@@ -8,6 +8,10 @@
 
   <ItemGroup>
     <Folder Include="Models\Entities\" />
+    <Folder Include="Services\" />
+    <Folder Include="wwwroot\asset\css\" />
+    <Folder Include="wwwroot\asset\image\" />
+    <Folder Include="wwwroot\asset\js\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -15,6 +15,15 @@ namespace QuanLyRuiRoTinDung.Controllers
 
         public IActionResult Index()
         {
+            // Kiểm tra đăng nhập
+            var maNguoiDung = HttpContext.Session.GetString("MaNguoiDung");
+            if (!string.IsNullOrEmpty(maNguoiDung))
+            {
+                // Đã đăng nhập, redirect đến Dashboard
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            // Chưa đăng nhập, hiển thị landing page
             return View();
         }
 
