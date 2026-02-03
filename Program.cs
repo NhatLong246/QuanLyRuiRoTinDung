@@ -46,6 +46,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add Services
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ILoanService, LoanService>();
+builder.Services.AddScoped<ICicService, CicService>();
 
 var app = builder.Build();
 
@@ -58,6 +61,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
 
 app.UseSession();

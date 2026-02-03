@@ -1,0 +1,693 @@
+@model List<QuanLyRuiRoTinDung.Models.Entities.ThongTinCic>
+@{
+    ViewData["Title"] = "Tra cứu CIC";
+    Layout = "_DashboardLayout";
+}
+
+<div class="cic-container">
+    <!-- Header -->
+    <div class="cic-header">
+        <div class="header-content">
+            <div class="header-top">
+                <a href="@Url.Action("Index", "Dashboard")" class="btn-back-dashboard">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Quay lại
+                </a>
+            </div>
+            <h1 class="page-title">
+                <svg class="title-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 8V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Tra cứu CIC - Trung tâm Thông tin Tín dụng
+            </h1>
+            <p class="page-subtitle">Danh sách khách hàng trong hệ thống CIC quốc gia</p>
+        </div>
+        <div class="header-stats">
+            <div class="stat-card">
+                <div class="stat-value">@ViewBag.TotalCount</div>
+                <div class="stat-label">Tổng bản ghi CIC</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="cic-filters">
+        <form asp-action="Search" method="post" class="filter-form">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Tìm kiếm</label>
+                    <input type="text" 
+                           name="searchTerm" 
+                           value="@ViewBag.SearchTerm" 
+                           placeholder="CMND/CCCD, MST, Họ tên, Mã CIC..." 
+                           class="filter-input" />
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Loại khách hàng</label>
+                    <select name="loaiKhachHang" class="filter-select">
+                        <option value="">Tất cả</option>
+                        <option value="CaNhan" selected="@(ViewBag.LoaiKhachHang == "CaNhan")">Cá nhân</option>
+                        <option value="DoanhNghiep" selected="@(ViewBag.LoaiKhachHang == "DoanhNghiep")">Doanh nghiệp</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Khuyến nghị</label>
+                    <select name="khuyenNghi" class="filter-select">
+                        <option value="">Tất cả</option>
+                        <option value="ChoVay" selected="@(ViewBag.KhuyenNghi == "ChoVay")">Cho vay</option>
+                        <option value="CanThanTrong" selected="@(ViewBag.KhuyenNghi == "CanThanTrong")">Cần thận trọng</option>
+                        <option value="KhongChoVay" selected="@(ViewBag.KhuyenNghi == "KhongChoVay")">Không cho vay</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button type="submit" class="btn-search">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                            <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Tìm kiếm
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn-reset">Đặt lại</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- CIC List -->
+    <div class="cic-list">
+        @if (Model != null && Model.Any())
+        {
+            <div class="cic-grid">
+                @foreach (var cic in Model)
+                {
+                    var riskColor = cic.MucDoRuiRo switch
+                    {
+                        "Thấp" => "risk-low",
+                        "Trung bình" => "risk-medium",
+                        "Cao" => "risk-high",
+                        "Rất cao" => "risk-very-high",
+                        _ => "risk-unknown"
+                    };
+
+                    var recommendationColor = cic.KhuyenNghiChoVay switch
+                    {
+                        "ChoVay" => "rec-approve",
+                        "CanThanTrong" => "rec-caution",
+                        "KhongChoVay" => "rec-reject",
+                        _ => "rec-unknown"
+                    };
+
+                    <div class="cic-card">
+                        <div class="cic-card-header">
+                            <div class="cic-code">@cic.MaCicCode</div>
+                            <div class="cic-badges">
+                                <span class="badge badge-type @(cic.LoaiKhachHang == "CaNhan" ? "badge-person" : "badge-company")">
+                                    @(cic.LoaiKhachHang == "CaNhan" ? "Cá nhân" : "Doanh nghiệp")
+                                </span>
+                                @if (!string.IsNullOrEmpty(cic.XepHangTinDungCic))
+                                {
+                                    <span class="badge badge-rating">@cic.XepHangTinDungCic</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="cic-card-body">
+                            <div class="cic-info-row">
+                                <span class="info-label">Họ tên:</span>
+                                <span class="info-value">@(cic.HoTen ?? "N/A")</span>
+                            </div>
+                            <div class="cic-info-row">
+                                <span class="info-label">CMND/CCCD:</span>
+                                <span class="info-value">@cic.SoCmndCccd</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(cic.MaSoThue))
+                            {
+                                <div class="cic-info-row">
+                                    <span class="info-label">Mã số thuế:</span>
+                                    <span class="info-value">@cic.MaSoThue</span>
+                                </div>
+                            }
+
+                            <div class="cic-stats">
+                                <div class="stat-item">
+                                    <div class="stat-label-small">Điểm CIC</div>
+                                    <div class="stat-value-small @(cic.DiemTinDungCic >= 700 ? "score-high" : cic.DiemTinDungCic >= 500 ? "score-medium" : "score-low")">
+                                        @(cic.DiemTinDungCic?.ToString() ?? "N/A")
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label-small">Khoản vay</div>
+                                    <div class="stat-value-small">@cic.SoKhoanVayDangVayCic đang vay</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label-small">Nợ xấu</div>
+                                    <div class="stat-value-small @(cic.SoKhoanVayNoXauCic > 0 ? "text-danger" : "text-success")">
+                                        @cic.SoKhoanVayNoXauCic khoản
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cic-risk-row">
+                                <span class="risk-badge @riskColor">
+                                    <span class="risk-dot"></span>
+                                    @(cic.MucDoRuiRo ?? "Chưa đánh giá")
+                                </span>
+                                <span class="recommendation-badge @recommendationColor">
+                                    @(cic.KhuyenNghiChoVay == "ChoVay" ? "✓ Cho vay" : 
+                                      cic.KhuyenNghiChoVay == "CanThanTrong" ? "⚠ Cần thận trọng" : 
+                                      cic.KhuyenNghiChoVay == "KhongChoVay" ? "✗ Không cho vay" : "Chưa đánh giá")
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="cic-card-footer">
+                            <div class="footer-info">
+                                <span class="footer-label">Tra cứu lần cuối:</span>
+                                <span class="footer-value">@(cic.NgayTraCuuCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</span>
+                            </div>
+                            <a href="@Url.Action("Details", new { id = cic.MaCic })" class="btn-details">
+                                Xem chi tiết
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="no-data">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p>Không tìm thấy dữ liệu CIC nào</p>
+                @if (!string.IsNullOrEmpty(ViewBag.SearchTerm as string))
+                {
+                    <p class="no-data-hint">Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+.cic-container {
+    padding: 32px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.cic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    gap: 24px;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.header-top {
+    margin-bottom: 16px;
+}
+
+.btn-back-dashboard {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--bg-gray-light);
+    color: var(--text-dark);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s;
+    border: 1px solid var(--border-gray);
+}
+
+.btn-back-dashboard:hover {
+    background: var(--border-gray);
+    transform: translateX(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-back-dashboard svg {
+    width: 18px;
+    height: 18px;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.title-icon {
+    width: 32px;
+    height: 32px;
+    color: var(--primary-blue);
+}
+
+.page-subtitle {
+    font-size: 16px;
+    color: var(--text-gray);
+}
+
+.header-stats {
+    display: flex;
+    gap: 16px;
+}
+
+.stat-card {
+    background: var(--bg-white);
+    padding: 20px 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    min-width: 180px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--text-gray);
+}
+
+.cic-filters {
+    background: var(--bg-white);
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 32px;
+}
+
+.filter-form {
+    width: 100%;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.filter-input,
+.filter-select {
+    padding: 10px 14px;
+    border: 1px solid var(--border-gray);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.btn-search {
+    padding: 10px 20px;
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-search:hover {
+    background: var(--primary-blue-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-search svg {
+    width: 18px;
+    height: 18px;
+}
+
+.btn-reset {
+    padding: 10px 20px;
+    background: var(--bg-gray-light);
+    color: var(--text-dark);
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.btn-reset:hover {
+    background: var(--border-gray);
+}
+
+.cic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 24px;
+}
+
+.cic-card {
+    background: var(--bg-white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: all 0.3s;
+    border: 1px solid var(--border-gray);
+}
+
+.cic-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-blue-light);
+}
+
+.cic-card-header {
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border-bottom: 1px solid var(--border-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cic-code {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-blue);
+    font-family: var(--font-mono);
+}
+
+.cic-badges {
+    display: flex;
+    gap: 8px;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-type {
+    background: var(--bg-gray-light);
+    color: var(--text-dark);
+}
+
+.badge-person {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-green);
+}
+
+.badge-company {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary-blue);
+}
+
+.badge-rating {
+    background: var(--purple-gradient);
+    color: white;
+}
+
+.cic-card-body {
+    padding: 20px;
+}
+
+.cic-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bg-gray-light);
+}
+
+.cic-info-row:last-of-type {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 14px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 14px;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.cic-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+    padding: 20px;
+    background: var(--bg-gray);
+    border-radius: 8px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label-small {
+    font-size: 12px;
+    color: var(--text-gray);
+    margin-bottom: 4px;
+}
+
+.stat-value-small {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.score-high {
+    color: var(--success-green);
+}
+
+.score-medium {
+    color: var(--warning-yellow);
+}
+
+.score-low {
+    color: var(--danger-red);
+}
+
+.cic-risk-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-gray);
+}
+
+.risk-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.risk-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.risk-low {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-green);
+}
+
+.risk-low .risk-dot {
+    background: var(--success-green);
+}
+
+.risk-medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-yellow);
+}
+
+.risk-medium .risk-dot {
+    background: var(--warning-yellow);
+}
+
+.risk-high {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-red);
+}
+
+.risk-high .risk-dot {
+    background: var(--danger-red);
+}
+
+.risk-very-high {
+    background: rgba(220, 38, 38, 0.15);
+    color: #991b1b;
+}
+
+.risk-very-high .risk-dot {
+    background: #991b1b;
+}
+
+.recommendation-badge {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.rec-approve {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-green);
+}
+
+.rec-caution {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-yellow);
+}
+
+.rec-reject {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-red);
+}
+
+.cic-card-footer {
+    padding: 16px 20px;
+    background: var(--bg-gray-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-gray);
+}
+
+.footer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.footer-label {
+    font-size: 11px;
+    color: var(--text-light);
+}
+
+.footer-value {
+    font-size: 12px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.btn-details {
+    padding: 8px 16px;
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-details:hover {
+    background: var(--primary-blue-dark);
+    transform: translateX(2px);
+}
+
+.btn-details svg {
+    width: 16px;
+    height: 16px;
+}
+
+.no-data {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-gray);
+}
+
+.no-data svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    opacity: 0.5;
+}
+
+.no-data p {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.no-data-hint {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+@@media (max-width: 1200px) {
+    .filter-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .cic-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

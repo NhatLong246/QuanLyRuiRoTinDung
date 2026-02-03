@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -54,6 +54,17 @@ public partial class KhachHangCaNhan
 
     [StringLength(50)]
     public string? Phuong { get; set; }
+
+    [Column("CCCDTruoc")]
+    [StringLength(500)]
+    public string? CccdTruoc { get; set; }
+
+    [Column("CCCDSau")]
+    [StringLength(500)]
+    public string? CccdSau { get; set; }
+
+    [StringLength(500)]
+    public string? AnhDaiDien { get; set; }
 
     [StringLength(20)]
     public string? TinhTrangHonNhan { get; set; }

@@ -1,0 +1,992 @@
+@model List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>
+@{
+    ViewData["Title"] = "Danh sách hồ sơ vay";
+    Layout = "_DashboardLayout";
+    var customerId = ViewBag.CustomerId as int? ?? 0;
+    var customerType = ViewBag.CustomerType as string ?? "";
+    var tenKhachHang = ViewBag.TenKhachHang as string ?? "";
+    
+    var hoSoNhap = Model.Where(k => k.TrangThaiKhoanVay == "Nháp").ToList();
+    var hoSoDaGui = Model.Where(k => k.TrangThaiKhoanVay == "Chờ duyệt" || k.TrangThaiKhoanVay == "Đang xử lý").ToList();
+}
+
+@Html.AntiForgeryToken()
+
+<div class="loan-list-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">Danh sách hồ sơ vay</h1>
+            <p class="page-subtitle">Khách hàng: <strong>@tenKhachHang</strong></p>
+        </div>
+        <a href="@Url.Action("SelectCustomer", "Loan")" class="btn-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Quay lại
+        </a>
+    </div>
+
+    <!-- Hồ sơ nháp -->
+    <div class="loan-section">
+        <h2 class="section-title">
+            <span class="title-icon">📝</span>
+            Hồ sơ nháp cần chỉnh sửa (@hoSoNhap.Count)
+        </h2>
+        @if (hoSoNhap.Any())
+        {
+            <div class="loan-grid">
+                @foreach (var loan in hoSoNhap)
+                {
+                    <div class="loan-card">
+                        <div class="loan-header">
+                            <div class="loan-code">@loan.MaKhoanVayCode</div>
+                            <span class="status-badge status-draft">Nháp</span>
+                        </div>
+                        <div class="loan-info">
+                            <div class="info-row">
+                                <span class="info-label">Loại vay:</span>
+                                <span class="info-value">@(loan.MaLoaiVayNavigation?.TenLoaiVay ?? "N/A")</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Số tiền vay:</span>
+                                <span class="info-value">@loan.SoTienVay.ToString("N0") VNĐ</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Lãi suất:</span>
+                                <span class="info-value">@loan.LaiSuat%</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Kỳ hạn:</span>
+                                <span class="info-value">@loan.KyHanVay tháng</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Ngày tạo:</span>
+                                <span class="info-value">@(loan.NgayTao?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</span>
+                            </div>
+                            @{
+                                // Lọc bỏ phần ghi chú chuyên viên cũ (nếu có) - chỉ lấy phần ghi chú hồ sơ
+                                var ghiChuHoSo = loan.GhiChu ?? "";
+                                var separatorIndex = ghiChuHoSo.IndexOf("--- Ghi chú của chuyên viên ---");
+                                if (separatorIndex >= 0)
+                                {
+                                    ghiChuHoSo = ghiChuHoSo.Substring(0, separatorIndex).Trim();
+                                }
+                            }
+                            <div class="info-row">
+                                <span class="info-label">Ghi chú:</span>
+                                <span class="info-value ghi-chu-value">@(!string.IsNullOrEmpty(ghiChuHoSo) ? ghiChuHoSo : "Không có")</span>
+                            </div>
+                        </div>
+                        <div class="loan-actions">
+                            <a href="@Url.Action("Edit", "Loan", new { loanId = loan.MaKhoanVay })" class="btn-edit">
+                                Chỉnh sửa
+                            </a>
+                            <button onclick="showDeleteConfirmationModal(@loan.MaKhoanVay)" class="btn-delete">
+                                Xóa
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>Chưa có hồ sơ nháp nào.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Hồ sơ đã gửi -->
+    <div class="loan-section">
+        <h2 class="section-title">
+            <span class="title-icon">📤</span>
+            Hồ sơ đã gửi (@hoSoDaGui.Count)
+        </h2>
+        @if (hoSoDaGui.Any())
+        {
+            <div class="loan-grid">
+                @foreach (var loan in hoSoDaGui)
+                {
+                    <div class="loan-card">
+                        <div class="loan-header">
+                            <div class="loan-code">@loan.MaKhoanVayCode</div>
+                            <span class="status-badge status-submitted">@loan.TrangThaiKhoanVay</span>
+                        </div>
+                        <div class="loan-info">
+                            <div class="info-row">
+                                <span class="info-label">Loại vay:</span>
+                                <span class="info-value">@(loan.MaLoaiVayNavigation?.TenLoaiVay ?? "N/A")</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Số tiền vay:</span>
+                                <span class="info-value">@loan.SoTienVay.ToString("N0") VNĐ</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Lãi suất:</span>
+                                <span class="info-value">@loan.LaiSuat%</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Kỳ hạn:</span>
+                                <span class="info-value">@loan.KyHanVay tháng</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(loan.MucDoRuiRo))
+                            {
+                                <div class="info-row">
+                                    <span class="info-label">Đánh giá:</span>
+                                    <span class="info-value">@loan.MucDoRuiRo</span>
+                                </div>
+                            }
+                            <div class="info-row">
+                                <span class="info-label">Ngày gửi:</span>
+                                <span class="info-value">@(loan.NgayNopHoSo?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Ghi chú:</span>
+                                <span class="info-value ghi-chu-value">@(!string.IsNullOrEmpty(loan.GhiChuNhanVien) ? loan.GhiChuNhanVien : "Không có")</span>
+                            </div>
+                        </div>
+                        <div class="loan-actions">
+                            <button onclick="cancelSubmission(@loan.MaKhoanVay)" class="btn-cancel-submission">
+                                Hủy gửi
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p>Chưa có hồ sơ nào đã gửi.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal xác nhận hủy gửi -->
+<div id="cancelSubmissionModal" class="custom-modal-overlay" style="display: none;">
+    <div class="custom-modal">
+        <div class="modal-icon warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        </div>
+        <h3 class="modal-title">Xác nhận hủy gửi</h3>
+        <p class="modal-message">Bạn có chắc chắn muốn hủy gửi hồ sơ này không?<br>Hồ sơ sẽ được chuyển về danh sách nháp.</p>
+        <div class="modal-buttons">
+            <button type="button" class="btn-modal-cancel" onclick="closeCancelModal()">Không</button>
+            <button type="button" class="btn-confirm-cancel" onclick="confirmCancelSubmission()">Xác nhận hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal kết quả -->
+<div id="resultModal" class="custom-modal-overlay" style="display: none;">
+    <div class="custom-modal">
+        <div id="resultIcon" class="result-icon success">✓</div>
+        <h3 id="resultTitle" class="modal-title">Thành công!</h3>
+        <p id="resultMessage" class="modal-message">Đã hủy gửi hồ sơ thành công!</p>
+        <div class="modal-buttons">
+            <button type="button" class="btn-modal-ok" onclick="closeResultModal()">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modal styles */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.custom-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease;
+}
+
+@@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.modal-icon.warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    color: #856404;
+}
+
+.modal-icon.warning svg {
+    width: 32px;
+    height: 32px;
+}
+
+.result-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.result-icon.success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+}
+
+.result-icon.error {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 0.75rem;
+}
+
+.modal-message {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-modal-cancel {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #dee2e6;
+    background: white;
+    color: #6c757d;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-modal-cancel:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+.btn-confirm-cancel {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-confirm-cancel:hover {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    transform: translateY(-1px);
+}
+
+.btn-confirm-cancel:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-modal-ok {
+    padding: 0.75rem 2rem;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-modal-ok:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+}
+
+@@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loan-list-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #f3f4f6;
+    color: #374151;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: #e5e7eb;
+}
+
+.btn-back svg {
+    width: 20px;
+    height: 20px;
+}
+
+.loan-section {
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+}
+
+.title-icon {
+    font-size: 1.5rem;
+}
+
+.loan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.loan-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.2s;
+}
+
+.loan-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+}
+
+.loan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.loan-code {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 1.1rem;
+}
+
+.status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-draft {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-submitted {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.loan-info {
+    margin-bottom: 1rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.info-value {
+    color: #1a1a1a;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.loan-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-edit {
+    display: inline-block;
+    width: 100%;
+    padding: 0.75rem;
+    background: #3b82f6;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: center;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-edit:hover {
+    background: #2563eb;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px dashed #d1d5db;
+}
+
+.ghi-chu-value {
+    color: #dc2626;
+    font-weight: 500;
+    font-style: italic;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.btn-delete {
+    display: inline-block;
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete:hover {
+    background: #b91c1c;
+}
+
+.btn-cancel-submission {
+    display: inline-block;
+    width: 100%;
+    padding: 0.75rem;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel-submission:hover {
+    background: #d97706;
+}
+
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+    // Hàm hiển thị modal xác nhận xóa
+    function showDeleteConfirmationModal(loanId) {
+        // Xóa modal cũ nếu có
+        const existingModal = document.getElementById('deleteConfirmModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Tạo modal overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'deleteConfirmModal';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        `;
+        
+        // Tạo modal content
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        `;
+        
+        // Icon
+        const icon = document.createElement('div');
+        icon.style.cssText = `
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #fee2e2;
+            color: #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+        `;
+        icon.innerHTML = '⚠';
+        
+        // Message
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = `
+            text-align: center;
+            font-size: 1.1rem;
+            color: #1a1a1a;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        `;
+        messageDiv.textContent = 'Bạn có chắc chắn muốn xóa hồ sơ nháp này không? Hành động này không thể hoàn tác.';
+        
+        // Buttons
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.style.cssText = `
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        `;
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Hủy';
+        cancelBtn.style.cssText = `
+            padding: 0.75rem 2rem;
+            background: #f3f4f6;
+            color: #374151;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+        cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+        cancelBtn.onclick = function() {
+            overlay.remove();
+        };
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = 'Xóa';
+        confirmBtn.style.cssText = `
+            padding: 0.75rem 2rem;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        confirmBtn.onmouseover = function() { this.style.background = '#b91c1c'; };
+        confirmBtn.onmouseout = function() { this.style.background = '#dc2626'; };
+        confirmBtn.onclick = function() {
+            overlay.remove();
+            deleteLoan(loanId);
+        };
+        
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(confirmBtn);
+        
+        // Assemble modal
+        modal.appendChild(icon);
+        modal.appendChild(messageDiv);
+        modal.appendChild(buttonsDiv);
+        overlay.appendChild(modal);
+        
+        // Close on overlay click
+        overlay.onclick = function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        };
+        
+        document.body.appendChild(overlay);
+    }
+    
+    async function deleteLoan(loanId) {
+        console.log('deleteLoan called with loanId:', loanId);
+        
+        try {
+            // Gửi request với query string (đơn giản hơn)
+            const url = '@Url.Action("DeleteLoan", "Loan")' + '?loanId=' + encodeURIComponent(loanId);
+            
+            console.log('Delete URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            console.log('Delete response status:', response.status);
+            console.log('Delete response ok:', response.ok);
+            
+            // Kiểm tra content type
+            const contentType = response.headers.get('content-type');
+            console.log('Delete response content-type:', contentType);
+
+            if (!response.ok) {
+                let errorText = '';
+                try {
+                    errorText = await response.text();
+                    console.error('Delete response error text:', errorText);
+                    
+                    // Thử parse JSON nếu có thể
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(errorJson.message || `HTTP error! status: ${response.status}`);
+                    } catch {
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    }
+                } catch (parseError) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            }
+
+            // Parse response
+            let result;
+            try {
+                const responseText = await response.text();
+                console.log('Delete response text:', responseText);
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Error parsing JSON response:', parseError);
+                throw new Error('Không thể parse response từ server. Vui lòng thử lại.');
+            }
+            
+            console.log('Delete result:', result);
+            
+            if (result && result.success) {
+                showNotification('Đã xóa hồ sơ nháp thành công!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showNotification(result?.message || 'Có lỗi xảy ra khi xóa hồ sơ.', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting loan:', error);
+            console.error('Error stack:', error.stack);
+            showNotification('Có lỗi xảy ra khi xóa hồ sơ: ' + (error.message || 'Vui lòng thử lại.'), 'error');
+        }
+    }
+    
+    // Hàm hiển thị thông báo custom (giống Create.cshtml)
+    function showNotification(message, type = 'info') {
+        // Xóa notification cũ nếu có
+        const existingNotification = document.getElementById('customNotification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // Tạo modal overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'customNotification';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            animation: fadeIn 0.2s ease;
+        `;
+        
+        // Tạo modal content
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        `;
+        
+        // Icon
+        const icon = document.createElement('div');
+        icon.style.cssText = `
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: ${type === 'success' ? '#d1fae5' : type === 'error' ? '#fee2e2' : '#dbeafe'};
+            color: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+        `;
+        icon.innerHTML = type === 'success' ? '✓' : type === 'error' ? '⚠' : 'ℹ';
+        
+        // Message
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = `
+            text-align: center;
+            font-size: 1.1rem;
+            color: #1a1a1a;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        `;
+        messageDiv.textContent = message;
+        
+        // Button
+        const button = document.createElement('button');
+        button.textContent = 'Đóng';
+        button.style.cssText = `
+            width: 100%;
+            padding: 0.75rem;
+            background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        button.onclick = function() {
+            overlay.remove();
+        };
+        
+        // Assemble modal
+        modal.appendChild(icon);
+        modal.appendChild(messageDiv);
+        modal.appendChild(button);
+        overlay.appendChild(modal);
+        
+        document.body.appendChild(overlay);
+    }
+
+    // Biến lưu loanId đang xử lý
+    let pendingCancelLoanId = null;
+
+    // Hiển thị modal xác nhận hủy gửi
+    function cancelSubmission(loanId) {
+        pendingCancelLoanId = loanId;
+        const modal = document.getElementById('cancelSubmissionModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    // Đóng modal hủy gửi
+    function closeCancelModal() {
+        const modal = document.getElementById('cancelSubmissionModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        pendingCancelLoanId = null;
+    }
+
+    // Xác nhận hủy gửi
+    async function confirmCancelSubmission() {
+        if (!pendingCancelLoanId) return;
+
+        const confirmBtn = document.querySelector('#cancelSubmissionModal .btn-confirm-cancel');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner"></span> Đang xử lý...';
+        }
+
+        try {
+            const response = await fetch('@Url.Action("CancelSubmission", "Loan")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify({ loanId: pendingCancelLoanId })
+            });
+
+            const result = await response.json();
+            
+            closeCancelModal();
+            
+            if (result.success) {
+                showResultModal('success', 'Thành công!', 'Đã hủy gửi hồ sơ thành công! Hồ sơ đã được chuyển về danh sách nháp.');
+            } else {
+                showResultModal('error', 'Lỗi!', result.message || 'Có lỗi xảy ra khi hủy gửi hồ sơ.');
+            }
+        } catch (error) {
+            console.error('Error canceling submission:', error);
+            closeCancelModal();
+            showResultModal('error', 'Lỗi!', 'Có lỗi xảy ra khi hủy gửi hồ sơ. Vui lòng thử lại.');
+        }
+    }
+
+    // Hiển thị modal kết quả
+    function showResultModal(type, title, message) {
+        const modal = document.getElementById('resultModal');
+        const iconEl = document.getElementById('resultIcon');
+        const titleEl = document.getElementById('resultTitle');
+        const messageEl = document.getElementById('resultMessage');
+        
+        if (modal && iconEl && titleEl && messageEl) {
+            iconEl.className = 'result-icon ' + type;
+            iconEl.innerHTML = type === 'success' ? '✓' : '✕';
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            modal.style.display = 'flex';
+        }
+    }
+
+    // Đóng modal kết quả và reload trang
+    function closeResultModal() {
+        const modal = document.getElementById('resultModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        location.reload();
+    }
+</script>

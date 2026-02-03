@@ -1,4 +1,4 @@
-﻿-- =============================================
+-- =============================================
 -- HỆ THỐNG QUẢN LÝ RỦI RO TÍN DỤNG
 -- SQL Server Database Schema - Tiếng Việt có chú thích
 -- =============================================
@@ -652,3 +652,144 @@ CREATE INDEX IX_CanhBao_NgayCanhBao ON CanhBao(NgayCanhBao);
 CREATE INDEX IX_NoXau_MaKhoanVay ON TheoDoi_NoXau(MaKhoanVay);
 CREATE INDEX IX_NoXau_TrangThai ON TheoDoi_NoXau(TrangThai);
 CREATE INDEX IX_NoXau_NgayPhanLoai ON TheoDoi_NoXau(NgayPhanLoai);
+
+-- ============================================
+-- BẢNG THÔNG TIN CIC (CREDIT INFORMATION CENTER)
+-- Lưu thông tin tra cứu từ Trung tâm Thông tin Tín dụng Quốc gia Việt Nam
+-- Dùng để đánh giá rủi ro và quyết định cho vay
+-- ============================================
+
+-- Bảng thông tin CIC của khách hàng (tra cứu từ CIC quốc gia)
+CREATE TABLE ThongTin_CIC (
+    MaCIC INT PRIMARY KEY IDENTITY(1,1),                            -- Mã định danh duy nhất của bản ghi CIC
+    MaCIC_Code NVARCHAR(20) UNIQUE NOT NULL,                       -- Mã code: CIC0001, CIC0002
+    LoaiKhachHang NVARCHAR(20) NOT NULL,                           -- Loại khách hàng: CaNhan, DoanhNghiep
+    MaKhachHang INT,                                                -- Mã khách hàng trong hệ thống (có thể NULL nếu chưa tạo khách hàng)
+    
+    -- Thông tin định danh để tra cứu CIC
+    SoCMND_CCCD NVARCHAR(20) NOT NULL,                              -- Số CMND/CCCD (bắt buộc để tra cứu)
+    MaSoThue NVARCHAR(20),                                         -- Mã số thuế (cho doanh nghiệp)
+    HoTen NVARCHAR(100),                                           -- Họ tên (để đối chiếu)
+    
+    -- Thông tin tín dụng từ CIC quốc gia (từ các ngân hàng/tổ chức tín dụng khác)
+    TongSoKhoanVayCIC INT DEFAULT 0,                               -- Tổng số khoản vay từ CIC (từ các ngân hàng khác)
+    SoKhoanVayDangVayCIC INT DEFAULT 0,                            -- Số khoản vay đang vay từ các ngân hàng khác
+    SoKhoanVayDaTraXongCIC INT DEFAULT 0,                          -- Số khoản vay đã trả xong
+    SoKhoanVayQuaHanCIC INT DEFAULT 0,                             -- Số khoản vay đang quá hạn
+    SoKhoanVayNoXauCIC INT DEFAULT 0,                              -- Số khoản vay nợ xấu (nhóm 3, 4, 5)
+    
+    -- Thông tin dư nợ từ CIC (từ các ngân hàng khác)
+    TongDuNoCIC DECIMAL(18,2) DEFAULT 0,                           -- Tổng dư nợ hiện tại từ CIC (VNĐ)
+    DuNoQuaHanCIC DECIMAL(18,2) DEFAULT 0,                         -- Dư nợ quá hạn từ CIC (VNĐ)
+    DuNoNoXauCIC DECIMAL(18,2) DEFAULT 0,                          -- Dư nợ nợ xấu từ CIC (VNĐ) - nhóm 3, 4, 5
+    DuNoToiDaCIC DECIMAL(18,2) DEFAULT 0,                          -- Dư nợ tối đa từng có (VNĐ)
+    TongGiaTriVayCIC DECIMAL(18,2) DEFAULT 0,                      -- Tổng giá trị đã vay trong lịch sử từ CIC (VNĐ)
+    
+    -- Điểm tín dụng và xếp hạng từ CIC quốc gia
+    DiemTinDungCIC INT,                                            -- Điểm tín dụng CIC (0-1000) - từ CIC quốc gia
+    XepHangTinDungCIC NVARCHAR(10),                                 -- Xếp hạng tín dụng CIC: AAA, AA, A, BBB, BB, B, CCC, CC, C, D
+    MucDoRuiRo NVARCHAR(20),                                       -- Mức độ rủi ro: Thấp, Trung bình, Cao, Rất cao
+    KhaNangTraNo NVARCHAR(20),                                     -- Khả năng trả nợ: Tốt, Khá, Trung bình, Yếu, Rất yếu
+    
+    -- Lịch sử tín dụng từ CIC
+    SoLanQuaHanCIC INT DEFAULT 0,                                 -- Số lần quá hạn trong lịch sử (từ CIC)
+    SoLanNoXauCIC INT DEFAULT 0,                                   -- Số lần nợ xấu trong lịch sử (từ CIC)
+    SoNgayQuaHanToiDaCIC INT DEFAULT 0,                            -- Số ngày quá hạn tối đa từng có
+    NgayQuaHanLanCuoiCIC DATE,                                    -- Ngày quá hạn lần cuối
+    NgayNoXauLanCuoiCIC DATE,                                      -- Ngày nợ xấu lần cuối
+    ThoiGianTraNoTotCIC INT DEFAULT 0,                             -- Thời gian trả nợ tốt (tháng) - không quá hạn
+    TyLeTraNoDungHanCIC DECIMAL(5,2) DEFAULT 0,                    -- Tỷ lệ trả nợ đúng hạn (%) từ CIC
+    
+    -- Thông tin các ngân hàng/tổ chức tín dụng đã vay
+    DanhSachToChucTinDung NVARCHAR(MAX),                           -- Danh sách các tổ chức tín dụng đã vay (JSON hoặc text)
+    SoToChucTinDungDaVay INT DEFAULT 0,                           -- Số tổ chức tín dụng đã từng vay
+    
+    -- Đánh giá và khuyến nghị dựa trên CIC
+    DanhGiaTongQuat NVARCHAR(1000),                                -- Đánh giá tổng quan về khách hàng dựa trên CIC
+    KhuyenNghiChoVay NVARCHAR(50),                                -- Khuyến nghị: ChoVay, CanThanTrong, KhongChoVay
+    LyDoKhuyenNghi NVARCHAR(1000),                                -- Lý do khuyến nghị chi tiết
+    
+    -- Thông tin tra cứu
+    NgayTraCuuCuoi DATETIME DEFAULT GETDATE(),                    -- Ngày tra cứu CIC lần cuối
+    NguoiTraCuu INT,                                               -- Người thực hiện tra cứu CIC (FK đến NguoiDung)
+    KetQuaTraCuu NVARCHAR(50),                                     -- Kết quả tra cứu: ThanhCong, ThatBai, KhongCoThongTin
+    ThongTinTraVeCIC NVARCHAR(MAX),                                -- Thông tin trả về từ CIC (JSON hoặc text gốc)
+    
+    -- Thông tin hệ thống
+    NgayTao DATETIME DEFAULT GETDATE(),                            -- Ngày tạo bản ghi CIC
+    NguoiTao INT,                                                  -- Người tạo bản ghi
+    NgayCapNhat DATETIME,                                          -- Ngày cập nhật thông tin gần nhất
+    NguoiCapNhat INT,                                              -- Người cập nhật thông tin
+    TrangThaiHoatDong BIT DEFAULT 1,                               -- 1: Đang hoạt động, 0: Đã xóa/không sử dụng
+    
+    FOREIGN KEY (NguoiTraCuu) REFERENCES NguoiDung(MaNguoiDung),
+    FOREIGN KEY (NguoiTao) REFERENCES NguoiDung(MaNguoiDung),
+    FOREIGN KEY (NguoiCapNhat) REFERENCES NguoiDung(MaNguoiDung)
+);
+
+-- Bảng lịch sử tra cứu CIC (lưu lại mỗi lần tra cứu để đối chiếu)
+CREATE TABLE LichSu_TraCuuCIC (
+    MaLichSu INT PRIMARY KEY IDENTITY(1,1),                        -- Mã định danh lịch sử tra cứu
+    MaCIC INT,                                                     -- Mã bản ghi CIC (có thể NULL nếu tra cứu lần đầu)
+    LoaiKhachHang NVARCHAR(20) NOT NULL,                          -- Loại khách hàng: CaNhan, DoanhNghiep
+    MaKhachHang INT,                                               -- Mã khách hàng trong hệ thống (có thể NULL)
+    
+    -- Thông tin tra cứu
+    SoCMND_CCCD NVARCHAR(20) NOT NULL,                            -- Số CMND/CCCD tra cứu
+    MaSoThue NVARCHAR(20),                                        -- Mã số thuế tra cứu (cho doanh nghiệp)
+    NgayTraCuu DATETIME DEFAULT GETDATE(),                        -- Ngày giờ tra cứu
+    NguoiTraCuu INT NOT NULL,                                      -- Người thực hiện tra cứu (FK đến NguoiDung)
+    
+    -- Kết quả tra cứu từ CIC
+    KetQua NVARCHAR(50),                                           -- Kết quả: ThanhCong, ThatBai, KhongCoThongTin
+    ThongTinTraVe NVARCHAR(MAX),                                   -- Thông tin trả về từ CIC (JSON hoặc text gốc)
+    DiemTinDung INT,                                               -- Điểm tín dụng tại thời điểm tra cứu
+    XepHangTinDung NVARCHAR(10),                                   -- Xếp hạng tại thời điểm tra cứu
+    TongDuNo DECIMAL(18,2),                                        -- Tổng dư nợ tại thời điểm tra cứu
+    SoKhoanVayDangVay INT,                                        -- Số khoản vay đang vay tại thời điểm tra cứu
+    SoKhoanVayNoXau INT,                                          -- Số khoản vay nợ xấu tại thời điểm tra cứu
+    
+    -- Ghi chú
+    GhiChu NVARCHAR(1000),                                         -- Ghi chú về kết quả tra cứu
+    
+    FOREIGN KEY (MaCIC) REFERENCES ThongTin_CIC(MaCIC),
+    FOREIGN KEY (NguoiTraCuu) REFERENCES NguoiDung(MaNguoiDung)
+);
+
+-- Indexes cho bảng CIC
+CREATE INDEX IX_CIC_LoaiKhachHang_MaKhachHang ON ThongTin_CIC(LoaiKhachHang, MaKhachHang);
+CREATE INDEX IX_CIC_SoCMND ON ThongTin_CIC(SoCMND_CCCD);
+CREATE INDEX IX_CIC_MaSoThue ON ThongTin_CIC(MaSoThue);
+CREATE INDEX IX_CIC_XepHangTinDung ON ThongTin_CIC(XepHangTinDungCIC);
+CREATE INDEX IX_CIC_MucDoRuiRo ON ThongTin_CIC(MucDoRuiRo);
+CREATE INDEX IX_CIC_KhuyenNghiChoVay ON ThongTin_CIC(KhuyenNghiChoVay);
+CREATE INDEX IX_CIC_NgayTraCuuCuoi ON ThongTin_CIC(NgayTraCuuCuoi);
+
+-- Indexes cho bảng Lịch sử tra cứu CIC
+CREATE INDEX IX_LichSuTraCuuCIC_MaCIC ON LichSu_TraCuuCIC(MaCIC);
+CREATE INDEX IX_LichSuTraCuuCIC_SoCMND ON LichSu_TraCuuCIC(SoCMND_CCCD);
+CREATE INDEX IX_LichSuTraCuuCIC_NgayTraCuu ON LichSu_TraCuuCIC(NgayTraCuu);
+CREATE INDEX IX_LichSuTraCuuCIC_NguoiTraCuu ON LichSu_TraCuuCIC(NguoiTraCuu);
+
+-- ============================================
+-- THÊM CÁC TRƯỜNG ẢNH VÀO BẢNG KHÁCH HÀNG
+-- ============================================
+
+-- Thêm các trường ảnh vào bảng KhachHang_CaNhan
+ALTER TABLE KhachHang_CaNhan
+ADD CCCDTruoc NVARCHAR(500) NULL,                    -- Đường dẫn ảnh mặt trước CCCD/CMND
+    CCCDSau NVARCHAR(500) NULL,                      -- Đường dẫn ảnh mặt sau CCCD/CMND
+    AnhDaiDien NVARCHAR(500) NULL;                   -- Đường dẫn ảnh đại diện khách hàng
+
+-- Thêm các trường ảnh và thông tin bổ sung vào bảng KhachHang_DoanhNghiep
+ALTER TABLE KhachHang_DoanhNghiep
+ADD AnhGiayPhepKinhDoanh NVARCHAR(500) NULL,         -- Đường dẫn ảnh giấy phép kinh doanh
+    AnhBaoCaoTaichinh NVARCHAR(500) NULL,            -- Đường dẫn ảnh báo cáo tài chính
+    AnhGiayToLienQuanKhac NVARCHAR(500) NULL,        -- Đường dẫn ảnh giấy tờ liên quan khác
+    CCCDTruoc NVARCHAR(500) NULL,                    -- Đường dẫn ảnh mặt trước CCCD người đại diện
+    CCCDSau NVARCHAR(500) NULL,                      -- Đường dẫn ảnh mặt sau CCCD người đại diện
+    AnhNguoiDaiDien NVARCHAR(500) NULL,              -- Đường dẫn ảnh người đại diện pháp luật
+    SoCCCD_NguoiDaiDienPhapLuat NVARCHAR(20) NULL,   -- Số CCCD của người đại diện pháp luật
+    NgaySinh DATE NULL,                              -- Ngày sinh người đại diện pháp luật
+    GioiTinh NVARCHAR(10) NULL,                      -- Giới tính người đại diện pháp luật
+    Phuong NVARCHAR(50) NULL;                        -- Phường/Xã (bổ sung địa chỉ)
