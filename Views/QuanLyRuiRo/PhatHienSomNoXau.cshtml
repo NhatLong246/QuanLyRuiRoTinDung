@@ -1,0 +1,261 @@
+@{
+    Layout = "_QuanLyRuiRoLayout";
+    ViewData["Title"] = "Phát hiện sớm Nợ xấu";
+}
+
+<div class="page-header">
+    <div class="header-content">
+        <div>
+            <h1 class="page-title">Phát hiện sớm Nợ xấu</h1>
+            <p class="page-subtitle">Cảnh báo và phát hiện sớm các khoản vay có dấu hiệu quá hạn hoặc nợ xấu</p>
+        </div>
+        <a href="@Url.Action("Index", "QuanLyRuiRo")" class="btn-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19L5 12L12 5"/>
+            </svg>
+            Quay lại
+        </a>
+    </div>
+</div>
+
+<!-- Alert Summary -->
+<div class="alert-summary">
+    <div class="alert-card alert-critical">
+        <div class="alert-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.71 21H20.29A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z"/>
+                <path d="M12 9V13"/>
+                <path d="M12 17H12.01"/>
+            </svg>
+        </div>
+        <div class="alert-content">
+            <div class="alert-count">15</div>
+            <div class="alert-label">Cảnh báo Nghiêm trọng</div>
+        </div>
+    </div>
+    <div class="alert-card alert-warning">
+        <div class="alert-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+            </svg>
+        </div>
+        <div class="alert-content">
+            <div class="alert-count">32</div>
+            <div class="alert-label">Cảnh báo Cần chú ý</div>
+        </div>
+    </div>
+    <div class="alert-card alert-info">
+        <div class="alert-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+            </svg>
+        </div>
+        <div class="alert-content">
+            <div class="alert-count">48</div>
+            <div class="alert-label">Cảnh báo Thông tin</div>
+        </div>
+    </div>
+</div>
+
+<div class="content-section">
+    <!-- Filter Section -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Bộ lọc Cảnh báo</h3>
+        </div>
+        <div class="card-body">
+            <div class="filter-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Mức độ nghiêm trọng</label>
+                        <select class="form-control">
+                            <option value="">Tất cả</option>
+                            <option value="NghiemTrong">Nghiêm trọng</option>
+                            <option value="CanChuY">Cần chú ý</option>
+                            <option value="ThongTin">Thông tin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Loại cảnh báo</label>
+                        <select class="form-control">
+                            <option value="">Tất cả</option>
+                            <option value="QuaHan">Quá hạn thanh toán</option>
+                            <option value="NoXau">Nợ xấu</option>
+                            <option value="GiamDiem">Giảm điểm tín dụng</option>
+                            <option value="BatThuong">Bất thường</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Trạng thái</label>
+                        <select class="form-control">
+                            <option value="">Tất cả</option>
+                            <option value="ChuaXuLy">Chưa xử lý</option>
+                            <option value="DangXuLy">Đang xử lý</option>
+                            <option value="DaGiaiQuyet">Đã giải quyết</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21L16.65 16.65"/>
+                            </svg>
+                            Lọc
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert List -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Danh sách Cảnh báo</h3>
+            <button class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5V19M5 12H19"/>
+                </svg>
+                Tạo cảnh báo thủ công
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="alert-list">
+                <div class="alert-item alert-critical">
+                    <div class="alert-item-header">
+                        <div class="alert-severity">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.71 21H20.29A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z"/>
+                                <path d="M12 9V13"/>
+                                <path d="M12 17H12.01"/>
+                            </svg>
+                            <span>Nghiêm trọng</span>
+                        </div>
+                        <span class="alert-date">15/01/2024 14:30</span>
+                    </div>
+                    <h4 class="alert-title">Khoản vay KV-2024-001 quá hạn 15 ngày</h4>
+                    <p class="alert-description">
+                        Khách hàng Nguyễn Văn A chưa thanh toán kỳ trả nợ tháng 12/2023. 
+                        Số tiền quá hạn: 25,000,000 VNĐ. Cần liên hệ ngay để xử lý.
+                    </p>
+                    <div class="alert-meta">
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            KV-2024-001
+                        </span>
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22S22 17.52 22 12S17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4S20 7.59 20 12S16.41 20 12 20Z"/>
+                                <path d="M12 6V12L16 14"/>
+                            </svg>
+                            15 ngày quá hạn
+                        </span>
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22S22 17.52 22 12S17.52 2 12 2Z"/>
+                                <path d="M12 6V12L16 14"/>
+                            </svg>
+                            Chưa xử lý
+                        </span>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="btn btn-primary btn-sm">Xử lý ngay</button>
+                        <button class="btn btn-secondary btn-sm">Chi tiết</button>
+                    </div>
+                </div>
+
+                <div class="alert-item alert-warning">
+                    <div class="alert-item-header">
+                        <div class="alert-severity">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+                            </svg>
+                            <span>Cần chú ý</span>
+                        </div>
+                        <span class="alert-date">14/01/2024 10:15</span>
+                    </div>
+                    <h4 class="alert-title">Điểm tín dụng giảm đáng kể</h4>
+                    <p class="alert-description">
+                        Khách hàng Trần Thị B có điểm tín dụng giảm từ 75 xuống 58 trong tháng này. 
+                        Cần theo dõi và đánh giá lại rủi ro.
+                    </p>
+                    <div class="alert-meta">
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            KV-2024-003
+                        </span>
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3V21H21"/>
+                                <path d="M7 16L12 11L16 15L21 10"/>
+                            </svg>
+                            Giảm 17 điểm
+                        </span>
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22S22 17.52 22 12S17.52 2 12 2Z"/>
+                                <path d="M12 6V12L16 14"/>
+                            </svg>
+                            Đang xử lý
+                        </span>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="btn btn-primary btn-sm">Xử lý</button>
+                        <button class="btn btn-secondary btn-sm">Chi tiết</button>
+                    </div>
+                </div>
+
+                <div class="alert-item alert-info">
+                    <div class="alert-item-header">
+                        <div class="alert-severity">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+                            </svg>
+                            <span>Thông tin</span>
+                        </div>
+                        <span class="alert-date">13/01/2024 16:45</span>
+                    </div>
+                    <h4 class="alert-title">Giao dịch bất thường phát hiện</h4>
+                    <p class="alert-description">
+                        Phát hiện giao dịch rút tiền lớn bất thường từ tài khoản khách hàng Công ty ABC. 
+                        Cần xác minh và theo dõi.
+                    </p>
+                    <div class="alert-meta">
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            KV-2024-002
+                        </span>
+                        <span class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22S22 17.52 22 12S17.52 2 12 2Z"/>
+                                <path d="M12 6V12L16 14"/>
+                            </svg>
+                            Đã giải quyết
+                        </span>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="btn btn-secondary btn-sm">Xem chi tiết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/quanlyruiro.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/quanlyruiro.js" asp-append-version="true"></script>
+}
