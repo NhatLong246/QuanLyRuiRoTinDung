@@ -23,6 +23,10 @@ namespace QuanLyRuiRoTinDung.Controllers
             if (HttpContext.Session.GetString("MaNguoiDung") != null)
             {
                 var tenVaiTro = HttpContext.Session.GetString("TenVaiTro");
+                if (tenVaiTro == "LanhDao")
+                {
+                    return RedirectToAction("Index", "LanhDao");
+                }
                 if (tenVaiTro == "QuanLyRuiRo")
                 {
                     return RedirectToAction("Index", "QuanLyRuiRo");
@@ -86,6 +90,10 @@ namespace QuanLyRuiRoTinDung.Controllers
                 }
 
                 // Redirect based on role
+                if (tenVaiTro == "LanhDao")
+                {
+                    return RedirectToAction("Index", "LanhDao");
+                }
                 if (tenVaiTro == "QuanLyRuiRo")
                 {
                     return RedirectToAction("Index", "QuanLyRuiRo");
