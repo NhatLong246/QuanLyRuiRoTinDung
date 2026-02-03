@@ -1,0 +1,767 @@
+@model List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>
+
+@{
+    ViewData["Title"] = "Khoản vay - Quản lý Lãnh đạo";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2">
+                <i class="fas fa-check-circle me-2"></i>
+                Khoản vay
+            </h1>
+            <p class="text-muted">Xem xét và quyết định các khoản vay </p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <form method="get" class="row g-3">
+                <input type="hidden" name="status" value="Chờ phê duyệt">
+                <div class="col-md-5">
+                    <input type="text" class="form-control" placeholder="Tìm kiếm theo mã, tên..." name="search" value="@ViewBag.Search">
+                </div>
+                <div class="col-md-5">
+                    <select class="form-select" name="riskLevel">
+                        <option value="">-- Tất cả mức độ rủi ro --</option>
+                        @if (ViewBag.RiskLevelList != null)
+                        {
+                            @foreach (var riskLevelItem in (List<string>)ViewBag.RiskLevelList)
+                            {
+                                <option value="@riskLevelItem" selected="@(ViewBag.SelectedRiskLevel?.ToString() == riskLevelItem)">
+                                    @riskLevelItem
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h6 class="card-title mb-0">Danh sách khoản vay chờ phê duyệt</h6>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-warning">
+                        @(Model?.Count ?? 0)
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã khoản vay</th>
+                        <th>Loại khoản vay</th>
+                        <th>Tên khách hàng</th>
+                        <th>Số tiền vay</th>
+                        <th>Mục đích vay</th>
+                        <th>Mức độ rủi ro</th>
+                        <th>Nhân viên tín dụng</th>
+                        <th>Ngày nộp hồ sơ</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var loan in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">@loan.MaKhoanVayCode</span>
+                                </td>
+                                <td>@loan.MaLoaiVayNavigation?.TenLoaiVay</td>
+                                <td>
+                                    @{
+                                        var customerNameKey = $"CustomerName_{loan.MaKhoanVay}";
+                                        var tenKhachHang = ViewData[customerNameKey]?.ToString();
+                                        
+                                        if (string.IsNullOrEmpty(tenKhachHang))
+                                        {
+                                            // Fallback nếu không có trong ViewData
+                                            tenKhachHang = loan.LoaiKhachHang == "CaNhan" 
+                                                ? $"KH-{loan.MaKhachHang}" 
+                                                : $"DN-{loan.MaKhachHang}";
+                                        }
+                                    }
+                                    <strong>@tenKhachHang</strong>
+                                </td>
+                                <td class="text-end">
+                                    <strong>@loan.SoTienVay.ToString("N0")</strong> VND
+                                </td>
+                                <td>
+                                    <small>@loan.MucDichVay</small>
+                                </td>
+                                <td>
+                                    @{
+                                        var riskLevelKey = $"RiskLevel_{loan.MaKhoanVay}";
+                                        var riskLevel = ViewData[riskLevelKey]?.ToString() ?? loan.MucDoRuiRo ?? "Chưa đánh giá";
+                                        var riskBadgeClass = riskLevel switch
+                                        {
+                                            "Cao" or "Rất cao" => "bg-danger",
+                                            "Trung bình" => "bg-warning",
+                                            "Thấp" => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @riskBadgeClass">@riskLevel</span>
+                                </td>
+                                <td>@loan.MaNhanVienTinDungNavigation?.HoTen</td>
+                                <td>@loan.NgayNopHoSo?.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <button type="button" 
+                                            class="btn btn-primary btn-sm action-view-btn" 
+                                                data-bs-toggle="modal" 
+                                            data-bs-target="#loanDetailModal"
+                                                data-loan-id="@loan.MaKhoanVay"
+                                            title="Xem chi tiết">
+                                        <i class="fas fa-eye me-1"></i>Xem
+                                        </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                <br>
+                                Không có khoản vay nào chờ phê duyệt
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Enhanced view-specific styles */
+    .card-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .table th {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .action-view-btn {
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    }
+
+    .action-view-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .modal-xl {
+        max-width: 90%;
+    }
+
+    .modal-header.bg-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    }
+
+    .h2 {
+        color: #1e293b;
+        font-weight: 700;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+    }
+</style>
+
+<!-- Modal Chi tiết Khoản vay -->
+<div class="modal fade" id="loanDetailModal" tabindex="-1" aria-labelledby="loanDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="loanDetailModalLabel">
+                    <i class="fas fa-file-signature me-2"></i>Chi tiết Khoản vay
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="loanDetailContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Đang tải thông tin...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác nhận Quyết định -->
+<div class="modal fade" id="confirmDecisionModal" tabindex="-1" aria-labelledby="confirmDecisionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="confirmModalHeader">
+                <h5 class="modal-title" id="confirmDecisionModalLabel">
+                    <i class="fas fa-question-circle me-2"></i>Xác nhận Quyết định
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert mb-3" id="confirmAlert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span id="confirmMessage"></span>
+                </div>
+                
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Thông tin Khoản vay
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mã khoản vay:</small>
+                                <p class="mb-0"><strong id="confirmLoanCode">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mã khách hàng:</small>
+                                <p class="mb-0"><strong id="confirmCustomerId">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Loại khách hàng:</small>
+                                <p class="mb-0"><strong id="confirmCustomerType">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Số tiền vay:</small>
+                                <p class="mb-0"><strong class="text-success" id="confirmLoanAmount">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mục đích vay:</small>
+                                <p class="mb-0"><strong id="confirmLoanPurpose">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mức độ rủi ro:</small>
+                                <p class="mb-0"><span id="confirmRiskLevel">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="rejectReasonSection" class="mt-3" style="display: none;">
+                    <label class="form-label"><strong>Lý do từ chối:</strong></label>
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="confirmRejectReason">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Hủy
+                </button>
+                <button type="button" class="btn" id="confirmSubmitBtn">
+                    <i class="fas fa-check me-2"></i>Xác nhận
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loanDetailModal = document.getElementById('loanDetailModal');
+        const loanDetailContent = document.getElementById('loanDetailContent');
+        
+        // Lưu trữ form và decision type để submit sau khi xác nhận
+        let pendingForm = null;
+        let pendingDecision = null;
+        
+        // Hàm lấy thông tin khoản vay từ modal content
+        function getLoanInfo(form) {
+            const loanCode = form.getAttribute('data-loan-code') || '';
+            const content = loanDetailContent;
+            
+            // Lấy thông tin từ các phần tử cụ thể trong modal
+            let customerId = '';
+            let customerType = '';
+            let loanAmount = '';
+            let loanPurpose = '';
+            let riskLevel = '';
+            
+            // Tìm mã khách hàng (thường là phần tử thứ 2 trong card đầu tiên)
+            const customerInfoCards = content.querySelectorAll('.card-body .row .col-md-6');
+            if (customerInfoCards.length > 0) {
+                const firstCol = customerInfoCards[0];
+                const secondCol = customerInfoCards[1];
+                
+                // Mã khách hàng thường ở phần tử thứ 2
+                if (firstCol && firstCol.querySelectorAll('p strong').length > 1) {
+                    customerId = firstCol.querySelectorAll('p strong')[1]?.textContent?.trim() || '';
+                }
+                
+                // Loại khách hàng thường ở phần tử thứ 3
+                if (firstCol && firstCol.querySelectorAll('p strong').length > 2) {
+                    customerType = firstCol.querySelectorAll('p strong')[2]?.textContent?.trim() || '';
+                }
+                
+                // Mục đích vay thường ở phần tử đầu tiên của cột thứ 2
+                if (secondCol && secondCol.querySelectorAll('p strong').length > 0) {
+                    loanPurpose = secondCol.querySelectorAll('p strong')[0]?.textContent?.trim() || '';
+                }
+            }
+            
+            // Tìm số tiền vay (thường có class text-success và h5)
+            const loanAmountEl = content.querySelector('.text-success.h5, .text-success strong');
+            if (loanAmountEl) {
+                loanAmount = loanAmountEl.textContent?.trim() || '';
+            }
+            
+            // Tìm mức độ rủi ro (badge)
+            const riskBadge = content.querySelector('.badge.bg-danger, .badge.bg-warning, .badge.bg-success, .badge.bg-secondary, .badge.bg-info');
+            if (riskBadge) {
+                riskLevel = riskBadge.textContent?.trim() || '';
+            }
+            
+            return {
+                loanCode: loanCode || 'N/A',
+                customerId: customerId || 'N/A',
+                customerType: customerType || 'N/A',
+                loanAmount: loanAmount || 'N/A',
+                loanPurpose: loanPurpose || 'N/A',
+                riskLevel: riskLevel || 'N/A'
+            };
+        }
+        
+        // Hàm hiển thị modal xác nhận
+        function showConfirmModal(form, decision, loanInfo) {
+            const confirmModalEl = document.getElementById('confirmDecisionModal');
+            if (!confirmModalEl) {
+                console.error('Modal xác nhận không tồn tại!');
+                alert('Không thể hiển thị modal xác nhận. Vui lòng thử lại.');
+                return;
+            }
+            
+            const confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
+            const confirmHeader = document.getElementById('confirmModalHeader');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+            const rejectReasonSection = document.getElementById('rejectReasonSection');
+            const confirmRejectReason = document.getElementById('confirmRejectReason');
+            const confirmAlert = document.getElementById('confirmAlert');
+            
+            // Điền thông tin khoản vay
+            document.getElementById('confirmLoanCode').textContent = loanInfo.loanCode || '-';
+            document.getElementById('confirmCustomerId').textContent = loanInfo.customerId || '-';
+            document.getElementById('confirmCustomerType').textContent = loanInfo.customerType || '-';
+            document.getElementById('confirmLoanAmount').textContent = loanInfo.loanAmount || '-';
+            document.getElementById('confirmLoanPurpose').textContent = loanInfo.loanPurpose || '-';
+            
+            // Hiển thị mức độ rủi ro với badge màu
+            const riskLevelEl = document.getElementById('confirmRiskLevel');
+            const riskLevel = loanInfo.riskLevel || '-';
+            if (riskLevel !== '-' && riskLevel !== 'N/A') {
+                let badgeClass = 'bg-secondary';
+                if (riskLevel.includes('Cao') || riskLevel.includes('Rất cao')) badgeClass = 'bg-danger';
+                else if (riskLevel.includes('Trung bình')) badgeClass = 'bg-warning';
+                else if (riskLevel.includes('Thấp')) badgeClass = 'bg-success';
+                riskLevelEl.innerHTML = `<span class="badge ${badgeClass}">${riskLevel}</span>`;
+            } else {
+                riskLevelEl.innerHTML = '<span class="badge bg-secondary">-</span>';
+            }
+            
+            if (decision === 'approve') {
+                // Chấp nhận
+                confirmHeader.className = 'modal-header bg-success text-white';
+                confirmMessage.textContent = 'Bạn có chắc chắn muốn CHẤP NHẬN khoản vay này không?';
+                confirmAlert.className = 'alert alert-info mb-3';
+                confirmSubmitBtn.className = 'btn btn-success';
+                confirmSubmitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Xác nhận Chấp nhận';
+                rejectReasonSection.style.display = 'none';
+            } else {
+                // Từ chối
+                const formId = form.id;
+                const notesId = 'notes_' + formId.replace('decisionForm_', '');
+                const notes = document.getElementById(notesId);
+                const rejectReason = notes ? notes.value.trim() : '';
+                
+                if (!rejectReason || rejectReason.length === 0) {
+                    console.error('Lý do từ chối không được để trống!');
+                    return;
+                }
+                
+                confirmHeader.className = 'modal-header bg-danger text-white';
+                confirmMessage.textContent = 'Bạn có chắc chắn muốn TỪ CHỐI khoản vay này không?';
+                confirmAlert.className = 'alert alert-danger mb-3';
+                confirmSubmitBtn.className = 'btn btn-danger';
+                confirmSubmitBtn.innerHTML = '<i class="fas fa-times me-2"></i>Xác nhận Từ chối';
+                confirmRejectReason.textContent = rejectReason || 'Không có lý do';
+                rejectReasonSection.style.display = 'block';
+            }
+            
+            // Lưu form và decision để submit sau khi xác nhận
+            pendingForm = form;
+            pendingDecision = decision;
+            
+            // Hiển thị modal
+            confirmModal.show();
+        }
+        
+        // Xử lý khi xác nhận trong modal
+        document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
+            if (pendingForm && pendingDecision) {
+                // Nếu là từ chối, kiểm tra lại lý do từ chối
+                if (pendingDecision === 'reject') {
+                    const formId = pendingForm.id;
+                    const notesId = 'notes_' + formId.replace('decisionForm_', '');
+                    const notes = document.getElementById(notesId);
+                    
+                    if (!notes || !notes.value.trim()) {
+                        // Đóng modal xác nhận và focus vào trường nhập lý do
+                        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDecisionModal'));
+                        confirmModal.hide();
+                        
+                        // Mở lại modal chi tiết và focus vào trường nhập lý do
+                        setTimeout(() => {
+                            if (notes) {
+                                notes.focus();
+                                notes.classList.add('is-invalid');
+                                
+                                const errorMsg = document.createElement('div');
+                                errorMsg.className = 'invalid-feedback d-block';
+                                errorMsg.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Vui lòng nhập lý do từ chối!';
+                                
+                                const oldError = notes.parentNode.querySelector('.invalid-feedback');
+                                if (oldError) {
+                                    oldError.remove();
+                                }
+                                
+                                notes.parentNode.appendChild(errorMsg);
+                            }
+                            alert('Vui lòng nhập lý do từ chối trước khi xác nhận!');
+                        }, 300);
+                        
+                        return false;
+                    }
+                }
+                
+                // Xóa input decision cũ nếu có
+                const oldDecision = pendingForm.querySelector('input[name="decision"]');
+                if (oldDecision) {
+                    oldDecision.remove();
+                }
+                
+                // Tạo input hidden cho decision
+                const decisionInput = document.createElement('input');
+                decisionInput.type = 'hidden';
+                decisionInput.name = 'decision';
+                decisionInput.value = pendingDecision;
+                pendingForm.appendChild(decisionInput);
+                
+                // Đóng modal và submit form
+                const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDecisionModal'));
+                confirmModal.hide();
+                
+                pendingForm.submit();
+            }
+        });
+        
+        // Hàm xử lý click cho các nút quyết định
+        function handleDecisionButtonClick(e) {
+            const approveBtn = e.target.closest('.btn-approve');
+            const rejectBtn = e.target.closest('.btn-reject');
+            
+            if (approveBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const form = approveBtn.closest('form');
+                if (!form) {
+                    console.error('Không tìm thấy form!');
+                    return;
+                }
+                
+                console.log('Chấp nhận được click');
+                const loanInfo = getLoanInfo(form);
+                showConfirmModal(form, 'approve', loanInfo);
+                return;
+            }
+            
+            if (rejectBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const form = rejectBtn.closest('form');
+                if (!form) {
+                    console.error('Không tìm thấy form!');
+                    return;
+                }
+                
+                console.log('Từ chối được click');
+                const formId = form.id;
+                const notesId = 'notes_' + formId.replace('decisionForm_', '');
+                const notes = document.getElementById(notesId);
+                
+                // Kiểm tra ghi chú - BẮT BUỘC phải có lý do từ chối
+                if (!notes) {
+                    console.error('Không tìm thấy trường nhập lý do từ chối!', notesId);
+                    alert('Không tìm thấy trường nhập lý do từ chối!');
+                    return false;
+                }
+                
+                const rejectReason = notes.value.trim();
+                if (!rejectReason || rejectReason.length === 0) {
+                    notes.focus();
+                    notes.classList.add('is-invalid');
+                    
+                    // Hiển thị thông báo lỗi rõ ràng hơn
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'invalid-feedback d-block';
+                    errorMsg.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Vui lòng nhập lý do từ chối!';
+                    
+                    // Xóa thông báo lỗi cũ nếu có
+                    const oldError = notes.parentNode.querySelector('.invalid-feedback');
+                    if (oldError) {
+                        oldError.remove();
+                    }
+                    
+                    notes.parentNode.appendChild(errorMsg);
+                    alert('Vui lòng nhập lý do từ chối trước khi tiếp tục!');
+                    return false;
+                }
+                
+                // Xóa class invalid nếu đã nhập
+                notes.classList.remove('is-invalid');
+                const oldError = notes.parentNode.querySelector('.invalid-feedback');
+                if (oldError) {
+                    oldError.remove();
+                }
+                
+                console.log('Hiển thị modal từ chối với lý do:', rejectReason);
+                const loanInfo = getLoanInfo(form);
+                showConfirmModal(form, 'reject', loanInfo);
+                return;
+            }
+        }
+        
+        // Event delegation cho các nút quyết định trong modal
+        loanDetailContent.addEventListener('click', handleDecisionButtonClick);
+        
+        // Đảm bảo event listener được gắn lại sau khi content được load
+        loanDetailModal.addEventListener('shown.bs.modal', function() {
+            // Gắn lại event listener cho các button mới được load
+            const approveBtns = loanDetailContent.querySelectorAll('.btn-approve');
+            const rejectBtns = loanDetailContent.querySelectorAll('.btn-reject');
+            
+            approveBtns.forEach(btn => {
+                btn.removeEventListener('click', handleDecisionButtonClick);
+                btn.addEventListener('click', handleDecisionButtonClick);
+            });
+            
+            rejectBtns.forEach(btn => {
+                btn.removeEventListener('click', handleDecisionButtonClick);
+                btn.addEventListener('click', handleDecisionButtonClick);
+            });
+        });
+        
+        // Lưu trữ nội dung đã load để có thể khôi phục lại
+        let savedLoanContent = null;
+        let currentLoanId = null;
+        
+        function loadLoanDetail(loanId) {
+            // Load chi tiết khoản vay
+            fetch('@Url.Action("ChiTietKhoanVay", "LanhDao")?id=' + loanId + '&partial=true')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Không thể tải thông tin');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    loanDetailContent.innerHTML = html;
+                    savedLoanContent = html; // Lưu nội dung đã load
+                    currentLoanId = loanId; // Lưu ID khoản vay hiện tại
+                    
+                    // Thực thi các script trong HTML vừa được inject
+                    const scripts = loanDetailContent.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        Array.from(oldScript.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = oldScript.textContent;
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    });
+                    
+                    // Đảm bảo event listener được gắn lại sau khi content được load
+                    setTimeout(() => {
+                        const approveBtns = loanDetailContent.querySelectorAll('.btn-approve');
+                        const rejectBtns = loanDetailContent.querySelectorAll('.btn-reject');
+                        
+                        console.log('Tìm thấy', approveBtns.length, 'nút chấp nhận và', rejectBtns.length, 'nút từ chối');
+                        
+                        approveBtns.forEach(btn => {
+                            btn.addEventListener('click', handleDecisionButtonClick);
+                        });
+                        
+                        rejectBtns.forEach(btn => {
+                            btn.addEventListener('click', handleDecisionButtonClick);
+                        });
+                    }, 100);
+                })
+                .catch(error => {
+                    loanDetailContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Lỗi khi tải thông tin: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+        
+        loanDetailModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            
+            // Nếu có button và có data-loan-id, load nội dung mới
+            if (button && button.hasAttribute('data-loan-id')) {
+                const loanId = button.getAttribute('data-loan-id');
+                loadLoanDetail(loanId);
+            } 
+            // Nếu không có button (modal được mở lại sau khi đóng modal khác)
+            // và đã có nội dung đã lưu, khôi phục lại nội dung đó
+            else if (savedLoanContent && currentLoanId) {
+                loanDetailContent.innerHTML = savedLoanContent;
+                
+                // Thực thi lại các script
+                const scripts = loanDetailContent.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+                
+                // Đảm bảo event listener được gắn lại
+                setTimeout(() => {
+                    const approveBtns = loanDetailContent.querySelectorAll('.btn-approve');
+                    const rejectBtns = loanDetailContent.querySelectorAll('.btn-reject');
+                    
+                    approveBtns.forEach(btn => {
+                        btn.addEventListener('click', handleDecisionButtonClick);
+                    });
+                    
+                    rejectBtns.forEach(btn => {
+                        btn.addEventListener('click', handleDecisionButtonClick);
+                    });
+                }, 100);
+            }
+            // Nếu không có nội dung đã lưu và không có button, giữ nguyên trạng thái hiện tại
+        });
+        
+        // Biến để theo dõi xem modal chi tiết có đang được đóng thực sự không
+        let isLoanDetailModalClosing = false;
+        
+        loanDetailModal.addEventListener('hide.bs.modal', function() {
+            isLoanDetailModalClosing = true;
+        });
+        
+        loanDetailModal.addEventListener('hidden.bs.modal', function() {
+            // Chỉ reset nội dung khi modal chi tiết thực sự được đóng bởi người dùng
+            // (không phải do đóng modal xác nhận)
+            if (isLoanDetailModalClosing) {
+                // Chỉ reset nếu modal chi tiết không còn hiển thị
+                const modalInstance = bootstrap.Modal.getInstance(loanDetailModal);
+                if (!modalInstance || !modalInstance._isShown) {
+                    loanDetailContent.innerHTML = `
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Đang tải thông tin...</p>
+                        </div>
+                    `;
+                    savedLoanContent = null;
+                    currentLoanId = null;
+                }
+                isLoanDetailModalClosing = false;
+            }
+        });
+        
+        // Đảm bảo khi modal xác nhận đóng (hủy), không làm ảnh hưởng đến modal chi tiết
+        const confirmModalEl = document.getElementById('confirmDecisionModal');
+        if (confirmModalEl) {
+            confirmModalEl.addEventListener('hide.bs.modal', function() {
+                // Đảm bảo khi modal xác nhận đóng, không reset modal chi tiết
+                isLoanDetailModalClosing = false;
+            });
+            
+            confirmModalEl.addEventListener('hidden.bs.modal', function() {
+                // Khi modal xác nhận đóng, đảm bảo modal chi tiết vẫn giữ nguyên nội dung
+                // Không làm gì cả, để modal chi tiết giữ nguyên trạng thái
+                isLoanDetailModalClosing = false;
+                
+                // Nếu modal chi tiết đang mở nhưng bị reset về loading, khôi phục lại nội dung
+                if (loanDetailModal.classList.contains('show') && savedLoanContent) {
+                    // Kiểm tra xem nội dung có đang ở trạng thái loading không
+                    const loadingIndicator = loanDetailContent.querySelector('.spinner-border');
+                    if (loadingIndicator) {
+                        // Khôi phục lại nội dung đã lưu
+                        loanDetailContent.innerHTML = savedLoanContent;
+                        
+                        // Thực thi lại các script
+                        const scripts = loanDetailContent.querySelectorAll('script');
+                        scripts.forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            Array.from(oldScript.attributes).forEach(attr => {
+                                newScript.setAttribute(attr.name, attr.value);
+                            });
+                            newScript.textContent = oldScript.textContent;
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        });
+                        
+                        // Đảm bảo event listener được gắn lại
+                        setTimeout(() => {
+                            const approveBtns = loanDetailContent.querySelectorAll('.btn-approve');
+                            const rejectBtns = loanDetailContent.querySelectorAll('.btn-reject');
+                            
+                            approveBtns.forEach(btn => {
+                                btn.addEventListener('click', handleDecisionButtonClick);
+                            });
+                            
+                            rejectBtns.forEach(btn => {
+                                btn.addEventListener('click', handleDecisionButtonClick);
+                            });
+                        }, 100);
+                    }
+                }
+            });
+        }
+    });
+</script>
+

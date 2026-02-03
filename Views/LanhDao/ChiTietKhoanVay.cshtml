@@ -1,0 +1,730 @@
+@using QuanLyRuiRoTinDung.Models.Entities
+@using System.Linq
+@model dynamic
+
+@{
+    ViewData["Title"] = "Chi tiết Khoản vay - Phê duyệt";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2">
+                        <i class="fas fa-file-signature me-2"></i>
+                        Chi tiết Khoản vay
+                    </h1>
+                    <p class="text-muted">Mã khoản vay: <strong>@Model.MaKhoanVayCode</strong></p>
+                </div>
+                <a href="@Url.Action("PheDuyetKhoanVay")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Loan Information -->
+        <div class="col-lg-8">
+            <!-- Customer Information -->
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Thông tin khách hàng</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Mã khách hàng</label>
+                                <p class="mb-0"><strong>@Model.MaKhachHang</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Loại khách hàng</label>
+                                <p class="mb-0"><strong>@Model.LoaiKhachHang</strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Mục đích vay</label>
+                                <p class="mb-0"><strong>@Model.MucDichVay</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Ngày nộp hồ sơ</label>
+                                <p class="mb-0"><strong>@Model.NgayNopHoSo?.ToString("dd/MM/yyyy")</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loan Details -->
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Chi tiết khoản vay</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Số tiền vay</label>
+                                <p class="mb-0"><strong class="text-success">@Model.SoTienVay.ToString("N0") VND</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Lãi suất hàng năm</label>
+                                <p class="mb-0"><strong>@Model.LaiSuat%</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Kỳ hạn vay</label>
+                                <p class="mb-0"><strong>@Model.KyHanVay tháng</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Hình thức trả nợ</label>
+                                <p class="mb-0"><strong>@Model.HinhThucTraNo</strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Ngày giải ngân dự kiến</label>
+                                <p class="mb-0"><strong>@Model.NgayGiaiNgan?.ToString("dd/MM/yyyy")</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Ngày đáo hạn</label>
+                                <p class="mb-0"><strong>@Model.NgayDaoHan?.ToString("dd/MM/yyyy")</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Nhân viên tín dụng</label>
+                                <p class="mb-0"><strong>@Model.MaNhanVienTinDungNavigation?.HoTen</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Trạng thái</label>
+                                <p class="mb-0"><strong>@Model.TrangThaiKhoanVay</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Assessment Information -->
+            @{
+                var danhGiaRuiRosList = Model.DanhGiaRuiRos as List<DanhGiaRuiRo>;
+                if (danhGiaRuiRosList != null)
+                {
+                    danhGiaRuiRosList = danhGiaRuiRosList.OrderByDescending(d => d.NgayDanhGia ?? DateTime.MinValue).ToList();
+                }
+                else
+                {
+                    danhGiaRuiRosList = new List<DanhGiaRuiRo>();
+                }
+                var hasDanhGia = danhGiaRuiRosList.Count > 0;
+            }
+            <div class="card mb-3">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Thông tin đánh giá mức độ rủi ro
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (hasDanhGia)
+                    {
+                        @foreach (var danhGia in danhGiaRuiRosList)
+                        {
+                            <div class="card border mb-3 @(danhGia != danhGiaRuiRosList.First() ? "border-secondary" : "")">
+                                <div class="card-body">
+                                    @if (danhGia == danhGiaRuiRosList.First())
+                                    {
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-star me-1"></i>Đánh giá mới nhất
+                                            </span>
+                                            @if (danhGia.NgayDanhGia.HasValue)
+                                            {
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    Ngày đánh giá: @danhGia.NgayDanhGia.Value.ToString("dd/MM/yyyy HH:mm")
+                                                </small>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex justify-content-end mb-3">
+                                            @if (danhGia.NgayDanhGia.HasValue)
+                                            {
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    Ngày đánh giá: @danhGia.NgayDanhGia.Value.ToString("dd/MM/yyyy HH:mm")
+                                                </small>
+                                            }
+                                        </div>
+                                    }
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label text-muted small mb-1">
+                                                    <i class="fas fa-user me-1"></i>Người đánh giá
+                                                </label>
+                                                <p class="mb-0">
+                                                    <strong>@(danhGia.NguoiDanhGiaNavigation?.HoTen ?? $"ID: {danhGia.NguoiDanhGia}")</strong>
+                                                </p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label text-muted small mb-1">
+                                                    <i class="fas fa-calculator me-1"></i>Tổng điểm
+                                                </label>
+                                                <p class="mb-0">
+                                                    <strong class="h5 @(danhGia.TongDiem.HasValue && danhGia.TongDiem.Value >= 70 ? "text-success" : danhGia.TongDiem.HasValue && danhGia.TongDiem.Value >= 50 ? "text-warning" : "text-danger")">
+                                                        @(danhGia.TongDiem?.ToString("N2") ?? "N/A")
+                                                    </strong>
+                                                </p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label text-muted small mb-1">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Mức độ rủi ro
+                                                </label>
+                                                <p class="mb-0">
+                                                    @{
+                                                        var riskBadgeClass = "bg-secondary";
+                                                        if (!string.IsNullOrEmpty(danhGia.MucDoRuiRo))
+                                                        {
+                                                            riskBadgeClass = danhGia.MucDoRuiRo switch
+                                                            {
+                                                                "Thấp" => "bg-success",
+                                                                "Trung bình" => "bg-warning",
+                                                                "Cao" => "bg-danger",
+                                                                "Rất cao" => "bg-danger",
+                                                                _ => "bg-secondary"
+                                                            };
+                                                        }
+                                                    }
+                                                    <span class="badge @riskBadgeClass" style="font-size: 1rem;">
+                                                        @(danhGia.MucDoRuiRo ?? "Chưa xác định")
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label text-muted small mb-1">
+                                                    <i class="fas fa-trophy me-1"></i>Xếp hạng rủi ro
+                                                </label>
+                                                <p class="mb-0">
+                                                    <strong class="h6">@(danhGia.XepHangRuiRo ?? "N/A")</strong>
+                                                </p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label text-muted small mb-1">
+                                                    <i class="fas fa-lightbulb me-1"></i>Kiến nghị
+                                                </label>
+                                                <p class="mb-0">
+                                                    <strong>@(danhGia.KienNghi ?? "N/A")</strong>
+                                                </p>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(danhGia.TrangThai))
+                                            {
+                                                <div class="mb-3">
+                                                    <label class="form-label text-muted small mb-1">
+                                                        <i class="fas fa-info-circle me-1"></i>Trạng thái
+                                                    </label>
+                                                    <p class="mb-0">
+                                                        <span class="badge bg-info">@danhGia.TrangThai</span>
+                                                    </p>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                    
+                                    @if (!string.IsNullOrEmpty(danhGia.NhanXet))
+                                    {
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <label class="form-label text-muted small mb-1">
+                                                    <i class="fas fa-comment-alt me-1"></i>Nhận xét
+                                                </label>
+                                                <div class="alert alert-light py-2 mb-0">
+                                                    <p class="mb-0 small">@danhGia.NhanXet</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Chưa có đánh giá rủi ro</strong>
+                            <p class="mb-0 small mt-2">Khoản vay này chưa được đánh giá mức độ rủi ro.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Collateral Information -->
+            @{
+                var taiSanList = Model.KhoanVayTaiSans as System.Collections.ICollection;
+                var hasTaiSan = taiSanList != null && taiSanList.Count > 0;
+            }
+            @if (hasTaiSan)
+            {
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="card-title mb-0">Tài sản đảm bảo</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã tài sản</th>
+                                        <th>Mô tả</th>
+                                        <th>Giá trị</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var asset in Model.KhoanVayTaiSans)
+                                    {
+                                        <tr>
+                                            <td>@asset.MaTaiSan</td>
+                                            <td>@asset.MaTaiSanNavigation?.TenGoi</td>
+                                            <td class="text-end">@(asset.MaTaiSanNavigation?.GiaTriDinhGia?.ToString("N0") ?? asset.GiaTriDinhGiaTaiThoiDiemVay?.ToString("N0") ?? "0") VND</td>
+                                            <td>
+                                                <span class="badge bg-success">@asset.TrangThai</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar - Decision Panel -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-gavel me-2"></i>Quyết định
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Thông tin:</strong><br>
+                        <small>Vui lòng xem xét kỹ thông tin khoản vay trước khi đưa ra quyết định</small>
+                    </div>
+
+                    @if (Model.TrangThaiKhoanVay != "Đã phê duyệt" && Model.TrangThaiKhoanVay != "Từ chối" && Model.TrangThaiKhoanVay != "Đã giải ngân" && Model.TrangThaiKhoanVay != "Đã thanh toán")
+                    {
+                        <form method="post" action="@Url.Action("PheDuyetKhoanVay")" id="decisionForm">
+                            <input type="hidden" name="id" value="@Model.MaKhoanVay">
+                            
+                            <div class="d-grid gap-2">
+                                <button type="button" name="decision" value="approve" class="btn btn-success btn-lg decision-btn btn-approve">
+                                    <i class="fas fa-check-circle me-2"></i>Chấp nhận
+                                </button>
+                                <button type="button" name="decision" value="reject" class="btn btn-danger btn-lg decision-btn btn-reject">
+                                    <i class="fas fa-times-circle me-2"></i>Từ chối
+                                </button>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                                    <i class="fas fa-arrow-left me-2"></i>Quay lại
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Khoản vay này đã được xử lý:</strong><br>
+                            Trạng thái: <strong>@Model.TrangThaiKhoanVay</strong>
+                            @if (Model.NgayPheDuyet.HasValue)
+                            {
+                                <text>
+                                    <br>Ngày quyết định: <strong>@Model.NgayPheDuyet.Value.ToString("dd/MM/yyyy HH:mm")</strong>
+                                </text>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.LyDoTuChoi))
+                            {
+                                <text>
+                                    <br><br><strong>Ghi chú:</strong><br>
+                                    <small>@Model.LyDoTuChoi</small>
+                                </text>
+                            }
+                        </div>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Summary Info -->
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Tóm tắt</h6>
+                </div>
+                <div class="card-body text-sm">
+                    <div class="mb-2">
+                        <span class="text-muted">Ngày nộp hồ sơ:</span><br>
+                        <strong>@Model.NgayNopHoSo.ToString("dd/MM/yyyy")</strong>
+                    </div>
+                    <hr>
+                    <div class="mb-2">
+                        <span class="text-muted">Số dư còn lại:</span><br>
+                        <strong class="text-danger">@Model.SoDuLaiConLai.ToString("N0") VND</strong>
+                    </div>
+                    <hr>
+                    <div>
+                        <span class="text-muted">Trạng thái:</span><br>
+                        <strong>@Model.TrangThaiKhoanVay</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác nhận Quyết định -->
+<div class="modal fade" id="confirmDecisionModal" tabindex="-1" aria-labelledby="confirmDecisionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="confirmModalHeader">
+                <h5 class="modal-title" id="confirmDecisionModalLabel">
+                    <i class="fas fa-question-circle me-2"></i>Xác nhận Quyết định
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert mb-3" id="confirmAlert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span id="confirmMessage"></span>
+                </div>
+                
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Thông tin Khoản vay
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mã khoản vay:</small>
+                                <p class="mb-0"><strong id="confirmLoanCode">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mã khách hàng:</small>
+                                <p class="mb-0"><strong id="confirmCustomerId">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Loại khách hàng:</small>
+                                <p class="mb-0"><strong id="confirmCustomerType">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Số tiền vay:</small>
+                                <p class="mb-0"><strong class="text-success" id="confirmLoanAmount">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mục đích vay:</small>
+                                <p class="mb-0"><strong id="confirmLoanPurpose">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Mức độ rủi ro:</small>
+                                <p class="mb-0"><span id="confirmRiskLevel">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="rejectReasonSection" class="mt-3" style="display: none;">
+                    <label for="rejectReasonTextarea" class="form-label">
+                        <strong>Lý do từ chối <span class="text-danger">*</span>:</strong>
+                    </label>
+                    <textarea class="form-control" 
+                              id="rejectReasonTextarea" 
+                              rows="4" 
+                              placeholder="Nhập lý do từ chối (bắt buộc)..."></textarea>
+                    <div class="invalid-feedback d-none" id="rejectReasonError">
+                        <i class="fas fa-exclamation-circle me-1"></i>Vui lòng nhập lý do từ chối!
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Hủy
+                </button>
+                <button type="button" class="btn" id="confirmSubmitBtn">
+                    <i class="fas fa-check me-2"></i>Xác nhận
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+    }
+
+    .card-header {
+        border-bottom: 1px solid #e3e6f0;
+    }
+
+    .table th {
+        border-bottom: 2px solid #e3e6f0;
+        font-weight: 600;
+    }
+
+    .sticky-top {
+        position: sticky;
+        top: 20px;
+    }
+
+    .decision-btn {
+        transition: all 0.3s ease;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 1.1rem;
+    }
+
+    .decision-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .decision-btn:active {
+        transform: translateY(0);
+    }
+
+    .btn-success.decision-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+    }
+
+    .btn-danger.decision-btn {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('decisionForm');
+        
+        if (!form) {
+            console.error('Form không tồn tại!');
+            return;
+        }
+        
+        const approveBtn = form.querySelector('.btn-approve');
+        const rejectBtn = form.querySelector('.btn-reject');
+        
+        // Lưu trữ form và decision type để submit sau khi xác nhận
+        let pendingForm = null;
+        let pendingDecision = null;
+        
+        // Hàm lấy thông tin khoản vay từ trang
+        function getLoanInfo() {
+            return {
+                loanCode: '@Model.MaKhoanVayCode',
+                customerId: '@Model.MaKhachHang',
+                customerType: '@Model.LoaiKhachHang',
+                loanAmount: '@Model.SoTienVay.ToString("N0") VND',
+                loanPurpose: '@Model.MucDichVay',
+                riskLevel: '@Model.MucDoRuiRo'
+            };
+        }
+        
+        // Hàm hiển thị modal xác nhận
+        function showConfirmModal(decision, loanInfo) {
+            const confirmModalEl = document.getElementById('confirmDecisionModal');
+            if (!confirmModalEl) {
+                console.error('Modal xác nhận không tồn tại!');
+                alert('Không thể hiển thị modal xác nhận. Vui lòng thử lại.');
+                return;
+            }
+            
+            const confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
+            const confirmHeader = document.getElementById('confirmModalHeader');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+            const rejectReasonSection = document.getElementById('rejectReasonSection');
+            const confirmAlert = document.getElementById('confirmAlert');
+            
+            // Điền thông tin khoản vay
+            document.getElementById('confirmLoanCode').textContent = loanInfo.loanCode || '-';
+            document.getElementById('confirmCustomerId').textContent = loanInfo.customerId || '-';
+            document.getElementById('confirmCustomerType').textContent = loanInfo.customerType || '-';
+            document.getElementById('confirmLoanAmount').textContent = loanInfo.loanAmount || '-';
+            document.getElementById('confirmLoanPurpose').textContent = loanInfo.loanPurpose || '-';
+            
+            // Hiển thị mức độ rủi ro với badge màu
+            const riskLevelEl = document.getElementById('confirmRiskLevel');
+            const riskLevel = loanInfo.riskLevel || '-';
+            if (riskLevel !== '-' && riskLevel !== 'N/A' && riskLevel.length > 0) {
+                let badgeClass = 'bg-secondary';
+                if (riskLevel.includes('Cao') || riskLevel.includes('Rất cao')) badgeClass = 'bg-danger';
+                else if (riskLevel.includes('Trung bình')) badgeClass = 'bg-warning';
+                else if (riskLevel.includes('Thấp')) badgeClass = 'bg-success';
+                riskLevelEl.innerHTML = `<span class="badge ${badgeClass}">${riskLevel}</span>`;
+            } else {
+                riskLevelEl.innerHTML = '<span class="badge bg-secondary">-</span>';
+            }
+            
+            const rejectReasonTextarea = document.getElementById('rejectReasonTextarea');
+            const rejectReasonError = document.getElementById('rejectReasonError');
+            
+            if (decision === 'approve') {
+                // Chấp nhận
+                confirmHeader.className = 'modal-header bg-success text-white';
+                confirmMessage.textContent = 'Bạn có chắc chắn muốn CHẤP NHẬN khoản vay này không?';
+                confirmAlert.className = 'alert alert-info mb-3';
+                confirmSubmitBtn.className = 'btn btn-success';
+                confirmSubmitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Xác nhận Chấp nhận';
+                rejectReasonSection.style.display = 'none';
+                // Xóa lỗi validation nếu có
+                if (rejectReasonTextarea) {
+                    rejectReasonTextarea.classList.remove('is-invalid');
+                    rejectReasonTextarea.value = '';
+                }
+                if (rejectReasonError) {
+                    rejectReasonError.classList.add('d-none');
+                }
+            } else {
+                // Từ chối - luôn hiển thị modal với textarea để nhập lý do
+                confirmHeader.className = 'modal-header bg-danger text-white';
+                confirmMessage.textContent = 'Bạn có chắc chắn muốn TỪ CHỐI khoản vay này không?';
+                confirmAlert.className = 'alert alert-danger mb-3';
+                confirmSubmitBtn.className = 'btn btn-danger';
+                confirmSubmitBtn.innerHTML = '<i class="fas fa-times me-2"></i>Xác nhận Từ chối';
+                rejectReasonSection.style.display = 'block';
+                
+                // Xóa lỗi validation và focus vào textarea
+                if (rejectReasonTextarea) {
+                    rejectReasonTextarea.classList.remove('is-invalid');
+                    rejectReasonTextarea.value = '';
+                    // Focus vào textarea sau khi modal hiển thị
+                    setTimeout(() => {
+                        rejectReasonTextarea.focus();
+                    }, 300);
+                }
+                if (rejectReasonError) {
+                    rejectReasonError.classList.add('d-none');
+                }
+            }
+            
+            // Lưu form và decision để submit sau khi xác nhận
+            pendingForm = form;
+            pendingDecision = decision;
+            
+            // Hiển thị modal
+            confirmModal.show();
+        }
+        
+        // Xử lý khi xác nhận trong modal
+        document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
+            if (pendingForm && pendingDecision) {
+                // Nếu là từ chối, kiểm tra lý do từ chối trong modal
+                if (pendingDecision === 'reject') {
+                    const rejectReasonTextarea = document.getElementById('rejectReasonTextarea');
+                    const rejectReasonError = document.getElementById('rejectReasonError');
+                    
+                    if (!rejectReasonTextarea || !rejectReasonTextarea.value.trim()) {
+                        // Hiển thị lỗi validation trên textarea trong modal
+                        if (rejectReasonTextarea) {
+                            rejectReasonTextarea.classList.add('is-invalid');
+                            rejectReasonTextarea.focus();
+                        }
+                        if (rejectReasonError) {
+                            rejectReasonError.classList.remove('d-none');
+                        }
+                        return false;
+                    }
+                    
+                    // Xóa lỗi validation nếu đã nhập
+                    if (rejectReasonTextarea) {
+                        rejectReasonTextarea.classList.remove('is-invalid');
+                    }
+                    if (rejectReasonError) {
+                        rejectReasonError.classList.add('d-none');
+                    }
+                }
+                
+                // Xóa input decision và notes cũ nếu có
+                const oldDecision = pendingForm.querySelector('input[name="decision"]');
+                if (oldDecision) {
+                    oldDecision.remove();
+                }
+                const oldNotes = pendingForm.querySelector('input[name="notes"]');
+                if (oldNotes) {
+                    oldNotes.remove();
+                }
+                
+                // Tạo input hidden cho decision
+                const decisionInput = document.createElement('input');
+                decisionInput.type = 'hidden';
+                decisionInput.name = 'decision';
+                decisionInput.value = pendingDecision;
+                pendingForm.appendChild(decisionInput);
+                
+                // Nếu là từ chối, thêm lý do từ chối vào form
+                if (pendingDecision === 'reject') {
+                    const rejectReasonTextarea = document.getElementById('rejectReasonTextarea');
+                    if (rejectReasonTextarea && rejectReasonTextarea.value.trim()) {
+                        const notesInput = document.createElement('input');
+                        notesInput.type = 'hidden';
+                        notesInput.name = 'notes';
+                        notesInput.value = rejectReasonTextarea.value.trim();
+                        pendingForm.appendChild(notesInput);
+                    }
+                }
+                
+                // Đóng modal và submit form
+                const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDecisionModal'));
+                if (confirmModal) {
+                    confirmModal.hide();
+                }
+                
+                pendingForm.submit();
+            }
+        });
+        
+        // Xử lý nút Chấp nhận
+        if (approveBtn) {
+            approveBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const loanInfo = getLoanInfo();
+                showConfirmModal('approve', loanInfo);
+            });
+        } else {
+            console.error('Nút Chấp nhận không tồn tại!');
+        }
+        
+        // Xử lý nút Từ chối
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const loanInfo = getLoanInfo();
+                showConfirmModal('reject', loanInfo);
+            });
+        } else {
+            console.error('Nút Từ chối không tồn tại!');
+        }
+    });
+</script>

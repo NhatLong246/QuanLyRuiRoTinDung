@@ -1,0 +1,361 @@
+@model List<QuanLyRuiRoTinDung.Models.Entities.TheoDoiNoXau>
+
+@{
+    ViewData["Title"] = "Theo dõi Nợ xấu - Quản lý Lãnh đạo";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2">
+                <i class="fas fa-list me-2"></i>
+                Theo dõi Nợ xấu
+            </h1>
+            <p class="text-muted">Giám sát các khoản vay nợ xấu và tỷ lệ nợ xấu</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-danger">
+                <div class="card-body">
+                    <div class="text-danger font-weight-bold text-uppercase mb-1">Tổng Nợ Xấu</div>
+                    <div class="h3 mb-0">@Model.Count</div>
+                    <small class="text-muted">khoản vay nợ xấu</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="text-warning font-weight-bold text-uppercase mb-1">Quá Hạn 1-3 Tháng</div>
+                    <div class="h3 mb-0">
+                        @if (Model != null)
+                        {
+                            @Model.Count(x => x.SoNgayQuaHan > 30 && x.SoNgayQuaHan <= 90)
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-danger">
+                <div class="card-body">
+                    <div class="text-danger font-weight-bold text-uppercase mb-1">Quá Hạn > 3 Tháng</div>
+                    <div class="h3 mb-0">
+                        @if (Model != null)
+                        {
+                            @Model.Count(x => x.SoNgayQuaHan > 90)
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-info">
+                <div class="card-body">
+                    <div class="text-info font-weight-bold text-uppercase mb-1">Đã Xử Lý</div>
+                    <div class="h3 mb-0">
+                        @if (Model != null)
+                        {
+                            @Model.Count(x => x.TrangThai == "Đã xử lý")
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Tìm kiếm mã khoản vay..." name="search">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="status">
+                        <option value="">-- Trạng thái --</option>
+                        @if (ViewBag.StatusList != null)
+                        {
+                            @foreach (var statusItem in (List<string>)ViewBag.StatusList)
+                            {
+                                <option value="@statusItem" selected="@(ViewBag.SelectedStatus?.ToString() == statusItem)">
+                                    @statusItem
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="classification">
+                        <option value="">-- Phân loại --</option>
+                        @if (ViewBag.ClassificationList != null)
+                        {
+                            @foreach (var classificationItem in (List<string>)ViewBag.ClassificationList)
+                            {
+                                <option value="@classificationItem" selected="@(ViewBag.SelectedClassification?.ToString() == classificationItem)">
+                                    @classificationItem
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã khoản vay</th>
+                        <th>Tên khách hàng</th>
+                        <th>Số tiền gốc</th>
+                        <th>Số dư nợ</th>
+                        <th>Số ngày quá hạn</th>
+                        <th>Phân loại</th>
+                        <th>Người xử lý</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var badDebt in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-danger">@badDebt.MaKhoanVayNavigation?.MaKhoanVayCode</span>
+                                </td>
+                                <td>@badDebt.MaKhoanVayNavigation?.MaKhachHang</td>
+                                <td class="text-end">@badDebt.MaKhoanVayNavigation?.SoTienVay.ToString("N0") VND</td>
+                                <td class="text-end">
+                                    <strong class="text-danger">@((badDebt.SoDuNo ?? 0).ToString("N0")) VND</strong>
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        var daysBadge = badDebt.SoNgayQuaHan > 90 ? "bg-danger" : "bg-warning";
+                                    }
+                                    <span class="badge @daysBadge">@badDebt.SoNgayQuaHan ngày</span>
+                                </td>
+                                <td>
+                                    <small>@badDebt.MaPhanLoaiNavigation?.TenPhanLoai</small>
+                                </td>
+                                <td>
+                                    @if (badDebt.NguoiXuLyNavigation != null)
+                                    {
+                                        <small>@badDebt.NguoiXuLyNavigation.HoTen</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">Chưa phân công</small>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var statusClass = badDebt.TrangThai switch
+                                        {
+                                            "Đã xử lý" => "bg-success",
+                                            "Chuyển DSA" => "bg-info",
+                                            _ => "bg-warning"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@badDebt.TrangThai</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                <br>
+                                Không có nợ xấu
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Statistics Chart -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Phân bố nợ xấu theo thời gian quá hạn</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="badDebtChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Trạng thái xử lý nợ xấu</h6>
+                </div>
+                <div class="card-body" style="height: 280px; position: relative;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cập nhật trạng thái nợ xấu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="#">
+                <div class="modal-body">
+                    <input type="hidden" id="badDebtId" name="badDebtId">
+                    <div class="mb-3">
+                        <label for="newStatus" class="form-label">Trạng thái mới <span class="text-danger">*</span></label>
+                        <select class="form-select" id="newStatus" name="newStatus" required>
+                            <option value="">-- Chọn trạng thái --</option>
+                            <option value="Đang xử lý">Đang xử lý</option>
+                            <option value="Đã xử lý">Đã xử lý</option>
+                            <option value="Chuyển DSA">Chuyển DSA</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Ghi chú</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Nhập ghi chú..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update Status Modal handler
+            const updateModal = document.getElementById('updateStatusModal');
+            updateModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const badDebtId = button.getAttribute('data-bad-debt-id');
+                document.getElementById('badDebtId').value = badDebtId;
+            });
+
+            // Bad Debt Chart
+            const overdueDays = @Html.Raw(Json.Serialize(Model?.GroupBy(x => 
+                x.SoNgayQuaHan > 90 ? "> 90 ngày" : (x.SoNgayQuaHan > 30 ? "30-90 ngày" : "< 30 ngày"))
+                .Select(g => new { Label = g.Key, Count = g.Count() }).ToList()));
+
+            const ctx1 = document.getElementById('badDebtChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: overdueDays.map(x => x.label),
+                    datasets: [{
+                        label: 'Số khoản nợ xấu',
+                        data: overdueDays.map(x => x.count),
+                        backgroundColor: ['#198754', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Status Chart
+            const statuses = @Html.Raw(Json.Serialize(Model?.GroupBy(x => x.TrangThai)
+                .Select(g => new { Label = g.Key, Count = g.Count() }).ToList()));
+
+            const ctx2 = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: statuses.map(x => x.label),
+                    datasets: [{
+                        data: statuses.map(x => x.count),
+                        backgroundColor: ['#0d6efd', '#198754', '#0dcaf0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 1.5,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    /* Enhanced bad debt tracking styles */
+    .card-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .h2 {
+        color: #1e293b;
+        font-weight: 700;
+    }
+
+    .h3 {
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    /* Chart size constraints */
+    #statusChart {
+        max-height: 270px !important;
+        height: 270px !important;
+    }
+
+    #badDebtChart {
+        max-height: 280px !important;
+        height: 280px !important;
+    }
+
+    canvas {
+        border-radius: 8px;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 2px solid #e2e8f0;
+    }
+</style>
