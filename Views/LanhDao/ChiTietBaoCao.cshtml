@@ -1,0 +1,214 @@
+@model QuanLyRuiRoTinDung.Models.Entities.BaoCaoRuiRo
+
+@{
+    ViewData["Title"] = "Chi tiết Báo cáo - Quản lý Lãnh đạo";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2">
+                        <i class="fas fa-file-alt me-2"></i>
+                        @Model.LoaiBaoCao
+                    </h1>
+                    <p class="text-muted">Mã báo cáo: <strong>@Model.MaBaoCao</strong></p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="@Url.Action("BaoCaoRuiRo")" class="btn btn-secondary" style="min-width: 120px;">
+                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                    </a>
+                    <button class="btn btn-primary" onclick="window.print()" style="min-width: 120px;">
+                        <i class="fas fa-print me-2"></i>In
+                    </button>
+                    <a href="#" class="btn btn-success" style="min-width: 120px;">
+                        <i class="fas fa-download me-2"></i>Tải về
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Thông tin báo cáo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Loại báo cáo</label>
+                                <p class="mb-0"><strong>@Model.LoaiBaoCao</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Kỳ báo cáo</label>
+                                <p class="mb-0">
+                                    <strong>
+                                        @Model.KyBaoCao
+                                    </strong>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Trạng thái</label>
+                                <p class="mb-0">
+                                    @{
+                                        var badgeClass = Model.TrangThai switch
+                                        {
+                                            "Phê duyệt" => "bg-success",
+                                            "Nháp" => "bg-secondary",
+                                            _ => "bg-info"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@Model.TrangThai</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Ngày báo cáo</label>
+                                <p class="mb-0">
+                                    <strong>
+                                        @Model.NgayBaoCao.ToString("dd/MM/yyyy")
+                                    </strong>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Người lập</label>
+                                <p class="mb-0"><strong>@Model.NguoiLapNavigation?.HoTen</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Ngày lập</label>
+                                <p class="mb-0"><strong>@Model.NgayLap?.ToString("dd/MM/yyyy HH:mm")</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Nội dung báo cáo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="report-content">
+                        <div>
+                            <h6>Tổng số khoản vay rà soát</h6>
+                            <p>@Model.TongSoKhoanVayRaSoat khoản</p>
+                        </div>
+                        <div>
+                            <h6>Số khoản vay rủi ro cao</h6>
+                            <p>@Model.SoKhoanVayRuiRoCao khoản</p>
+                        </div>
+                        <div>
+                            <h6>Giá trị nợ xấu</h6>
+                            <p>@Model.GiaTriNoXau?.ToString("N0") VND</p>
+                        </div>
+                        <div>
+                            <h6>Kiến nghị xử lý</h6>
+                            <p>@Model.KienNghiXuLy</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TrangThai == "Nháp")
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-header bg-light">
+                        <h6 class="card-title mb-0">Phê duyệt báo cáo</h6>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="#">
+                            <div class="mb-3">
+                                <label for="comments" class="form-label">Ghi chú phê duyệt</label>
+                                <textarea class="form-control" id="comments" name="comments" rows="3" 
+                                          placeholder="Nhập ghi chú..."></textarea>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check-circle me-2"></i>Phê duyệt
+                                </button>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" 
+                                        data-bs-target="#rejectModal">
+                                    <i class="fas fa-times-circle me-2"></i>Từ chối
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Từ chối báo cáo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="#">
+                    <div class="mb-3">
+                        <label for="rejectReason" class="form-label">Lý do từ chối <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="rejectReason" name="rejectReason" rows="3" required
+                                  placeholder="Nhập lý do từ chối..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger">Từ chối</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+    }
+
+    .card-header {
+        border-bottom: 1px solid #e3e6f0;
+    }
+
+    .report-content {
+        line-height: 1.8;
+        color: #333;
+    }
+
+    .report-content p {
+        margin-bottom: 1rem;
+    }
+
+    .border-warning {
+        border-left: 4px solid #ffc107 !important;
+    }
+
+    @@media print {
+        .btn-group,
+        .card-header {
+            display: none;
+        }
+        
+        .card {
+            box-shadow: none;
+            border: 1px solid #dee2e6;
+        }
+    }
+</style>

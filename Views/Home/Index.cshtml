@@ -1,8 +1,33 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Trang chủ";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5 text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-shield-alt fa-5x text-primary mb-4"></i>
+                    </div>
+                    <h1 class="display-4 fw-bold mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        Chào mừng đến với Hệ thống
+                    </h1>
+                    <h2 class="h3 mb-4 text-muted">Quản Lý Rủi Ro Tín Dụng</h2>
+                    <p class="lead mb-4">
+                        Hệ thống quản lý và giám sát rủi ro tín dụng chuyên nghiệp, 
+                        giúp bạn theo dõi và đánh giá các khoản vay một cách hiệu quả.
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center flex-wrap">
+                        <a href="@Url.Action("Index", "LanhDao")" class="btn btn-primary btn-lg px-4">
+                            <i class="fas fa-chart-pie me-2"></i>Dashboard
+                        </a>
+                        <a href="@Url.Action("PheDuyetKhoanVay", "LanhDao")" class="btn btn-outline-primary btn-lg px-4">
+                            <i class="fas fa-check-circle me-2"></i>Phê duyệt Khoản vay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

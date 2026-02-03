@@ -1,0 +1,384 @@
+@{
+    ViewData["Title"] = "Dashboard - Quản lý Lãnh đạo";
+}
+
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2 d-flex align-items-center">
+                <i class="fas fa-chart-pie me-2"></i>
+                Dashboard Lãnh đạo Ngân hàng
+            </h1>
+            <p class="text-muted">Giám sát tổng thể hoạt động tín dụng và rủi ro</p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="text-primary font-weight-bold text-uppercase mb-1">Tổng Khoản Vay</div>
+                    <div class="h3 mb-0">@Model.TotalLoans</div>
+                    <small class="text-muted">@Model.TotalLoanAmount.ToString("N0") VND</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="text-success font-weight-bold text-uppercase mb-1">Đã Phê Duyệt</div>
+                    <div class="h3 mb-0">@Model.ApprovedLoans</div>
+                    <a href="@Url.Action("DanhSachKhoanVayDaQuyetDinh")" class="small text-decoration-none text-primary">Xem chi tiết →</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="text-warning font-weight-bold text-uppercase mb-1">Chờ Phê Duyệt</div>
+                    <div class="h3 mb-0">@Model.PendingLoans</div>
+                    <a href="@Url.Action("PheDuyetKhoanVay")" class="small text-decoration-none">Xem chi tiết →</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-danger">
+                <div class="card-body">
+                    <div class="text-danger font-weight-bold text-uppercase mb-1">Tổng Nợ Xấu</div>
+                    <div class="h3 mb-0">@Model.BadDebtAmount.ToString("N0")</div>
+                    <small class="text-muted">@Model.BadDebtCount khoản (@Model.BadDebtRatio% tổng danh mục)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4 justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Phân bố trạng thái khoản vay</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="loanStatusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Phân bố mức độ rủi ro</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="riskLevelChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Tỷ lệ nợ xấu</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="badDebtRatioChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">Báo cáo gần đây</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã báo cáo</th>
+                                <th>Tiêu đề</th>
+                                <th>Người tạo</th>
+                                <th>Ngày tạo</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.RecentReports != null && ((System.Collections.IList)Model.RecentReports).Count > 0)
+                            {
+                                @foreach (var report in Model.RecentReports)
+                                {
+                                    <tr>
+                                        <td>@report.MaBaoCao</td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(report.LoaiBaoCao) || !string.IsNullOrEmpty(report.KyBaoCao))
+                                            {
+                                                <text>@report.LoaiBaoCao @(string.IsNullOrEmpty(report.KyBaoCao) ? "" : $" - {report.KyBaoCao}")</text>
+                                            }
+                                            else
+                                            {
+                                                <text>@report.MaBaoCaoCode</text>
+                                            }
+                                        </td>
+                                        <td>@report.NguoiLapNavigation?.HoTen</td>
+                                        <td>@(report.NgayLap?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                        <td>
+                                            <span class="badge bg-info">@report.TrangThai</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">Không có báo cáo nào</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-end">
+                    <a href="@Url.Action("BaoCaoRuiRo")" class="btn btn-sm btn-outline-primary">
+                        Xem tất cả báo cáo →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script>
+        // Loan Status Chart
+        fetch('@Url.Action("GetChartData", new { type = "loanByStatus" })')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('loanStatusChart').getContext('2d');
+                const total = data.data.reduce((a, b) => a + b, 0);
+                
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: data.backgroundColor || [
+                                '#198754',  // Đã phê duyệt - Xanh lá
+                                '#ffc107',  // Chờ phê duyệt - Vàng
+                                '#0d6efd',  // Đã giải ngân - Xanh dương
+                                '#dc3545',  // Từ chối - Đỏ
+                                '#6c757d'   // Khác - Xám
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                        label += context.parsed + ' (' + percentage + '%)';
+                                        return label;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                color: '#fff',
+                                font: {
+                                    weight: 'bold',
+                                    size: 12
+                                },
+                                formatter: (value, ctx) => {
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return percentage + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            });
+
+        // Risk Level Chart
+        fetch('@Url.Action("GetChartData", new { type = "riskLevel" })')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('riskLevelChart').getContext('2d');
+                const total = data.data.reduce((a, b) => a + b, 0);
+                
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: data.backgroundColor || [
+                                '#dc3545',
+                                '#ffc107',
+                                '#198754'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                        label += context.parsed + ' (' + percentage + '%)';
+                                        return label;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                color: '#fff',
+                                font: {
+                                    weight: 'bold',
+                                    size: 12
+                                },
+                                formatter: (value, ctx) => {
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return percentage + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            });
+
+        // Bad Debt Ratio Chart
+        fetch('@Url.Action("GetChartData", new { type = "badDebtRatio" })')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('badDebtRatioChart').getContext('2d');
+                const total = data.data.reduce((a, b) => a + b, 0);
+                
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: data.backgroundColor
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                        label += context.parsed + ' khoản (' + percentage + '%)';
+                                        return label;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                color: '#fff',
+                                font: {
+                                    weight: 'bold',
+                                    size: 12
+                                },
+                                formatter: (value, ctx) => {
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return percentage + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            });
+    </script>
+}
+
+<style>
+    /* Additional dashboard-specific styles */
+    .card {
+        margin-bottom: 1.5rem;
+    }
+
+    .h2 {
+        color: #1e293b;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .text-muted {
+        color: #64748b !important;
+    }
+
+    .h3 {
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .text-primary {
+        color: #3b82f6 !important;
+    }
+
+    .text-success {
+        color: #10b981 !important;
+    }
+
+    .text-warning {
+        color: #f59e0b !important;
+    }
+
+    .text-danger {
+        color: #ef4444 !important;
+    }
+
+    .text-info {
+        color: #06b6d4 !important;
+    }
+
+    canvas {
+        border-radius: 8px;
+    }
+</style>

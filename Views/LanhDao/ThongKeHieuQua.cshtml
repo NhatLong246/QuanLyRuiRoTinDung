@@ -1,0 +1,391 @@
+@using System.Linq
+@model dynamic
+
+@{
+    ViewData["Title"] = "Thống kê Hiệu quả Hoạt động - Quản lý Lãnh đạo";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2">
+                <i class="fas fa-chart-line me-2"></i>
+                Thống kê Hiệu quả Hoạt động Tín dụng
+            </h1>
+            <p class="text-muted">Phân tích và đánh giá hiệu quả hoạt động tín dụng</p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-primary font-weight-bold text-uppercase mb-1 small">Tháng Này - Nộp Hồ Sơ</div>
+                            <div class="h3 mb-0">@Model.LoansThisMonth</div>
+                            @{
+                                var changeLoans = Model.LoansThisMonth - Model.LoansLastMonth;
+                                var changePercent = Model.LoansLastMonth > 0 
+                                    ? Math.Round((decimal)changeLoans / Model.LoansLastMonth * 100, 1) 
+                                    : 0;
+                            }
+                            <small class="text-muted">
+                                @if (changeLoans > 0)
+                                {
+                                    <span class="text-success">↑ +@changeLoans</span>
+                                }
+                                else if (changeLoans < 0)
+                                {
+                                    <span class="text-danger">↓ @changeLoans</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">→ Không đổi</span>
+                                }
+                                so với tháng trước (@Model.LoansLastMonth)
+                            </small>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-success font-weight-bold text-uppercase mb-1 small">Phê Duyệt Tháng Này</div>
+                            <div class="h3 mb-0">@Model.ApprovedThisMonth</div>
+                            <small class="text-muted">
+                                Từ chối: <span class="text-danger">@Model.RejectedThisMonth</span>
+                            </small>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-warning h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-warning font-weight-bold text-uppercase mb-1 small">Tỷ Lệ Phê Duyệt</div>
+                            <div class="h3 mb-0">@Model.ApprovalRate%</div>
+                            <small class="text-muted">Trong tháng này</small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-percentage fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-info h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-info font-weight-bold text-uppercase mb-1 small">Vốn Vay Trung Bình</div>
+                            <div class="h5 mb-0">@Model.AverageLoanAmount.ToString("N0")</div>
+                            <small class="text-muted">VNĐ / khoản vay</small>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-money-bill-wave fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Xu hướng phê duyệt (6 tháng gần đây)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="approvalTrendChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>So sánh nộp hồ sơ vs phê duyệt
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="comparisonChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Summary Table -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+                <i class="fas fa-table me-2"></i>Tóm tắt theo tháng (6 tháng gần đây)
+            </h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tháng</th>
+                        <th class="text-center">Khoản Nộp Hồ Sơ</th>
+                        <th class="text-center">Khoản Phê Duyệt</th>
+                        <th class="text-center">Khoản Từ Chối</th>
+                        <th>Tỷ Lệ Phê Duyệt</th>
+                        <th class="text-center">Tổng Vốn Vay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var monthlySummary = Model.MonthlySummary as System.Collections.ICollection;
+                        var hasMonthlyData = monthlySummary != null && monthlySummary.Count > 0;
+                    }
+                    @if (hasMonthlyData)
+                    {
+                        @foreach (var summary in Model.MonthlySummary)
+                        {
+                            var approvalRate = summary.Submitted > 0 
+                                ? Math.Round((decimal)summary.Approved / summary.Submitted * 100, 1) 
+                                : 0;
+                            
+                            <tr>
+                                <td><strong>@summary.Month</strong></td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">@summary.Submitted</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success">@summary.Approved</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-danger">@summary.Rejected</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: @approvalRate%">
+                                                @approvalRate%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    @if (summary.TotalLoanAmount > 0)
+                                    {
+                                        <strong class="text-success">@summary.TotalLoanAmount.ToString("N0")</strong>
+                                        <br><small class="text-muted">VNĐ</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">-</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle me-2"></i>Chưa có dữ liệu thống kê
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Approval Trend Chart
+            fetch('@Url.Action("GetChartData", new { type = "approvalRate" })')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.labels && data.data) {
+                        const ctx = document.getElementById('approvalTrendChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.labels,
+                                datasets: [{
+                                    label: 'Tỷ lệ phê duyệt (%)',
+                                    data: data.data,
+                                    borderColor: '#0d6efd',
+                                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 5,
+                                    pointBackgroundColor: '#0d6efd',
+                                    pointBorderColor: '#fff',
+                                    pointBorderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: true,
+                                        position: 'bottom'
+                                    },
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        max: 100,
+                                        ticks: {
+                                            callback: function(value) {
+                                                return value + '%';
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading approval trend chart:', error);
+                });
+
+            // Comparison Chart (Submitted vs Approved)
+            @{
+                var monthlyData = Model.MonthlySummary as System.Collections.ICollection;
+                if (monthlyData != null && monthlyData.Count > 0)
+                {
+                    var months = new List<string>();
+                    var submitted = new List<int>();
+                    var approved = new List<int>();
+                    
+                    foreach (var item in Model.MonthlySummary)
+                    {
+                        months.Add(item.Month);
+                        submitted.Add(item.Submitted);
+                        approved.Add(item.Approved);
+                    }
+                    
+                    <text>
+                    const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+                    new Chart(comparisonCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(months)),
+                            datasets: [{
+                                label: 'Nộp hồ sơ',
+                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(submitted)),
+                                backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                                borderColor: '#0d6efd',
+                                borderWidth: 1
+                            }, {
+                                label: 'Phê duyệt',
+                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(approved)),
+                                backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                                borderColor: '#198754',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    </text>
+                }
+            }
+        });
+    </script>
+}
+
+<style>
+    /* Enhanced statistics view styles */
+    .card {
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .h2 {
+        color: #1e293b;
+        font-weight: 700;
+    }
+
+    .h3 {
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .h5 {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    canvas {
+        border-radius: 8px;
+    }
+
+    .table th {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .progress {
+        border-radius: 12px;
+    }
+
+    .h-100 {
+        height: 100%;
+    }
+</style>
