@@ -41,22 +41,35 @@ namespace QuanLyRuiRoTinDung.Services
                 // 3. Filter TrangThaiHoatDong trong query thay vì sau khi load
                 // 4. Chỉ Include VaiTro khi cần
                 var nguoiDung = await _context.NguoiDungs
-                    .AsNoTracking() // Tắt tracking để tăng performance đáng kể
                     .Include(u => u.MaVaiTroNavigation)
-                    .Where(u => u.TenDangNhap == tenDangNhap && u.TrangThaiHoatDong == true)
+                    .Where(u => u.TenDangNhap == tenDangNhap && (u.TrangThaiHoatDong == true || u.TrangThaiHoatDong == null))
                     .FirstOrDefaultAsync();
 
                 if (nguoiDung == null)
                 {
+                    _logger.LogWarning("User not found: {TenDangNhap}", tenDangNhap);
                     return null;
                 }
 
                 // Kiểm tra mật khẩu (plain text - chưa hash)
-                if (nguoiDung.MatKhauHash?.Trim() != matKhau)
+                // Trim cả hai để đảm bảo so sánh chính xác
+                var matKhauFromDb = nguoiDung.MatKhauHash?.Trim() ?? string.Empty;
+                var matKhauInput = matKhau.Trim();
+
+                if (string.IsNullOrEmpty(matKhauFromDb))
                 {
+                    _logger.LogWarning("Password is null or empty for user: {TenDangNhap}", tenDangNhap);
                     return null;
                 }
 
+                // So sánh mật khẩu (case-sensitive)
+                if (!matKhauFromDb.Equals(matKhauInput, StringComparison.Ordinal))
+                {
+                    _logger.LogWarning("Password mismatch for user: {TenDangNhap}", tenDangNhap);
+                    return null;
+                }
+
+                _logger.LogInformation("Authentication successful for user: {TenDangNhap}", tenDangNhap);
                 return nguoiDung;
             }
             catch (Exception ex)

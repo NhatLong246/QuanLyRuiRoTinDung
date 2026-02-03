@@ -1,0 +1,3901 @@
+@model QuanLyRuiRoTinDung.Models.Entities.KhoanVay
+@using QuanLyRuiRoTinDung.Models.Entities
+@{
+    ViewData["Title"] = "Lập hồ sơ vay vốn";
+    Layout = "_DashboardLayout";
+    var tenKhachHang = ViewBag.TenKhachHang as string ?? "";
+    var customerType = ViewBag.CustomerType as string ?? "";
+    var khachHangCaNhan = ViewBag.KhachHang as KhachHangCaNhan;
+    var khachHangDoanhNghiep = ViewBag.KhachHang as KhachHangDoanhNghiep;
+    var cicInfo = ViewBag.CicInfo as ThongTinCic;
+    var maKhachHangCode = ViewBag.MaKhachHangCode as string ?? "";
+    var soDienThoai = ViewBag.SoDienThoai as string ?? "";
+    var email = ViewBag.Email as string ?? "";
+    var isCaNhan = customerType == "CaNhan";
+}
+
+<div class="loan-create-container">
+    <!-- Main Title -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">Lập hồ sơ vay vốn</h1>
+            <p class="page-description">Điền thông tin chi tiết để tạo hồ sơ tín dụng mới cho khách hàng @(isCaNhan ? "cá nhân" : "doanh nghiệp").</p>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="btn-save-draft" onclick="saveDraft(event)">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16L21 8V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M17 21V13H7V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M7 3V8H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Lưu nháp
+            </button>
+            <button type="button" class="btn-submit" onclick="showSubmitModal()">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Gửi duyệt hồ sơ
+            </button>
+        </div>
+    </div>
+
+    <div class="loan-create-layout">
+        <!-- Left Panel: Loan Form -->
+        <div class="loan-form-panel">
+            <form asp-action="Create" method="post" id="loanForm" class="loan-form" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="LoaiKhachHang" />
+                <input type="hidden" asp-for="MaKhachHang" />
+                <input type="hidden" asp-for="MaNhanVienTinDung" />
+                <input type="hidden" asp-for="MaKhoanVay" id="maKhoanVay" />
+                
+                <div asp-validation-summary="ModelOnly" class="text-danger" id="validationSummary" style="display: none;"></div>
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success">
+                        @TempData["SuccessMessage"]
+                    </div>
+                }
+
+                <!-- Thông tin khoản vay -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="section-title-group">
+                            <h3 class="section-title">Thông tin khoản vay</h3>
+                            <p class="section-subtitle">Các thông số tài chính cơ bản của khoản vay đề xuất</p>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label asp-for="SoTienVay" class="form-label">
+                                Số tiền vay đề nghị (VND) <span class="required">*</span>
+                            </label>
+                            <div class="input-with-suffix">
+                                <input asp-for="SoTienVay" 
+                                       type="text" 
+                                       class="form-control money-input" 
+                                       placeholder="Nhập số tiền (VD: 500,000,000)" 
+                                       required />
+                                <span class="input-suffix">VND</span>
+                            </div>
+                            <span asp-validation-for="SoTienVay" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="LaiSuat" class="form-label">
+                                Lãi suất dự kiến (%/năm) <span class="required">*</span>
+                            </label>
+                            <div class="input-with-suffix">
+                                <input asp-for="LaiSuat" 
+                                       type="number" 
+                                       step="0.01" 
+                                       min="0"
+                                       max="100"
+                                       class="form-control" 
+                                       placeholder="VD: 8.5" 
+                                       required />
+                                <span class="input-suffix">%</span>
+                            </div>
+                            <span asp-validation-for="LaiSuat" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="KyHanVay" class="form-label">
+                                Thời hạn vay (tháng) <span class="required">*</span>
+                            </label>
+                            <input asp-for="KyHanVay" 
+                                   type="number" 
+                                   min="1"
+                                   class="form-control" 
+                                   placeholder="Nhập số tháng" 
+                                   required />
+                            <span asp-validation-for="KyHanVay" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="MaLoaiVay" class="form-label">
+                                Loại hình vay <span class="required">*</span>
+                            </label>
+                            <select asp-for="MaLoaiVay" asp-items="ViewBag.LoaiKhoanVays" class="form-control" required>
+                                <option value="">Chọn loại hình</option>
+                            </select>
+                            <span asp-validation-for="MaLoaiVay" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="HinhThucTraNo" class="form-label">
+                                Hình thức trả nợ
+                            </label>
+                            <select asp-for="HinhThucTraNo" class="form-control" id="hinhThucTraNo">
+                                <option value="">-- Chọn --</option>
+                                <option value="Trả góp đều">Trả góp đều</option>
+                                <option value="Trả gốc cuối kỳ">Trả gốc cuối kỳ</option>
+                                <option value="Trả gốc lãi cuối kỳ">Trả gốc lãi cuối kỳ</option>
+                            </select>
+                            <span asp-validation-for="HinhThucTraNo" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="SoTienTraHangThang" class="form-label">
+                                Số tiền trả hàng tháng (VND) <span class="text-muted">(Tự động tính)</span>
+                            </label>
+                            <div class="input-with-suffix">
+                                <input asp-for="SoTienTraHangThang" 
+                                       type="text" 
+                                       class="form-control money-input-readonly" 
+                                       id="soTienTraHangThang"
+                                       readonly 
+                                       placeholder="Sẽ tự động tính khi nhập đủ thông tin" />
+                                <span class="input-suffix">VND</span>
+                            </div>
+                            <input type="hidden" asp-for="SoTienTraHangThang" id="soTienTraHangThangHidden" />
+                            <span asp-validation-for="SoTienTraHangThang" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label asp-for="MucDichVay" class="form-label">
+                                Mục đích vay vốn <span class="required">*</span>
+                            </label>
+                            <textarea asp-for="MucDichVay" 
+                                      class="form-control" 
+                                      rows="4" 
+                                      placeholder="Mô tả chi tiết mục đích sử dụng vốn..." 
+                                      required></textarea>
+                            <span asp-validation-for="MucDichVay" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tài sản đảm bảo -->
+                <div class="form-section" id="taiSanDamBaoSection">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="section-title-group">
+                            <h3 class="section-title">Tài sản đảm bảo</h3>
+                            <p class="section-subtitle">Thông tin tài sản thế chấp cho khoản vay (nếu có)</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="hidden" name="CoTaiSanDamBao" value="false" />
+                            <input type="checkbox" name="CoTaiSanDamBao" id="coTaiSanDamBao" value="true" @(Model.CoTaiSanDamBao == true ? Html.Raw("checked") : Html.Raw("")) />
+                            Có tài sản đảm bảo
+                        </label>
+                    </div>
+
+                    <div id="taiSanSection" style="display: none;">
+                        <div id="taiSanList"></div>
+                        <button type="button" class="btn-add-taisan" onclick="addTaiSan()">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Thêm tài sản đảm bảo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hồ sơ đính kèm -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M3 7V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M8 11L12 7L16 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="section-title-group">
+                            <h3 class="section-title">Hồ sơ đính kèm</h3>
+                            <p class="section-subtitle">Tải lên các tài liệu pháp lý và tài chính liên quan</p>
+                        </div>
+                    </div>
+
+                    <div class="document-categories">
+                        <div class="doc-category">
+                            <div class="category-header">
+                                <h4 class="category-title" id="docCategory1">Pháp lý & Định danh (CCCD/GPKD)</h4>
+                            </div>
+                            <div class="file-list" id="legalFiles">
+                                <div class="no-files">Chưa có tệp nào được tải lên</div>
+                            </div>
+                            <button type="button" class="btn-add-file" data-category="legalFiles">
+                                Chọn tệp từ máy tính
+                            </button>
+                        </div>
+
+                        <div class="doc-category">
+                            <div class="category-header">
+                                <h4 class="category-title" id="docCategory2">Báo cáo tài chính & Thu nhập</h4>
+                            </div>
+                            <div class="file-list" id="financialFiles">
+                                <div class="no-files">Chưa có tệp nào được tải lên</div>
+                            </div>
+                            <button type="button" class="btn-add-file" data-category="financialFiles">
+                                Chọn tệp từ máy tính
+                            </button>
+                        </div>
+
+                        <div class="doc-category">
+                            <div class="category-header">
+                                <h4 class="category-title" id="docCategory3">Hợp đồng / Tài sản đảm bảo</h4>
+                            </div>
+                            <div class="file-list" id="collateralFiles">
+                                <div class="no-files">Chưa có tệp nào được tải lên</div>
+                            </div>
+                            <button type="button" class="btn-add-file" data-category="collateralFiles">
+                                Chọn tệp từ máy tính
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ghi chú -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="section-title-group">
+                            <h3 class="section-title">Ghi chú</h3>
+                            <p class="section-subtitle">Ghi chú bổ sung về hồ sơ vay</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <textarea asp-for="GhiChu" class="form-control" rows="4" placeholder="Nhập ghi chú bổ sung..."></textarea>
+                        <span asp-validation-for="GhiChu" class="text-danger"></span>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Right Panel: Customer Info & CIC -->
+        <div class="customer-info-panel">
+            <!-- Khách hàng -->
+            <div class="info-card customer-card">
+                <div class="card-header">
+                    <h3 class="card-title">Khách hàng</h3>
+                    <a href="@Url.Action("SelectCustomer", "Loan")" class="btn-change-customer">
+                        Thay đổi
+                    </a>
+                </div>
+                <div class="customer-info">
+                    <div class="customer-avatar-section">
+                        @if (ViewBag.AnhDaiDien != null)
+                        {
+                            <img src="@ViewBag.AnhDaiDien" alt="Ảnh khách hàng" class="customer-avatar-large" />
+                        }
+                        else
+                        {
+                            <div class="customer-avatar-placeholder-large">
+                                <span>@(tenKhachHang?.Substring(0, Math.Min(1, tenKhachHang.Length)) ?? "?")</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="customer-details">
+                        <div class="customer-name">@tenKhachHang</div>
+                        <div class="customer-type-badge">
+                            @(isCaNhan ? "KH Cá nhân" : "KH Doanh nghiệp")
+                            @if (cicInfo != null && cicInfo.XepHangTinDungCic != null)
+                            {
+                                <span class="vip-badge">• @cicInfo.XepHangTinDungCic</span>
+                            }
+                        </div>
+                        <div class="customer-info-row">
+                            <span class="info-label">Mã KH:</span>
+                            <span class="info-value">@maKhachHangCode</span>
+                        </div>
+                        <div class="customer-info-row">
+                            <span class="info-label">SĐT:</span>
+                            <span class="info-value">@(soDienThoai != null && soDienThoai.Length > 7 ? soDienThoai.Substring(0, 3) + " *** " + soDienThoai.Substring(Math.Max(0, soDienThoai.Length - 4)) : soDienThoai ?? "N/A")</span>
+                        </div>
+                        <div class="customer-info-row">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value">@(email ?? "N/A")</span>
+                        </div>
+
+                        @if (isCaNhan && khachHangCaNhan != null)
+                        {
+                            <div class="customer-detail-section">
+                                <h4 class="detail-section-title">Thông tin cá nhân</h4>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Ngày sinh:</span>
+                                    <span class="info-value">@(khachHangCaNhan.NgaySinh?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Giới tính:</span>
+                                    <span class="info-value">@(khachHangCaNhan.GioiTinh ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">CMND/CCCD:</span>
+                                    <span class="info-value">@(khachHangCaNhan.SoCmnd ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Địa chỉ:</span>
+                                    <span class="info-value">@(khachHangCaNhan.DiaChi ?? "N/A")</span>
+                                </div>
+                            </div>
+
+                            <div class="customer-detail-section">
+                                <h4 class="detail-section-title">Thông tin công việc</h4>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Nghề nghiệp:</span>
+                                    <span class="info-value">@(khachHangCaNhan.NgheNghiep ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Thu nhập/tháng:</span>
+                                    <span class="info-value">@(khachHangCaNhan.ThuNhapHangThang?.ToString("N0") ?? "N/A") VNĐ</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Công ty:</span>
+                                    <span class="info-value">@(khachHangCaNhan.TenCongTy ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Số năm làm việc:</span>
+                                    <span class="info-value">@(khachHangCaNhan.SoNamLamViec?.ToString() ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Tình trạng hôn nhân:</span>
+                                    <span class="info-value">@(khachHangCaNhan.TinhTrangHonNhan ?? "N/A")</span>
+                                </div>
+                            </div>
+
+                            <div class="customer-detail-section">
+                                <h4 class="detail-section-title">Đánh giá tín dụng</h4>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Điểm tín dụng:</span>
+                                    <span class="info-value">@(khachHangCaNhan.DiemTinDung?.ToString() ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Xếp hạng:</span>
+                                    <span class="info-value">@(khachHangCaNhan.XepHangTinDung ?? "N/A")</span>
+                                </div>
+                            </div>
+                        }
+                        else if (!isCaNhan && khachHangDoanhNghiep != null)
+                        {
+                            <div class="customer-detail-section">
+                                <h4 class="detail-section-title">Thông tin doanh nghiệp</h4>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Tên công ty:</span>
+                                    <span class="info-value">@khachHangDoanhNghiep.TenCongTy</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Mã số thuế:</span>
+                                    <span class="info-value">@khachHangDoanhNghiep.MaSoThue</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Giấy phép KD:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.SoGiayPhepKinhDoanh ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Ngày thành lập:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.NgayDangKy?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Lĩnh vực:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.LinhVucKinhDoanh ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Số nhân viên:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.SoLuongNhanVien?.ToString() ?? "N/A")</span>
+                                </div>
+                            </div>
+
+                            <div class="customer-detail-section">
+                                <h4 class="detail-section-title">Thông tin tài chính</h4>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Doanh thu/năm:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.DoanhThuHangNam?.ToString("N0") ?? "N/A") VNĐ</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Tổng tài sản:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.TongTaiSan?.ToString("N0") ?? "N/A") VNĐ</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Vốn điều lệ:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.VonDieuLe?.ToString("N0") ?? "N/A") VNĐ</span>
+                                </div>
+                            </div>
+
+                            <div class="customer-detail-section">
+                                <h4 class="detail-section-title">Người đại diện pháp luật</h4>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Họ tên:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.NguoiDaiDienPhapLuat ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Ngày sinh:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.NgaySinh?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Giới tính:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.GioiTinh ?? "N/A")</span>
+                                </div>
+                            </div>
+
+                            <div class="customer-detail-section">
+                                <h4 class="detail-section-title">Đánh giá tín dụng</h4>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Điểm tín dụng:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.DiemTinDung?.ToString() ?? "N/A")</span>
+                                </div>
+                                <div class="customer-info-row">
+                                    <span class="info-label">Xếp hạng:</span>
+                                    <span class="info-value">@(khachHangDoanhNghiep.XepHangTinDung ?? "N/A")</span>
+                                </div>
+                            </div>
+                        }
+
+                        @if (cicInfo != null)
+                        {
+                            <div class="cic-status">
+                                <span class="cic-label">CIC:</span>
+                                <span class="cic-badge cic-good">Hạng @(cicInfo.XepHangTinDungCic ?? "N/A") - @(cicInfo.MucDoRuiRo ?? "Chưa đánh giá")</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="cic-status">
+                                <span class="cic-label">CIC:</span>
+                                <span class="cic-badge cic-unknown">Chưa tra cứu</span>
+                            </div>
+                        }
+                    </div>
+                    @if (cicInfo != null)
+                    {
+                        <a href="@Url.Action("Details", "Cic", new { id = cicInfo.MaCic })" class="btn-view-history" target="_blank">
+                            Xem lịch sử tín dụng
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Thông tin CIC -->
+            @if (cicInfo != null)
+            {
+                <div class="info-card cic-card">
+                    <h3 class="card-title">Thông tin CIC</h3>
+                    <div class="cic-details">
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Tổng số khoản vay:</span>
+                            <span class="cic-info-value">@cicInfo.TongSoKhoanVayCic</span>
+                        </div>
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Đang vay:</span>
+                            <span class="cic-info-value">@cicInfo.SoKhoanVayDangVayCic</span>
+                        </div>
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Nợ xấu:</span>
+                            <span class="cic-info-value">@cicInfo.SoKhoanVayNoXauCic</span>
+                        </div>
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Tổng dư nợ:</span>
+                            <span class="cic-info-value">@cicInfo.TongDuNoCic.ToString("N0") VNĐ</span>
+                        </div>
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Điểm tín dụng:</span>
+                            <span class="cic-info-value">@(cicInfo.DiemTinDungCic?.ToString() ?? "N/A")</span>
+                        </div>
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Xếp hạng:</span>
+                            <span class="cic-info-value">@(cicInfo.XepHangTinDungCic ?? "N/A")</span>
+                        </div>
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Mức độ rủi ro:</span>
+                            <span class="cic-info-value">@(cicInfo.MucDoRuiRo ?? "N/A")</span>
+                        </div>
+                        <div class="cic-info-row">
+                            <span class="cic-info-label">Khuyến nghị:</span>
+                            <span class="cic-info-value">@(cicInfo.KhuyenNghiChoVay ?? "N/A")</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(cicInfo.DanhSachToChucTinDung))
+                        {
+                            <div class="cic-info-row full-width">
+                                <span class="cic-info-label">Tổ chức đã vay:</span>
+                                <span class="cic-info-value">@cicInfo.DanhSachToChucTinDung</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Quy trình xử lý -->
+            <div class="info-card workflow-card">
+                <h3 class="card-title">Quy trình xử lý</h3>
+                <div class="workflow-steps">
+                    <div class="workflow-step active">
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Lập hồ sơ</div>
+                            <div class="step-status active-status">Đang thực hiện</div>
+                        </div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Thẩm định rủi ro</div>
+                            <div class="step-status">Chờ xử lý</div>
+                        </div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M9 11L12 14L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Phê duyệt tín dụng</div>
+                            <div class="step-status">Chờ xử lý</div>
+                        </div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Giải ngân</div>
+                            <div class="step-status">Chờ xử lý</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cần hỗ trợ? -->
+            <div class="info-card support-card">
+                <div class="support-icon">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 19H11V17H13V19ZM15.07 11.25L14.17 12.17C13.45 12.89 13 13.5 13 15H11V14.5C11 13.39 11.45 12.39 12.17 11.67L13.41 10.41C13.78 10.05 14 9.55 14 9C14 7.89 13.1 7 12 7C10.9 7 10 7.9 10 9H8C8 6.79 9.79 5 12 5C14.21 5 16 6.79 16 9C16 10.11 15.28 11.07 14.28 11.5L15.07 11.25Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <p class="support-text">Liên hệ bộ phận hỗ trợ tín dụng nếu gặp vấn đề về hồ sơ.</p>
+                <a href="#" class="support-link">Gọi hotline nội bộ</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gửi duyệt hồ sơ -->
+<div id="submitModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Gửi duyệt hồ sơ</h3>
+            <button type="button" class="modal-close" onclick="closeSubmitModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group full-width">
+                <label class="form-label">
+                    Phân loại hồ sơ <span class="required">*</span>
+                </label>
+                <div class="classification-options">
+                    <label class="classification-card">
+                        <input type="radio" name="phanLoai" value="Tốt" required />
+                        <div class="card-content">
+                            <div class="classification-icon">✓</div>
+                            <div class="classification-label">Tốt</div>
+                        </div>
+                    </label>
+                    <label class="classification-card">
+                        <input type="radio" name="phanLoai" value="Trung bình" required />
+                        <div class="card-content">
+                            <div class="classification-icon">!</div>
+                            <div class="classification-label">Trung bình</div>
+                        </div>
+                    </label>
+                    <label class="classification-card">
+                        <input type="radio" name="phanLoai" value="Rủi ro cao" required />
+                        <div class="card-content">
+                            <div class="classification-icon">⚠</div>
+                            <div class="classification-label">Rủi ro cao</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group full-width">
+                <label class="form-label">
+                    Ghi chú của chuyên viên
+                </label>
+                <textarea id="ghiChuChuyenVien" class="form-control" rows="4" placeholder="Nhập ghi chú về hồ sơ (nếu có)"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeSubmitModal()">Hủy</button>
+            <button type="button" class="btn-submit-modal" onclick="submitLoan()">Gửi hồ sơ</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        var taiSanListForJs = ViewBag.TaiSanDamBaos as List<TaiSanDamBao> ?? new List<TaiSanDamBao>();
+        // Lấy ghi chú nhân viên đã lưu trước đó (nếu có)
+        var ghiChuNhanVienSaved = Model?.GhiChuNhanVien ?? "";
+    }
+    <script>
+        // Ghi chú nhân viên đã lưu trước đó
+        var savedGhiChuNhanVien = @Html.Raw(Json.Serialize(ghiChuNhanVienSaved));
+        
+        // Override validation messages to Vietnamese - Phải đặt trước khi form được validate
+        $(document).ready(function() {
+            if (typeof $.validator !== 'undefined' && $.validator.messages) {
+                $.validator.messages.required = "Trường này là bắt buộc.";
+                $.validator.messages.number = "Vui lòng nhập số hợp lệ.";
+                $.validator.messages.email = "Vui lòng nhập địa chỉ email hợp lệ.";
+                $.validator.messages.maxlength = $.validator.format("Vui lòng nhập tối đa {0} ký tự.");
+                $.validator.messages.minlength = $.validator.format("Vui lòng nhập tối thiểu {0} ký tự.");
+                $.validator.messages.min = $.validator.format("Vui lòng nhập giá trị lớn hơn hoặc bằng {0}.");
+                $.validator.messages.max = $.validator.format("Vui lòng nhập giá trị nhỏ hơn hoặc bằng {0}.");
+                $.validator.messages.range = $.validator.format("Vui lòng nhập giá trị trong khoảng {0} đến {1}.");
+                $.validator.messages.step = "Vui lòng nhập giá trị hợp lệ.";
+            }
+        });
+        
+        // Override ngay lập tức nếu jQuery đã sẵn sàng
+        if (typeof $ !== 'undefined' && typeof $.validator !== 'undefined' && $.validator.messages) {
+            $.validator.messages.required = "Trường này là bắt buộc.";
+            $.validator.messages.number = "Vui lòng nhập số hợp lệ.";
+            $.validator.messages.email = "Vui lòng nhập địa chỉ email hợp lệ.";
+            $.validator.messages.maxlength = $.validator.format("Vui lòng nhập tối đa {0} ký tự.");
+            $.validator.messages.minlength = $.validator.format("Vui lòng nhập tối thiểu {0} ký tự.");
+            $.validator.messages.min = $.validator.format("Vui lòng nhập giá trị lớn hơn hoặc bằng {0}.");
+            $.validator.messages.max = $.validator.format("Vui lòng nhập giá trị nhỏ hơn hoặc bằng {0}.");
+            $.validator.messages.range = $.validator.format("Vui lòng nhập giá trị trong khoảng {0} đến {1}.");
+            $.validator.messages.step = "Vui lòng nhập giá trị hợp lệ.";
+        }
+        
+        // Dữ liệu loại vay
+        var loaiKhoanVaysData = @Html.Raw(Json.Serialize(ViewBag.LoaiKhoanVaysData ?? new List<object>()));
+        
+        // Dữ liệu CIC
+        var cicInfo = @Html.Raw(Json.Serialize(new { 
+            xepHangTinDungCic = cicInfo?.XepHangTinDungCic ?? "",
+            mucDoRuiRo = cicInfo?.MucDoRuiRo ?? "",
+            diemTinDungCic = cicInfo?.DiemTinDungCic ?? 0
+        }));
+        
+        // Loại khách hàng
+        var customerType = '@customerType';
+        
+        var availableTaiSanList = @Html.Raw(Json.Serialize(taiSanListForJs.Select(t => new { maTaiSan = t.MaTaiSan, tenGoi = t.TenGoi, maTaiSanCode = t.MaTaiSanCode, giaTriDinhGia = t.GiaTriDinhGia, tenLoaiTaiSan = t.MaLoaiTaiSanNavigation?.TenLoaiTaiSan ?? "" })));
+        var taiSanCounter = 0;
+        
+        // Dữ liệu tài sản đảm bảo từ Model (khi Edit mode)
+        var existingKhoanVayTaiSans = @Html.Raw(
+            Model?.KhoanVayTaiSans != null && Model.KhoanVayTaiSans.Any() 
+                ? Json.Serialize(Model.KhoanVayTaiSans.Select(kvts => new {
+                    maLienKet = kvts.MaLienKet,
+                    maKhoanVay = kvts.MaKhoanVay,
+                    maTaiSan = kvts.MaTaiSan,
+                    giaTriDinhGia = kvts.GiaTriDinhGiaTaiThoiDiemVay,
+                    tyLeTheChap = kvts.TyLeTheChap,
+                    ngayTheChap = kvts.NgayTheChap.HasValue ? kvts.NgayTheChap.Value.ToString("yyyy-MM-dd") : null,
+                    ghiChu = kvts.GhiChu ?? "",
+                    loaiTaiSan = kvts.MaTaiSanNavigation?.MaLoaiTaiSanNavigation?.TenLoaiTaiSan ?? "",
+                    maTaiSanCode = kvts.MaTaiSanNavigation?.MaTaiSanCode ?? "",
+                    tenGoi = kvts.MaTaiSanNavigation?.TenGoi ?? "",
+                    // Các trường mới cho loại "Khác"
+                    tenTaiSanKhac = kvts.TenTaiSanKhac ?? "",
+                    donVi = kvts.DonVi ?? "",
+                    soLuong = kvts.SoLuong
+                }).ToList())
+                : "[]"
+        );
+        
+        // Dữ liệu file đính kèm từ ViewBag (khi Edit mode)
+        var existingFiles = @Html.Raw(
+            ViewBag.ExistingFiles != null && ((List<HoSoVayFileDinhKem>)ViewBag.ExistingFiles).Any()
+                ? Json.Serialize(((List<HoSoVayFileDinhKem>)ViewBag.ExistingFiles).Select(f => new {
+                    maFile = f.MaFile,
+                    maKhoanVay = f.MaKhoanVay,
+                    loaiFile = f.LoaiFile,
+                    tenFile = f.TenFile,
+                    tenFileLuu = f.TenFileLuu,
+                    duongDan = f.DuongDan,
+                    kichThuoc = f.KichThuoc,
+                    dinhDang = f.DinhDang,
+                    moTa = f.MoTa ?? "",
+                    ngayTao = f.NgayTao.HasValue ? f.NgayTao.Value.ToString("yyyy-MM-dd HH:mm:ss") : null
+                }).ToList())
+                : "[]"
+        );
+        
+        // Kiểm tra CIC có tốt trở lên không
+        function isCicGood() {
+            if (!cicInfo || !cicInfo.xepHangTinDungCic) return false;
+            const xepHang = cicInfo.xepHangTinDungCic.toUpperCase();
+            // AAA, AA, A được coi là tốt trở lên
+            return xepHang === 'AAA' || xepHang === 'AA' || xepHang === 'A' || cicInfo.mucDoRuiRo === 'Thấp';
+        }
+        
+        // Cập nhật tiêu đề hồ sơ đính kèm theo loại vay
+        function updateDocumentCategories(maLoaiVayCode) {
+            const docCategory1 = document.getElementById('docCategory1');
+            const docCategory2 = document.getElementById('docCategory2');
+            const docCategory3 = document.getElementById('docCategory3');
+            
+            if (maLoaiVayCode === 'STUDENT_CN') {
+                // Vay sinh viên
+                if (docCategory1) docCategory1.textContent = 'Giấy trúng tuyển đại học';
+                if (docCategory2) docCategory2.textContent = 'Hồ sơ nhập học';
+                if (docCategory3) docCategory3.textContent = 'Giấy chứng nhận sinh viên';
+            } else {
+                // Các loại vay khác
+                if (docCategory1) docCategory1.textContent = 'Pháp lý & Định danh (CCCD/GPKD)';
+                if (docCategory2) docCategory2.textContent = 'Báo cáo tài chính & Thu nhập';
+                if (docCategory3) docCategory3.textContent = 'Hợp đồng / Tài sản đảm bảo';
+            }
+        }
+        
+        // Xử lý khi chọn loại vay
+        document.querySelector('select[name="MaLoaiVay"]')?.addEventListener('change', function() {
+            const maLoaiVay = parseInt(this.value);
+            const loaiVay = loaiKhoanVaysData.find(l => l.maLoaiVay === maLoaiVay);
+            const laiSuatInput = document.querySelector('input[name="LaiSuat"]');
+            const soTienVayInput = document.querySelector('.money-input');
+            const taiSanDamBaoSection = document.getElementById('taiSanDamBaoSection');
+            
+            // Luôn ẩn thông báo lỗi CIC trước, sau đó mới kiểm tra lại nếu cần
+            hideCicError();
+            
+            if (loaiVay && laiSuatInput) {
+                // Tự động set lãi suất
+                if (loaiVay.maLoaiVayCode === 'SOCIAL_CN') {
+                    // Vay An sinh xã hội: 2%
+                    laiSuatInput.value = '2';
+                    // Hiển thị phần tài sản đảm bảo
+                    if (taiSanDamBaoSection) {
+                        taiSanDamBaoSection.style.display = 'block';
+                    }
+                } else if (loaiVay.maLoaiVayCode === 'STUDENT_CN') {
+                    // Vay Sinh viên: 0%
+                    laiSuatInput.value = '0';
+                    // Ẩn toàn bộ phần tài sản đảm bảo
+                    if (taiSanDamBaoSection) {
+                        taiSanDamBaoSection.style.display = 'none';
+                    }
+                    // Đảm bảo ẩn thông báo lỗi CIC
+                    hideCicError();
+                } else if (loaiVay.maLoaiVayCode === 'STARTUP_CN') {
+                    // Vay khởi nghiệp: 3%
+                    laiSuatInput.value = '3';
+                    // Set mặc định 100 triệu
+                    if (soTienVayInput) {
+                        soTienVayInput.value = '100.000.000';
+                    }
+                    // Hiển thị phần tài sản đảm bảo
+                    if (taiSanDamBaoSection) {
+                        taiSanDamBaoSection.style.display = 'block';
+                    }
+                    // Kiểm tra CIC
+                    if (!isCicGood()) {
+                        // CIC không tốt: hiển thị thông báo và disable form
+                        showCicError();
+                    }
+                } else {
+                    // Các loại vay khác (Vay tiêu dùng): hiển thị phần tài sản đảm bảo
+                    if (taiSanDamBaoSection) {
+                        taiSanDamBaoSection.style.display = 'block';
+                    }
+                    // Đảm bảo ẩn thông báo lỗi CIC
+                    hideCicError();
+                }
+                
+                // Cập nhật tiêu đề hồ sơ đính kèm
+                updateDocumentCategories(loaiVay.maLoaiVayCode);
+                
+                // Kiểm tra điều kiện tài sản đảm bảo
+                if (customerType === 'CaNhan' && loaiVay.maLoaiVayCode !== 'STUDENT_CN') {
+                    checkTaiSanDamBaoRequirement(loaiVay);
+                } else if (customerType === 'DoanhNghiep') {
+                    // Xử lý logic cho doanh nghiệp
+                    handleDoanhNghiepLoanType(loaiVay);
+                }
+            }
+            
+            calculateMonthlyPayment();
+        });
+        
+        // Xử lý loại hình vay cho doanh nghiệp
+        function handleDoanhNghiepLoanType(loaiVay) {
+            const taiSanDamBaoSection = document.getElementById('taiSanDamBaoSection');
+            const coTaiSanCheckbox = document.getElementById('coTaiSanDamBao');
+            const taiSanSection = document.getElementById('taiSanSection');
+            const maLoaiVayCode = loaiVay.maLoaiVayCode || '';
+            
+            // Kiểm tra loại vay dựa trên code
+            if (maLoaiVayCode === 'COLLATERAL_DN') {
+                // Vay có tài sản bảo đảm: Hiển thị phần tài sản đảm bảo
+                if (taiSanDamBaoSection) {
+                    taiSanDamBaoSection.style.display = 'block';
+                }
+                if (coTaiSanCheckbox) {
+                    coTaiSanCheckbox.checked = true;
+                    coTaiSanCheckbox.disabled = false;
+                }
+                if (taiSanSection) {
+                    taiSanSection.style.display = 'block';
+                }
+                // Ẩn thông báo lỗi CIC
+                hideCicError();
+            } else if (maLoaiVayCode === 'UNSECURED_DN') {
+                // Vay tín chấp doanh nghiệp: Không cần tài sản đảm bảo, nhưng CIC phải tốt
+                if (taiSanDamBaoSection) {
+                    taiSanDamBaoSection.style.display = 'none';
+                }
+                if (coTaiSanCheckbox) {
+                    coTaiSanCheckbox.checked = false;
+                    coTaiSanCheckbox.disabled = true;
+                }
+                if (taiSanSection) {
+                    taiSanSection.style.display = 'none';
+                }
+                
+                // Kiểm tra CIC phải tốt
+                if (!isCicGood()) {
+                    // CIC không tốt: hiển thị thông báo và disable form
+                    showCicError();
+                } else {
+                    // CIC tốt: ẩn thông báo lỗi
+                    hideCicError();
+                }
+            } else {
+                // Loại vay khác: mặc định hiển thị phần tài sản đảm bảo
+                if (taiSanDamBaoSection) {
+                    taiSanDamBaoSection.style.display = 'block';
+                }
+                hideCicError();
+            }
+        }
+        
+        // Hiển thị thông báo lỗi CIC
+        function showCicError() {
+            const soTienVayGroup = document.querySelector('.money-input')?.closest('.form-group');
+            if (soTienVayGroup) {
+                // Xóa thông báo cũ nếu có
+                const oldError = soTienVayGroup.querySelector('.cic-error-message');
+                if (oldError) {
+                    oldError.remove();
+                }
+                
+                // Tạo thông báo mới
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'cic-error-message alert alert-danger';
+                errorDiv.style.marginTop = '8px';
+                errorDiv.style.padding = '12px';
+                errorDiv.style.borderRadius = '6px';
+                errorDiv.style.backgroundColor = '#fee2e2';
+                errorDiv.style.border = '1px solid #fca5a5';
+                errorDiv.style.color = '#dc2626';
+                errorDiv.textContent = 'Không đủ yêu cầu để sử dụng. CIC của khách hàng này quá thấp.';
+                soTienVayGroup.appendChild(errorDiv);
+            }
+            
+            // Disable form submit
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            }
+        }
+        
+        // Ẩn thông báo lỗi CIC
+        function hideCicError() {
+            // Tìm và xóa tất cả thông báo lỗi CIC
+            const errorDivs = document.querySelectorAll('.cic-error-message');
+            errorDivs.forEach(div => {
+                div.remove();
+            });
+            
+            // Enable form submit
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+            }
+        }
+        
+        // Kiểm tra yêu cầu tài sản đảm bảo
+        function checkTaiSanDamBaoRequirement(loaiVay) {
+            const soTienVayInput = document.querySelector('.money-input');
+            const coTaiSanCheckbox = document.getElementById('coTaiSanDamBao');
+            const taiSanSection = document.getElementById('taiSanSection');
+            
+            if (!soTienVayInput || !coTaiSanCheckbox) return;
+            
+            const soTienVay = parseFloat(soTienVayInput.value.replace(/[^\d]/g, '')) || 0;
+            const cicGood = isCicGood();
+            
+            let requireTaiSan = false;
+            let canDisableTaiSan = false;
+            
+            // Vay Sinh viên: không cần tài sản đảm bảo (đã ẩn ở trên)
+            if (loaiVay.maLoaiVayCode === 'STUDENT_CN') {
+                return; // Không xử lý gì thêm
+            } else if (loaiVay.maLoaiVayCode === 'CONSUME_CN' || loaiVay.maLoaiVayCode === 'SOCIAL_CN') {
+                // Vay tiêu dùng hoặc An sinh xã hội
+                if (cicGood && soTienVay < 10000000) {
+                    // CIC tốt và vay < 10 triệu: không cần tài sản
+                    canDisableTaiSan = true;
+                } else if (cicGood && soTienVay >= 10000000) {
+                    // CIC tốt và vay >= 10 triệu: cần tài sản (Đất, Xe, Khác)
+                    requireTaiSan = true;
+                } else {
+                    // CIC không tốt: phải có tài sản thế chấp
+                    requireTaiSan = true;
+                }
+            } else if (loaiVay.maLoaiVayCode === 'STARTUP_CN') {
+                // Vay khởi nghiệp: vay >= 100 triệu và CIC tốt
+                if (soTienVay >= 100000000 && cicGood) {
+                    requireTaiSan = true;
+                } else {
+                    canDisableTaiSan = true;
+                }
+            }
+            
+            if (requireTaiSan) {
+                coTaiSanCheckbox.checked = true;
+                coTaiSanCheckbox.disabled = true;
+                if (taiSanSection) {
+                    taiSanSection.style.display = 'block';
+                    if (taiSanCounter === 0) {
+                        addTaiSan();
+                    }
+                }
+            } else if (canDisableTaiSan) {
+                coTaiSanCheckbox.checked = false;
+                coTaiSanCheckbox.disabled = false;
+                if (taiSanSection) {
+                    taiSanSection.style.display = 'none';
+                }
+            } else {
+                coTaiSanCheckbox.disabled = false;
+            }
+        }
+        
+        // Lắng nghe thay đổi số tiền vay để kiểm tra lại
+        document.querySelector('.money-input')?.addEventListener('input', function() {
+            const maLoaiVaySelect = document.querySelector('select[name="MaLoaiVay"]');
+            if (maLoaiVaySelect && maLoaiVaySelect.value) {
+                const maLoaiVay = parseInt(maLoaiVaySelect.value);
+                const loaiVay = loaiKhoanVaysData.find(l => l.maLoaiVay === maLoaiVay);
+                if (loaiVay && customerType === 'CaNhan') {
+                    checkTaiSanDamBaoRequirement(loaiVay);
+                }
+            }
+        });
+
+        // Format số tiền với dấu chấm khi load trang (cho Edit mode)
+        function formatMoneyOnLoad() {
+            const soTienVayInput = document.querySelector('.money-input');
+            if (soTienVayInput) {
+                // Lấy giá trị từ input (Razor sẽ tự động render giá trị từ Model khi Edit)
+                let value = soTienVayInput.value ? soTienVayInput.value.toString().trim() : '';
+                
+                if (!value) {
+                    console.log('formatMoneyOnLoad - No value to format');
+                    return;
+                }
+                
+                console.log('formatMoneyOnLoad - Original value from input:', value, 'Type:', typeof value);
+                
+                // Loại bỏ tất cả ký tự không phải số và dấu chấm để phân tích
+                const cleanValue = value.replace(/[^\d.]/g, '');
+                
+                // Đếm số dấu chấm
+                const dotCount = (cleanValue.match(/\./g) || []).length;
+                
+                // Trường hợp 1: Không có dấu chấm (ví dụ: "10000000")
+                if (dotCount === 0) {
+                    const numericValue = parseInt(cleanValue);
+                    if (!isNaN(numericValue) && numericValue > 0 && numericValue <= 999999999999) {
+                        soTienVayInput.value = numericValue.toLocaleString('vi-VN');
+                        console.log('Formatted money (no dots):', cleanValue, '->', numericValue, '->', soTienVayInput.value);
+                        triggerCalculations();
+                        return;
+                    }
+                }
+                
+                // Trường hợp 2: Có 1 dấu chấm
+                if (dotCount === 1) {
+                    const parts = cleanValue.split('.');
+                    const beforeDot = parts[0];
+                    const afterDot = parts[1];
+                    
+                    // Nếu phần sau dấu chấm có 1-2 chữ số -> đây là số thập phân (ví dụ: "10000000.00")
+                    if (afterDot && afterDot.length <= 2 && /^\d+$/.test(afterDot)) {
+                        const numericValue = parseInt(beforeDot + afterDot);
+                        if (!isNaN(numericValue) && numericValue > 0 && numericValue <= 999999999999) {
+                            // Parse lại chỉ lấy phần nguyên (bỏ phần thập phân)
+                            const integerValue = parseInt(beforeDot);
+                            soTienVayInput.value = integerValue.toLocaleString('vi-VN');
+                            console.log('Formatted money (decimal):', cleanValue, '->', integerValue, '->', soTienVayInput.value);
+                            triggerCalculations();
+                            return;
+                        }
+                    }
+                    // Nếu phần sau dấu chấm có nhiều hơn 2 chữ số -> có thể là format hàng nghìn (ví dụ: "1.000000")
+                    // Hoặc dấu chấm ở đầu/sau không hợp lý
+                    const allDigits = cleanValue.replace(/\./g, '');
+                    const numericValue = parseInt(allDigits);
+                    if (!isNaN(numericValue) && numericValue > 0 && numericValue <= 999999999999) {
+                        soTienVayInput.value = numericValue.toLocaleString('vi-VN');
+                        console.log('Formatted money (1 dot, treat as separator):', cleanValue, '->', numericValue, '->', soTienVayInput.value);
+                        triggerCalculations();
+                        return;
+                    }
+                }
+                
+                // Trường hợp 3: Có nhiều dấu chấm (ví dụ: "1.000.000" hoặc "10.000.000.00")
+                if (dotCount > 1) {
+                    const lastDotIndex = cleanValue.lastIndexOf('.');
+                    const beforeLastDot = cleanValue.substring(0, lastDotIndex);
+                    const afterLastDot = cleanValue.substring(lastDotIndex + 1);
+                    
+                    // Nếu phần sau dấu chấm cuối cùng có 1-2 chữ số -> có thể là số thập phân
+                    if (afterLastDot && afterLastDot.length <= 2 && /^\d+$/.test(afterLastDot)) {
+                        // Loại bỏ tất cả dấu chấm trước khi parse
+                        const allDigits = cleanValue.replace(/\./g, '');
+                        const numericValue = parseInt(allDigits);
+                        // Chỉ lấy phần nguyên (bỏ 2 chữ số cuối nếu là phần thập phân)
+                        const integerValue = Math.floor(numericValue / 100);
+                        if (!isNaN(integerValue) && integerValue > 0 && integerValue <= 999999999999) {
+                            soTienVayInput.value = integerValue.toLocaleString('vi-VN');
+                            console.log('Formatted money (multiple dots with decimal):', cleanValue, '->', integerValue, '->', soTienVayInput.value);
+                            triggerCalculations();
+                            return;
+                        }
+                    }
+                    
+                    // Nếu phần sau dấu chấm cuối cùng có nhiều hơn 2 chữ số -> đây là format hàng nghìn đúng
+                    // Ví dụ: "1.000.000" hoặc "10.000.000"
+                    console.log('Money already formatted with thousand separators:', cleanValue);
+                    triggerCalculations();
+                    return;
+                }
+                
+                console.error('formatMoneyOnLoad - Cannot parse value:', value);
+            }
+        }
+        
+        // Helper function để trigger calculations
+        function triggerCalculations() {
+            setTimeout(() => {
+                document.querySelectorAll('.ty-le-the-chap-input').forEach(input => {
+                    const dataIndex = input.getAttribute('data-index');
+                    if (dataIndex) {
+                        calculateTyLeTheChap(dataIndex);
+                    }
+                });
+                calculateMonthlyPayment();
+            }, 100);
+        }
+        
+        // Format số tiền với dấu chấm (chỉ cho nhập số)
+        // Lưu ý: Không format ở đây nữa vì đã có formatMoneyOnLoad() xử lý khi load trang
+        document.querySelectorAll('.money-input').forEach(input => {
+            
+            // Xóa validation error khi bắt đầu nhập
+            input.addEventListener('input', function(e) {
+                // Xóa error message
+                const errorSpan = this.parentElement?.parentElement?.querySelector('.text-danger');
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+                
+                let value = e.target.value.replace(/[^\d]/g, '');
+                
+                // Kiểm tra loại vay khởi nghiệp
+                const maLoaiVaySelect = document.querySelector('select[name="MaLoaiVay"]');
+                if (maLoaiVaySelect && maLoaiVaySelect.value) {
+                    const maLoaiVay = parseInt(maLoaiVaySelect.value);
+                    const loaiVay = loaiKhoanVaysData.find(l => l.maLoaiVay === maLoaiVay);
+                    
+                    if (loaiVay && loaiVay.maLoaiVayCode === 'STARTUP_CN') {
+                        // Vay khởi nghiệp: phải >= 100 triệu
+                        const numericValue = parseFloat(value) || 0;
+                        if (numericValue > 0 && numericValue < 100000000) {
+                            // Nếu < 100 triệu, set về 100 triệu
+                            value = '100000000';
+                        }
+                    }
+                }
+                
+                if (value) {
+                    value = parseInt(value).toLocaleString('vi-VN');
+                    e.target.value = value;
+                } else {
+                    e.target.value = '';
+                }
+                
+                // Kiểm tra lại CIC và tài sản đảm bảo
+                if (maLoaiVaySelect && maLoaiVaySelect.value) {
+                    const maLoaiVay = parseInt(maLoaiVaySelect.value);
+                    const loaiVay = loaiKhoanVaysData.find(l => l.maLoaiVay === maLoaiVay);
+                    if (loaiVay) {
+                        // Chỉ kiểm tra CIC cho vay khởi nghiệp
+                        if (loaiVay.maLoaiVayCode === 'STARTUP_CN') {
+                            if (!isCicGood()) {
+                                showCicError();
+                            } else {
+                                hideCicError();
+                            }
+                        } else {
+                            // Các loại vay khác: ẩn thông báo lỗi CIC
+                            hideCicError();
+                        }
+                        
+                        if (customerType === 'CaNhan' && loaiVay.maLoaiVayCode !== 'STUDENT_CN') {
+                            checkTaiSanDamBaoRequirement(loaiVay);
+                        }
+                    }
+                }
+                
+                // Tự động tính số tiền trả hàng tháng
+                calculateMonthlyPayment();
+            });
+            
+            // Ngăn nhập ký tự không phải số
+            input.addEventListener('keypress', function(e) {
+                const char = String.fromCharCode(e.which);
+                if (!/[0-9]/.test(char)) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Validate khi blur
+            input.addEventListener('blur', function(e) {
+                const numericValue = parseFloat(e.target.value.replace(/[^\d]/g, '')) || 0;
+                
+                // Kiểm tra loại vay khởi nghiệp
+                const maLoaiVaySelect = document.querySelector('select[name="MaLoaiVay"]');
+                if (maLoaiVaySelect && maLoaiVaySelect.value) {
+                    const maLoaiVay = parseInt(maLoaiVaySelect.value);
+                    const loaiVay = loaiKhoanVaysData.find(l => l.maLoaiVay === maLoaiVay);
+                    
+                    if (loaiVay && loaiVay.maLoaiVayCode === 'STARTUP_CN') {
+                        // Vay khởi nghiệp: phải >= 100 triệu
+                        if (numericValue > 0 && numericValue < 100000000) {
+                            e.target.value = '100.000.000';
+                            const errorSpan = this.parentElement?.parentElement?.querySelector('.text-danger');
+                            if (errorSpan) {
+                                errorSpan.textContent = 'Số tiền vay tối thiểu cho vay khởi nghiệp là 100 triệu VNĐ.';
+                                errorSpan.style.display = 'block';
+                            }
+                        } else {
+                            const errorSpan = this.parentElement?.parentElement?.querySelector('.text-danger');
+                            if (errorSpan) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } else if (numericValue > 0) {
+                        // Valid cho các loại vay khác
+                        const errorSpan = this.parentElement?.parentElement?.querySelector('.text-danger');
+                        if (errorSpan) {
+                            errorSpan.textContent = '';
+                            errorSpan.style.display = 'none';
+                        }
+                    }
+                } else if (numericValue > 0) {
+                    // Valid
+                    const errorSpan = this.parentElement?.parentElement?.querySelector('.text-danger');
+                    if (errorSpan) {
+                        errorSpan.textContent = '';
+                        errorSpan.style.display = 'none';
+                    }
+                }
+            });
+        });
+        
+        // Khởi tạo tiêu đề hồ sơ đính kèm khi trang load
+        // Sử dụng setTimeout để đảm bảo DOM đã sẵn sàng
+        setTimeout(function() {
+            const maLoaiVaySelect = document.querySelector('select[name="MaLoaiVay"]');
+            if (maLoaiVaySelect && maLoaiVaySelect.value) {
+                const maLoaiVay = parseInt(maLoaiVaySelect.value);
+                const loaiVay = loaiKhoanVaysData.find(l => l.maLoaiVay === maLoaiVay);
+                if (loaiVay) {
+                    updateDocumentCategories(loaiVay.maLoaiVayCode);
+                }
+            }
+        }, 100);
+        
+        // Format số tiền trả hàng tháng (readonly, chỉ hiển thị)
+        function formatCurrency(value) {
+            if (!value || value === 0) return '';
+            return parseInt(value).toLocaleString('vi-VN');
+        }
+        
+        // Tính số tiền trả hàng tháng tự động
+        function calculateMonthlyPayment() {
+            const soTienVayInput = document.querySelector('.money-input');
+            const laiSuatInput = document.querySelector('input[name="LaiSuat"]');
+            const kyHanVayInput = document.querySelector('input[name="KyHanVay"]');
+            const hinhThucTraNoSelect = document.getElementById('hinhThucTraNo');
+            const soTienTraHangThangDisplay = document.getElementById('soTienTraHangThang');
+            const soTienTraHangThangHidden = document.getElementById('soTienTraHangThangHidden');
+            
+            if (!soTienVayInput || !laiSuatInput || !kyHanVayInput || !hinhThucTraNoSelect) {
+                return;
+            }
+            
+            // Lấy giá trị số thuần (bỏ dấu chấm)
+            const soTienVayStr = soTienVayInput.value.replace(/[^\d]/g, '');
+            const laiSuatStr = laiSuatInput.value;
+            const kyHanVayStr = kyHanVayInput.value;
+            const hinhThucTraNo = hinhThucTraNoSelect.value;
+            
+            if (!soTienVayStr || !laiSuatStr || !kyHanVayStr || !hinhThucTraNo) {
+                if (soTienTraHangThangDisplay) {
+                    soTienTraHangThangDisplay.value = '';
+                }
+                if (soTienTraHangThangHidden) {
+                    soTienTraHangThangHidden.value = '';
+                }
+                return;
+            }
+            
+            const soTienVay = parseFloat(soTienVayStr);
+            const laiSuat = parseFloat(laiSuatStr);
+            const kyHanVay = parseInt(kyHanVayStr);
+            
+            if (isNaN(soTienVay) || isNaN(laiSuat) || isNaN(kyHanVay) || soTienVay <= 0 || kyHanVay <= 0) {
+                if (soTienTraHangThangDisplay) {
+                    soTienTraHangThangDisplay.value = '';
+                }
+                if (soTienTraHangThangHidden) {
+                    soTienTraHangThangHidden.value = '';
+                }
+                return;
+            }
+            
+            let soTienTraHangThang = 0;
+            let displayText = '';
+            
+            if (hinhThucTraNo === 'Trả góp đều') {
+                // Công thức tính trả góp đều: PMT = PV * (r(1+r)^n) / ((1+r)^n - 1)
+                // PV = Số tiền vay, r = Lãi suất tháng, n = Số kỳ
+                const laiSuatThang = laiSuat / 100 / 12;
+                
+                if (laiSuatThang > 0) {
+                    const tuSo = laiSuatThang * Math.pow(1 + laiSuatThang, kyHanVay);
+                    const mauSo = Math.pow(1 + laiSuatThang, kyHanVay) - 1;
+                    soTienTraHangThang = soTienVay * (tuSo / mauSo);
+                } else {
+                    soTienTraHangThang = soTienVay / kyHanVay;
+                }
+                displayText = formatCurrency(Math.round(soTienTraHangThang));
+            } else if (hinhThucTraNo === 'Trả gốc cuối kỳ') {
+                // Chỉ trả lãi hàng tháng, gốc trả cuối kỳ
+                const laiSuatThang = laiSuat / 100 / 12;
+                soTienTraHangThang = soTienVay * laiSuatThang;
+                displayText = formatCurrency(Math.round(soTienTraHangThang));
+            } else if (hinhThucTraNo === 'Trả gốc lãi cuối kỳ') {
+                // Trả toàn bộ gốc và lãi cuối kỳ, hàng tháng = 0
+                // Tính tổng tiền trả cuối kỳ để hiển thị
+                const laiSuatThang = laiSuat / 100 / 12;
+                const tongLai = soTienVay * laiSuatThang * kyHanVay;
+                const tongTraCuoiKy = soTienVay + tongLai;
+                soTienTraHangThang = 0;
+                displayText = '0 (Trả cuối kỳ: ' + formatCurrency(Math.round(tongTraCuoiKy)) + ')';
+            }
+            
+            // Hiển thị với format
+            if (soTienTraHangThangDisplay) {
+                soTienTraHangThangDisplay.value = displayText;
+            }
+            // Lưu giá trị số thuần vào hidden field
+            if (soTienTraHangThangHidden) {
+                soTienTraHangThangHidden.value = Math.round(soTienTraHangThang).toString();
+            }
+        }
+        
+        // Lắng nghe thay đổi từ các trường liên quan
+        const laiSuatInput = document.querySelector('input[name="LaiSuat"]');
+        const kyHanVayInput = document.querySelector('input[name="KyHanVay"]');
+        const hinhThucTraNoSelect = document.getElementById('hinhThucTraNo');
+        
+        // Ngăn nhập số âm cho lãi suất
+        if (laiSuatInput) {
+            laiSuatInput.addEventListener('input', function(e) {
+                let value = parseFloat(e.target.value);
+                if (isNaN(value)) {
+                    return;
+                }
+                if (value < 0) {
+                    e.target.value = '0';
+                    value = 0;
+                }
+                if (value > 100) {
+                    e.target.value = '100';
+                    value = 100;
+                }
+                // Xóa thông báo lỗi nếu có
+                const errorSpan = this.parentElement?.parentElement?.querySelector('.text-danger');
+                if (errorSpan && value >= 0 && value <= 100) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+                calculateMonthlyPayment();
+            });
+            laiSuatInput.addEventListener('keydown', function(e) {
+                // Ngăn nhập dấu trừ, e, E, +
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                    e.preventDefault();
+                }
+            });
+            laiSuatInput.addEventListener('blur', function(e) {
+                const value = parseFloat(e.target.value);
+                const errorSpan = this.parentElement?.parentElement?.querySelector('.text-danger');
+                if (isNaN(value) || value < 0) {
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Vui lòng nhập lãi suất hợp lệ (từ 0 đến 100%).';
+                        errorSpan.style.display = 'block';
+                    }
+                } else if (value > 100) {
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Lãi suất không được vượt quá 100%.';
+                        errorSpan.style.display = 'block';
+                    }
+                } else if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+            });
+            laiSuatInput.addEventListener('change', calculateMonthlyPayment);
+        }
+        
+        // Ngăn nhập số âm cho thời hạn vay
+        if (kyHanVayInput) {
+            kyHanVayInput.addEventListener('input', function(e) {
+                let value = parseInt(e.target.value);
+                if (isNaN(value)) {
+                    return;
+                }
+                if (value < 1) {
+                    e.target.value = '1';
+                    value = 1;
+                }
+                // Xóa thông báo lỗi nếu có
+                const errorSpan = this.parentElement?.querySelector('.text-danger');
+                if (errorSpan && value >= 1) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+                calculateMonthlyPayment();
+            });
+            kyHanVayInput.addEventListener('keydown', function(e) {
+                // Ngăn nhập dấu trừ, e, E, +
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '.') {
+                    e.preventDefault();
+                }
+            });
+            kyHanVayInput.addEventListener('blur', function(e) {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 1) {
+                    const errorSpan = this.parentElement?.querySelector('.text-danger');
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Vui lòng nhập số tháng hợp lệ (lớn hơn 0).';
+                        errorSpan.style.display = 'block';
+                    }
+                } else {
+                    const errorSpan = this.parentElement?.querySelector('.text-danger');
+                    if (errorSpan) {
+                        errorSpan.textContent = '';
+                        errorSpan.style.display = 'none';
+                    }
+                }
+            });
+            kyHanVayInput.addEventListener('change', calculateMonthlyPayment);
+        }
+        
+        if (hinhThucTraNoSelect) {
+            hinhThucTraNoSelect.addEventListener('change', calculateMonthlyPayment);
+        }
+        
+        // Format số tiền và tính toán ngay khi trang load (nếu có giá trị sẵn - cho Edit mode)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                formatMoneyOnLoad();
+                setTimeout(() => {
+                    calculateMonthlyPayment();
+                    loadExistingTaiSan(); // Load tài sản đảm bảo đã có
+                    loadExistingFiles(); // Load file đính kèm đã có
+                }, 300);
+            });
+        } else {
+            formatMoneyOnLoad();
+            setTimeout(() => {
+                calculateMonthlyPayment();
+                loadExistingTaiSan(); // Load tài sản đảm bảo đã có
+                loadExistingFiles(); // Load file đính kèm đã có
+            }, 300);
+        }
+        
+        // Hàm load tài sản đảm bảo đã có (khi Edit mode)
+        function loadExistingTaiSan() {
+            if (!existingKhoanVayTaiSans || !Array.isArray(existingKhoanVayTaiSans) || existingKhoanVayTaiSans.length === 0) {
+                console.log('No existing collateral assets to load');
+                return;
+            }
+            
+            console.log('Loading existing collateral assets:', existingKhoanVayTaiSans.length);
+            
+            const taiSanList = document.getElementById('taiSanList');
+            if (!taiSanList) {
+                console.warn('taiSanList element not found');
+                return;
+            }
+            
+            // Xóa nội dung cũ
+            taiSanList.innerHTML = '';
+            taiSanCounter = 0;
+            
+            // Load từng tài sản
+            existingKhoanVayTaiSans.forEach((taiSan, index) => {
+                // Xác định loại tài sản - dựa trên tên loại tài sản (Đất, Xe, Khác)
+                const loaiTaiSanTen = taiSan.loaiTaiSan || '';
+                const isKhac = loaiTaiSanTen === 'Khác';
+                const isDat = loaiTaiSanTen === 'Đất';
+                const isXe = loaiTaiSanTen === 'Xe';
+                
+                // Lấy dữ liệu từ các trường mới trong database
+                // Ưu tiên lấy từ trường mới, nếu không có thì lấy từ tenGoi
+                let tenTaiSanKhac = taiSan.tenTaiSanKhac || (isKhac ? taiSan.tenGoi : '') || '';
+                let donViTaiSan = taiSan.donVi || '';
+                let soLuongTaiSan = taiSan.soLuong !== null && taiSan.soLuong !== undefined ? taiSan.soLuong : '';
+                
+                // Xác định hiển thị
+                const showKhacFields = isKhac;
+                // Hiển thị trường số lượng nếu là loại Khác VÀ có đơn vị
+                const showSoLuong = isKhac && donViTaiSan;
+                
+                // Format giá trị định giá
+                const giaTriDinhGia = taiSan.giaTriDinhGia || 0;
+                const giaTriFormatted = Math.floor(giaTriDinhGia).toLocaleString('vi-VN');
+                
+                // Format tỷ lệ thế chấp
+                const tyLeTheChap = taiSan.tyLeTheChap || 0;
+                const tyLeFormatted = tyLeTheChap.toFixed(2);
+                
+                // Format ngày thế chấp
+                const ngayTheChap = taiSan.ngayTheChap || new Date().toISOString().split('T')[0];
+                
+                console.log('Loading asset:', { 
+                    index, 
+                    loaiTaiSanTen, 
+                    isKhac,
+                    isDat,
+                    isXe,
+                    tenTaiSanKhac, 
+                    donViTaiSan, 
+                    soLuongTaiSan,
+                    showKhacFields,
+                    showSoLuong
+                });
+                
+                // Tạo HTML cho tài sản
+                const taiSanHtml = `
+                    <div class="tai-san-item" data-index="${taiSanCounter}">
+                        <div class="tai-san-header">
+                            <h4>Tài sản đảm bảo #${taiSanCounter + 1}</h4>
+                            <button type="button" class="btn-remove-taisan" onclick="removeTaiSan(${taiSanCounter})">×</button>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Loại tài sản <span class="required">*</span></label>
+                                <select name="LoaiTaiSan" class="form-control tai-san-loai-select" data-index="${taiSanCounter}" required>
+                                    <option value="">-- Chọn loại tài sản --</option>
+                                    <option value="Dat" ${isDat ? 'selected' : ''}>Đất</option>
+                                    <option value="Xe" ${isXe ? 'selected' : ''}>Xe</option>
+                                    <option value="Khac" ${isKhac ? 'selected' : ''}>Khác</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="taiSanKhacGroup_${taiSanCounter}" style="display: ${showKhacFields ? 'block' : 'none'};">
+                                <label class="form-label">Tên tài sản (Khác) <span class="required">*</span></label>
+                                <input type="text" name="TenTaiSanKhac" class="form-control" placeholder="Nhập tên tài sản" value="${tenTaiSanKhac}" />
+                            </div>
+                            <div class="form-group" id="taiSanDonViGroup_${taiSanCounter}" style="display: ${showKhacFields ? 'block' : 'none'};">
+                                <label class="form-label">Đơn vị <span class="required">*</span></label>
+                                <select name="DonViTaiSan" class="form-control tai-san-donvi-select" data-index="${taiSanCounter}">
+                                    <option value="">-- Chọn đơn vị --</option>
+                                    <option value="SoLuong" ${donViTaiSan === 'SoLuong' ? 'selected' : ''}>Số lượng</option>
+                                    <option value="KhoiLuong" ${donViTaiSan === 'KhoiLuong' ? 'selected' : ''}>Khối lượng</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="taiSanSoLuongGroup_${taiSanCounter}" style="display: ${showSoLuong ? 'block' : 'none'};">
+                                <label class="form-label" id="taiSanSoLuongLabel_${taiSanCounter}">${donViTaiSan === 'SoLuong' ? 'Số lượng' : donViTaiSan === 'KhoiLuong' ? 'Khối lượng' : 'Số lượng'} <span class="required">*</span></label>
+                                <input type="number" name="SoLuongTaiSan" step="0.01" class="form-control" placeholder="Nhập số lượng/khối lượng" min="0" value="${soLuongTaiSan}" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Giá trị định giá (VNĐ) <span class="required">*</span></label>
+                                <input type="text" name="GiaTriDinhGia" class="form-control money-input-taisan" data-index="${taiSanCounter}" placeholder="Nhập giá trị" value="${giaTriFormatted}" required />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tỷ lệ thế chấp (%) <span class="required">*</span></label>
+                                <input type="number" name="TyLeTheChap" step="0.01" class="form-control ty-le-the-chap-input" data-index="${taiSanCounter}" placeholder="Tự động tính" value="${tyLeFormatted}" readonly required />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Ngày thế chấp</label>
+                                <input type="date" name="NgayTheChap" class="form-control" value="${ngayTheChap}" />
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                taiSanList.insertAdjacentHTML('beforeend', taiSanHtml);
+                
+                // Setup event listeners cho tài sản này
+                setTimeout(() => {
+                    setupTaiSanEventListeners(taiSanCounter);
+                }, 50);
+                
+                taiSanCounter++;
+            });
+            
+            // Hiển thị section tài sản nếu có
+            const taiSanSection = document.getElementById('taiSanSection');
+            const coTaiSanCheckbox = document.getElementById('coTaiSanDamBao');
+            if (taiSanSection && coTaiSanCheckbox && existingKhoanVayTaiSans.length > 0) {
+                coTaiSanCheckbox.checked = true;
+                taiSanSection.style.display = 'block';
+            }
+            
+            console.log('Loaded', taiSanCounter, 'collateral assets');
+        }
+        
+        // Setup event listeners cho tài sản
+        function setupTaiSanEventListeners(index) {
+            // Xử lý khi chọn loại tài sản
+            const selectElement = document.querySelector(`.tai-san-loai-select[data-index="${index}"]`);
+            if (selectElement) {
+                selectElement.addEventListener('change', function() {
+                    const idx = this.getAttribute('data-index');
+                    const khacGroup = document.getElementById(`taiSanKhacGroup_${idx}`);
+                    const donViGroup = document.getElementById(`taiSanDonViGroup_${idx}`);
+                    const soLuongGroup = document.getElementById(`taiSanSoLuongGroup_${idx}`);
+                    
+                    if (this.value === 'Khac') {
+                        if (khacGroup) khacGroup.style.display = 'block';
+                        if (donViGroup) donViGroup.style.display = 'block';
+                    } else {
+                        if (khacGroup) khacGroup.style.display = 'none';
+                        if (donViGroup) donViGroup.style.display = 'none';
+                        if (soLuongGroup) soLuongGroup.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Xử lý khi chọn đơn vị
+            const donViSelect = document.querySelector(`.tai-san-donvi-select[data-index="${index}"]`);
+            if (donViSelect) {
+                donViSelect.addEventListener('change', function() {
+                    const idx = this.getAttribute('data-index');
+                    const soLuongGroup = document.getElementById(`taiSanSoLuongGroup_${idx}`);
+                    const soLuongLabel = document.getElementById(`taiSanSoLuongLabel_${idx}`);
+                    
+                    if (this.value && soLuongGroup) {
+                        soLuongGroup.style.display = 'block';
+                        if (soLuongLabel) {
+                            soLuongLabel.textContent = (this.value === 'SoLuong' ? 'Số lượng' : 'Khối lượng') + ' *';
+                        }
+                    } else if (soLuongGroup) {
+                        soLuongGroup.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Format money input cho giá trị định giá
+            const giaTriInput = document.querySelector(`.money-input-taisan[data-index="${index}"]`);
+            if (giaTriInput) {
+                giaTriInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/[^\d]/g, '');
+                    if (value) {
+                        value = parseInt(value).toLocaleString('vi-VN');
+                        e.target.value = value;
+                    }
+                });
+                
+                giaTriInput.addEventListener('blur', function() {
+                    const idx = this.getAttribute('data-index');
+                    calculateTyLeTheChap(idx);
+                });
+            }
+        }
+        
+        // Hàm load file đính kèm đã có (khi Edit mode)
+        function loadExistingFiles() {
+            if (!existingFiles || !Array.isArray(existingFiles) || existingFiles.length === 0) {
+                console.log('No existing files to load');
+                return;
+            }
+            
+            console.log('Loading existing files:', existingFiles.length);
+            
+            // Group files by category
+            const filesByCategory = {
+                'PhapLy': [],
+                'TaiChinh': [],
+                'TaiSanDamBao': []
+            };
+            
+            existingFiles.forEach(file => {
+                if (filesByCategory[file.loaiFile]) {
+                    filesByCategory[file.loaiFile].push(file);
+                }
+            });
+            
+            // Load files cho từng category
+            Object.keys(filesByCategory).forEach(loaiFile => {
+                const files = filesByCategory[loaiFile];
+                if (files.length === 0) return;
+                
+                let categoryId = '';
+                if (loaiFile === 'PhapLy') categoryId = 'legalFiles';
+                else if (loaiFile === 'TaiChinh') categoryId = 'financialFiles';
+                else if (loaiFile === 'TaiSanDamBao') categoryId = 'collateralFiles';
+                
+                const fileList = document.getElementById(categoryId);
+                if (!fileList) {
+                    console.warn(`File list not found for category: ${categoryId}`);
+                    return;
+                }
+                
+                // Xóa "Chưa có tệp nào"
+                const noFilesMsg = fileList.querySelector('.no-files');
+                if (noFilesMsg) noFilesMsg.remove();
+                
+                files.forEach((file, index) => {
+                    const fileSizeKB = file.kichThuoc ? (file.kichThuoc / 1024).toFixed(2) : 0;
+                    const fileSizeMB = file.kichThuoc ? (file.kichThuoc / (1024 * 1024)).toFixed(2) : 0;
+                    const fileSizeText = fileSizeMB >= 1 ? `${fileSizeMB} MB` : `${fileSizeKB} KB`;
+                    
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item existing-file';
+                    fileItem.dataset.fileId = file.maFile;
+                    fileItem.dataset.loaiFile = file.loaiFile;
+                    fileItem.innerHTML = `
+                        <div class="file-info">
+                            <span class="file-name">${escapeHtml(file.tenFile)}</span>
+                            <span class="file-size">${fileSizeText}</span>
+                            <span class="file-status">(Đã lưu)</span>
+                        </div>
+                        <div class="file-actions">
+                            <a href="${escapeHtml(file.duongDan)}" target="_blank" class="btn-view-file">Xem</a>
+                            <button type="button" class="btn-remove-file" onclick="removeExistingFile(${file.maFile}, '${categoryId}')">Xóa</button>
+                        </div>
+                    `;
+                    
+                    fileList.appendChild(fileItem);
+                });
+            });
+            
+            console.log('Loaded', existingFiles.length, 'existing files');
+        }
+        
+        // Hàm xóa file đã lưu (đánh dấu để xóa khi save)
+        const filesToDelete = [];
+        function removeExistingFile(fileId, categoryId) {
+            if (confirm('Bạn có chắc chắn muốn xóa file này không?')) {
+                filesToDelete.push(fileId);
+                const fileItem = document.querySelector(`.existing-file[data-file-id="${fileId}"]`);
+                if (fileItem) {
+                    fileItem.remove();
+                }
+                
+                // Nếu không còn file nào, hiển thị "Chưa có tệp nào"
+                const fileList = document.getElementById(categoryId);
+                if (fileList && fileList.querySelectorAll('.file-item').length === 0) {
+                    const noFilesMsg = document.createElement('div');
+                    noFilesMsg.className = 'no-files';
+                    noFilesMsg.textContent = 'Chưa có tệp nào được tải lên';
+                    fileList.appendChild(noFilesMsg);
+                }
+            }
+        }
+        
+        // Hàm escape HTML để tránh XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+        }
+
+        // Lưu giá trị số thực vào hidden field trước khi submit
+        document.getElementById('loanForm')?.addEventListener('submit', function(e) {
+            // Xử lý số tiền vay (bỏ dấu chấm)
+            const moneyInput = document.querySelector('.money-input');
+            if (moneyInput) {
+                const numericValue = moneyInput.value.replace(/[^\d]/g, '');
+                if (!numericValue || parseFloat(numericValue) <= 0) {
+                    e.preventDefault();
+                    const errorSpan = moneyInput.parentElement?.parentElement?.querySelector('.text-danger');
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Vui lòng nhập số tiền vay hợp lệ.';
+                        errorSpan.style.display = 'block';
+                    }
+                    moneyInput.focus();
+                    return false;
+                }
+                moneyInput.value = numericValue;
+            }
+            
+            // Xử lý số tiền trả hàng tháng (đảm bảo hidden field có giá trị số thuần)
+            const soTienTraHangThangDisplay = document.getElementById('soTienTraHangThang');
+            const soTienTraHangThangHidden = document.getElementById('soTienTraHangThangHidden');
+            if (soTienTraHangThangDisplay && soTienTraHangThangHidden) {
+                const numericValue = soTienTraHangThangDisplay.value.replace(/[^\d]/g, '');
+                soTienTraHangThangHidden.value = numericValue || '0';
+            }
+            
+            // Xử lý checkbox CoTaiSanDamBao
+            const checkbox = document.getElementById('coTaiSanDamBao');
+            const hiddenInput = checkbox?.previousElementSibling;
+            if (checkbox && hiddenInput) {
+                if (checkbox.checked) {
+                    hiddenInput.value = 'true';
+                    
+                    // Validate tổng tỷ lệ thế chấp trước khi submit
+                    const allTyLeInputs = document.querySelectorAll('.ty-le-the-chap-input');
+                    let totalTyLe = 0;
+                    
+                    allTyLeInputs.forEach(input => {
+                        const value = parseFloat(input.value);
+                        if (!isNaN(value)) {
+                            totalTyLe += value;
+                        }
+                    });
+                    
+                    if (totalTyLe < 30) {
+                        e.preventDefault();
+                        showNotification(`Tổng tỷ lệ thế chấp hiện tại: ${totalTyLe.toFixed(2)}%. Tổng tỷ lệ thế chấp phải lớn hơn 30%.`, 'error');
+                        return false;
+                    }
+                } else {
+                    hiddenInput.value = 'false';
+                }
+            }
+        });
+
+        // Hiển thị/ẩn phần tài sản đảm bảo
+        document.getElementById('coTaiSanDamBao')?.addEventListener('change', function() {
+            const taiSanSection = document.getElementById('taiSanSection');
+            if (taiSanSection) {
+                taiSanSection.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+
+        // Thêm tài sản đảm bảo
+        function addTaiSan() {
+            const taiSanList = document.getElementById('taiSanList');
+            if (!taiSanList) return;
+
+            const taiSanHtml = `
+                <div class="tai-san-item" data-index="${taiSanCounter}">
+                    <div class="tai-san-header">
+                        <h4>Tài sản đảm bảo #${taiSanCounter + 1}</h4>
+                        <button type="button" class="btn-remove-taisan" onclick="removeTaiSan(${taiSanCounter})">×</button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Loại tài sản <span class="required">*</span></label>
+                            <select name="LoaiTaiSan" class="form-control tai-san-loai-select" data-index="${taiSanCounter}" required>
+                                <option value="">-- Chọn loại tài sản --</option>
+                                <option value="Dat">Đất</option>
+                                <option value="Xe">Xe</option>
+                                <option value="Khac">Khác</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="taiSanKhacGroup_${taiSanCounter}" style="display: none;">
+                            <label class="form-label">Tên tài sản (Khác) <span class="required">*</span></label>
+                            <input type="text" name="TenTaiSanKhac" class="form-control tai-san-tenkhac-input" data-index="${taiSanCounter}" placeholder="Nhập tên tài sản" />
+                        </div>
+                        <div class="form-group" id="taiSanDonViGroup_${taiSanCounter}" style="display: none;">
+                            <label class="form-label">Đơn vị <span class="required">*</span></label>
+                            <select name="DonViTaiSan" class="form-control tai-san-donvi-select" data-index="${taiSanCounter}">
+                                <option value="">-- Chọn đơn vị --</option>
+                                <option value="SoLuong">Số lượng</option>
+                                <option value="KhoiLuong">Khối lượng</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="taiSanSoLuongGroup_${taiSanCounter}" style="display: none;">
+                            <label class="form-label" id="taiSanSoLuongLabel_${taiSanCounter}">Số lượng <span class="required">*</span></label>
+                            <input type="number" name="SoLuongTaiSan" step="0.01" class="form-control tai-san-soluong-input" data-index="${taiSanCounter}" placeholder="Nhập số lượng/khối lượng" min="0" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Giá trị định giá (VNĐ) <span class="required">*</span></label>
+                            <input type="text" name="GiaTriDinhGia" class="form-control money-input-taisan" data-index="${taiSanCounter}" placeholder="Nhập giá trị" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tỷ lệ thế chấp (%) <span class="required">*</span></label>
+                            <input type="number" name="TyLeTheChap" step="0.01" class="form-control ty-le-the-chap-input" data-index="${taiSanCounter}" placeholder="Tự động tính" readonly required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ngày thế chấp</label>
+                            <input type="date" name="NgayTheChap" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            taiSanList.insertAdjacentHTML('beforeend', taiSanHtml);
+            
+            // Xử lý khi chọn loại tài sản
+            const selectElement = document.querySelector(`.tai-san-loai-select[data-index="${taiSanCounter}"]`);
+            if (selectElement) {
+                selectElement.addEventListener('change', function() {
+                    const index = this.getAttribute('data-index');
+                    const khacGroup = document.getElementById(`taiSanKhacGroup_${index}`);
+                    const donViGroup = document.getElementById(`taiSanDonViGroup_${index}`);
+                    const soLuongGroup = document.getElementById(`taiSanSoLuongGroup_${index}`);
+                    
+                    if (this.value === 'Khac') {
+                        if (khacGroup) khacGroup.style.display = 'block';
+                        if (donViGroup) donViGroup.style.display = 'block';
+                    } else {
+                        if (khacGroup) khacGroup.style.display = 'none';
+                        if (donViGroup) donViGroup.style.display = 'none';
+                        if (soLuongGroup) soLuongGroup.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Xử lý khi chọn đơn vị (hiển thị input số lượng/khối lượng)
+            const donViSelect = document.querySelector(`.tai-san-donvi-select[data-index="${taiSanCounter}"]`);
+            if (donViSelect) {
+                donViSelect.addEventListener('change', function() {
+                    const index = this.getAttribute('data-index');
+                    const soLuongGroup = document.getElementById(`taiSanSoLuongGroup_${index}`);
+                    const soLuongLabel = document.getElementById(`taiSanSoLuongLabel_${index}`);
+                    
+                    if (this.value === 'SoLuong') {
+                        if (soLuongGroup) {
+                            soLuongGroup.style.display = 'block';
+                            if (soLuongLabel) soLuongLabel.innerHTML = 'Số lượng <span class="required">*</span>';
+                        }
+                    } else if (this.value === 'KhoiLuong') {
+                        if (soLuongGroup) {
+                            soLuongGroup.style.display = 'block';
+                            if (soLuongLabel) soLuongLabel.innerHTML = 'Khối lượng <span class="required">*</span>';
+                        }
+                    } else {
+                        if (soLuongGroup) soLuongGroup.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Xử lý tính tỷ lệ thế chấp tự động
+            const giaTriInput = document.querySelector(`input[name="GiaTriDinhGia"][data-index="${taiSanCounter}"]`);
+            if (giaTriInput) {
+                giaTriInput.addEventListener('input', function() {
+                    calculateTyLeTheChap(this.getAttribute('data-index'));
+                });
+                giaTriInput.addEventListener('blur', function() {
+                    calculateTyLeTheChap(this.getAttribute('data-index'));
+                });
+            }
+            
+            taiSanCounter++;
+
+            // Format số tiền cho input mới
+            document.querySelectorAll('.money-input-taisan').forEach(input => {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/[^\d]/g, '');
+                    if (value) {
+                        value = parseInt(value).toLocaleString('vi-VN');
+                        e.target.value = value;
+                    }
+                });
+            });
+
+            // Auto-fill giá trị định giá khi chọn tài sản
+            document.querySelectorAll('.tai-san-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const option = this.options[this.selectedIndex];
+                    const giatri = option.getAttribute('data-giatri');
+                    const giatriInput = this.closest('.tai-san-item').querySelector('.money-input-taisan');
+                    if (giatriInput && giatri) {
+                        giatriInput.value = parseInt(giatri).toLocaleString('vi-VN');
+                    }
+                });
+            });
+        }
+
+        // Xóa tài sản đảm bảo
+        function removeTaiSan(index) {
+            const item = document.querySelector(`.tai-san-item[data-index="${index}"]`);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        // Hàm hiển thị thông báo custom (thay thế alert)
+        function showNotification(message, type = 'info') {
+            // Xóa notification cũ nếu có
+            const existingNotification = document.getElementById('customNotification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            // Tạo modal overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'customNotification';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.2s ease;
+            `;
+            
+            // Tạo modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 2rem;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: slideUp 0.3s ease;
+            `;
+            
+            // Icon
+            const icon = document.createElement('div');
+            icon.style.cssText = `
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background: ${type === 'success' ? '#d1fae5' : type === 'error' ? '#fee2e2' : '#dbeafe'};
+                color: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 1.5rem;
+                font-size: 2rem;
+            `;
+            icon.innerHTML = type === 'success' ? '✓' : type === 'error' ? '⚠' : 'ℹ';
+            
+            // Message
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                text-align: center;
+                font-size: 1.1rem;
+                color: #1a1a1a;
+                margin-bottom: 1.5rem;
+                line-height: 1.6;
+            `;
+            messageDiv.textContent = message;
+            
+            // Button
+            const button = document.createElement('button');
+            button.textContent = 'Đóng';
+            button.style.cssText = `
+                width: 100%;
+                padding: 0.75rem;
+                background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            `;
+            button.onmouseover = function() {
+                this.style.opacity = '0.9';
+            };
+            button.onmouseout = function() {
+                this.style.opacity = '1';
+            };
+            button.onclick = function() {
+                overlay.remove();
+            };
+            
+            // Thêm vào modal
+            modal.appendChild(icon);
+            modal.appendChild(messageDiv);
+            modal.appendChild(button);
+            overlay.appendChild(modal);
+            
+            // Thêm vào body
+            document.body.appendChild(overlay);
+            
+            // Click outside để đóng
+            overlay.onclick = function(e) {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            };
+            
+            // Đóng sau 5 giây nếu là success/info
+            if (type !== 'error') {
+                setTimeout(() => {
+                    if (overlay.parentElement) {
+                        overlay.remove();
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Xử lý validation messages từ ModelState (chuyển sang tiếng Việt)
+        @if (!ViewData.ModelState.IsValid)
+        {
+            var errorMessages = new List<string>();
+            foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                var errorMsg = modelError.ErrorMessage;
+                // Chuyển đổi một số thông báo lỗi phổ biến sang tiếng Việt
+                if (errorMsg.Contains("must be a number") || errorMsg.Contains("is not valid"))
+                {
+                    if (errorMsg.Contains("SoTienTraHangThang"))
+                        errorMessages.Add("Số tiền trả hàng tháng không hợp lệ.");
+                    else if (errorMsg.Contains("SoTienVay"))
+                        errorMessages.Add("Số tiền vay không hợp lệ.");
+                    else
+                        errorMessages.Add("Giá trị nhập vào không hợp lệ.");
+                }
+                else if (errorMsg.Contains("required") || errorMsg.Contains("required field"))
+                {
+                    errorMessages.Add("Vui lòng điền đầy đủ thông tin bắt buộc.");
+                }
+                else if (!string.IsNullOrEmpty(errorMsg))
+                {
+                    errorMessages.Add(errorMsg);
+                }
+            }
+            if (errorMessages.Any())
+            {
+                <text>
+                document.addEventListener('DOMContentLoaded', function() {
+                    showNotification('@string.Join("\\n", errorMessages)', 'error');
+                });
+                </text>
+            }
+        }
+        
+        // Tính tỷ lệ thế chấp tự động
+        function calculateTyLeTheChap(index) {
+            const giaTriInput = document.querySelector(`input[name="GiaTriDinhGia"][data-index="${index}"]`);
+            const tyLeInput = document.querySelector(`input[name="TyLeTheChap"][data-index="${index}"]`);
+            const soTienVayInput = document.querySelector('.money-input');
+            
+            if (!giaTriInput || !tyLeInput || !soTienVayInput) return;
+            
+            const giaTriStr = giaTriInput.value.replace(/[^\d]/g, '');
+            const soTienVayStr = soTienVayInput.value.replace(/[^\d]/g, '');
+            
+            if (giaTriStr && soTienVayStr) {
+                const giaTri = parseFloat(giaTriStr);
+                const soTienVay = parseFloat(soTienVayStr);
+                
+                if (soTienVay > 0) {
+                    const tyLe = (giaTri / soTienVay) * 100;
+                    tyLeInput.value = tyLe.toFixed(2);
+                    
+                    // Validate tổng tỷ lệ thế chấp
+                    validateTotalTyLeTheChap();
+                }
+            }
+        }
+
+        // Validate tổng tỷ lệ thế chấp phải > 30%
+        function validateTotalTyLeTheChap() {
+            const allTyLeInputs = document.querySelectorAll('.ty-le-the-chap-input');
+            let totalTyLe = 0;
+            
+            allTyLeInputs.forEach(input => {
+                const value = parseFloat(input.value);
+                if (!isNaN(value)) {
+                    totalTyLe += value;
+                }
+            });
+            
+            // Hiển thị thông báo nếu tổng < 30%
+            const validationMsg = document.getElementById('tyLeTheChapValidation');
+            if (totalTyLe < 30) {
+                if (!validationMsg) {
+                    const msg = document.createElement('div');
+                    msg.id = 'tyLeTheChapValidation';
+                    msg.className = 'text-danger';
+                    msg.style.marginTop = '10px';
+                    msg.textContent = `Tổng tỷ lệ thế chấp hiện tại: ${totalTyLe.toFixed(2)}%. Tổng tỷ lệ thế chấp phải lớn hơn 30%.`;
+                    
+                    const taiSanSection = document.getElementById('taiSanSection');
+                    if (taiSanSection) {
+                        taiSanSection.appendChild(msg);
+                    }
+                } else {
+                    validationMsg.textContent = `Tổng tỷ lệ thế chấp hiện tại: ${totalTyLe.toFixed(2)}%. Tổng tỷ lệ thế chấp phải lớn hơn 30%.`;
+                }
+            } else {
+                if (validationMsg) {
+                    validationMsg.remove();
+                }
+            }
+        }
+
+        // Lắng nghe thay đổi số tiền vay để tính lại tỷ lệ thế chấp
+        const soTienVayInput = document.querySelector('.money-input');
+        if (soTienVayInput) {
+            soTienVayInput.addEventListener('input', function() {
+                document.querySelectorAll('.ty-le-the-chap-input').forEach((input, index) => {
+                    const dataIndex = input.getAttribute('data-index');
+                    if (dataIndex) {
+                        calculateTyLeTheChap(dataIndex);
+                    }
+                });
+            });
+        }
+
+        // File upload handling - Quản lý file theo category
+        const fileCategories = {
+            'legalFiles': 'PhapLy',
+            'financialFiles': 'TaiChinh',
+            'collateralFiles': 'TaiSanDamBao'
+        };
+        
+        const uploadedFiles = {
+            'PhapLy': [],
+            'TaiChinh': [],
+            'TaiSanDamBao': []
+        };
+
+        // Tạo input file riêng cho mỗi category
+        function createFileInputForCategory(categoryId, loaiFile) {
+            // Tìm div chứa file-list (có id là categoryId)
+            const fileListDiv = document.getElementById(categoryId);
+            if (!fileListDiv) {
+                console.warn(`File list div not found: ${categoryId}`);
+                return;
+            }
+
+            // Tìm doc-category parent để tìm button
+            const docCategory = fileListDiv.closest('.doc-category');
+            if (!docCategory) {
+                console.warn(`Doc category parent not found for: ${categoryId}`);
+                return;
+            }
+
+            // Kiểm tra xem file input đã tồn tại chưa
+            let fileInput = document.getElementById(`fileInput_${loaiFile}`);
+            if (!fileInput) {
+                fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.multiple = true;
+                fileInput.accept = '.pdf,.jpg,.jpeg,.png,.docx';
+                fileInput.style.display = 'none';
+                fileInput.id = `fileInput_${loaiFile}`;
+                fileInput.name = `${loaiFile}Files`;
+                
+                fileInput.addEventListener('change', function(e) {
+                    handleFileSelection(e.target.files, loaiFile, categoryId);
+                });
+                
+                // Thêm vào fileListDiv
+                fileListDiv.appendChild(fileInput);
+            }
+            
+            // Tìm button trong cùng doc-category
+            const addButton = docCategory.querySelector('.btn-add-file');
+            if (addButton) {
+                // Xóa onclick inline nếu có
+                addButton.removeAttribute('onclick');
+                
+                // Xóa event listener cũ nếu có
+                if (addButton._fileClickHandler) {
+                    addButton.removeEventListener('click', addButton._fileClickHandler);
+                }
+                
+                // Tạo event handler mới
+                addButton._fileClickHandler = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (fileInput) {
+                        fileInput.click();
+                    } else {
+                        console.error(`File input not found for category: ${categoryId}`);
+                    }
+                };
+                
+                addButton.addEventListener('click', addButton._fileClickHandler);
+                console.log(`File input and button bound for category: ${categoryId}`);
+            } else {
+                console.warn(`Button not found in doc-category for: ${categoryId}`);
+            }
+        }
+
+        function handleFileSelection(files, loaiFile, categoryId) {
+            // categoryId là id của div .file-list (legalFiles, financialFiles, collateralFiles)
+            const fileList = document.getElementById(categoryId);
+            if (!fileList) {
+                console.error(`File list not found: ${categoryId}`);
+                return;
+            }
+
+            // Xóa "Chưa có tệp nào"
+            const noFilesMsg = fileList.querySelector('.no-files');
+            if (noFilesMsg) noFilesMsg.remove();
+
+            Array.from(files).forEach((file, fileIndex) => {
+                // Validate file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    showNotification(`File "${file.name}" vượt quá 10MB. Vui lòng chọn file nhỏ hơn.`, 'error');
+                    return;
+                }
+
+                // Validate file type
+                const allowedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.docx'];
+                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedTypes.includes(fileExt)) {
+                    showNotification(`File "${file.name}" không đúng định dạng. Chỉ chấp nhận: PDF, JPG, PNG, DOCX.`, 'error');
+                    return;
+                }
+
+                // Lưu file vào array
+                uploadedFiles[loaiFile].push(file);
+                const currentIndex = uploadedFiles[loaiFile].length - 1;
+
+                // Tạo file item để hiển thị
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.setAttribute('data-file-index', currentIndex);
+                fileItem.setAttribute('data-loai-file', loaiFile);
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <span class="file-name">${file.name}</span>
+                        <span class="file-size">${formatFileSize(file.size)}</span>
+                    </div>
+                    <button type="button" class="btn-remove-file" onclick="removeFile('${loaiFile}', ${currentIndex}, this)">×</button>
+                `;
+                fileList.appendChild(fileItem);
+                
+                console.log(`File added: ${file.name} to category ${categoryId}`);
+            });
+        }
+
+        function removeFile(loaiFile, index, button) {
+            // Xóa file khỏi array
+            uploadedFiles[loaiFile].splice(index, 1);
+            
+            // Xóa file item khỏi DOM
+            const fileItem = button.closest('.file-item');
+            if (fileItem) {
+                fileItem.remove();
+            }
+            
+            // Tìm file list div (categoryId)
+            const categoryId = Object.keys(fileCategories).find(k => fileCategories[k] === loaiFile);
+            if (categoryId) {
+                const fileList = document.getElementById(categoryId);
+                if (fileList && fileList.children.length === 0) {
+                    fileList.innerHTML = '<div class="no-files">Chưa có tệp nào được tải lên</div>';
+                }
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Khởi tạo file inputs cho từng category - Phải chạy sau khi DOM ready
+        $(document).ready(function() {
+            // Đợi một chút để đảm bảo DOM đã render xong
+            setTimeout(function() {
+                Object.keys(fileCategories).forEach(categoryId => {
+                    createFileInputForCategory(categoryId, fileCategories[categoryId]);
+                });
+
+                // Xóa file input cũ (nếu có)
+                const oldFileInput = document.getElementById('fileInput');
+                if (oldFileInput) {
+                    oldFileInput.remove();
+                }
+                
+                console.log('File inputs initialized');
+            }, 100);
+        });
+        
+        // Hàm hiển thị modal gửi duyệt hồ sơ
+        function showSubmitModal() {
+            // Validate tất cả các trường bắt buộc trước
+            const form = document.getElementById('loanForm');
+            if (!form) {
+                showNotification('Không tìm thấy form.', 'error');
+                return;
+            }
+            
+            // Kiểm tra các trường bắt buộc
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            let firstInvalidField = null;
+            
+            requiredFields.forEach(field => {
+                // Bỏ qua các field trong phần tài sản đảm bảo nếu phần đó bị ẩn
+                const taiSanSection = document.getElementById('taiSanSection');
+                if (taiSanSection && taiSanSection.style.display === 'none' && taiSanSection.contains(field)) {
+                    return;
+                }
+                
+                // Bỏ qua các field trong phần bị ẩn
+                if (field.offsetParent === null) {
+                    return;
+                }
+                
+                if (!field.value || field.value.trim() === '') {
+                    isValid = false;
+                    if (!firstInvalidField) {
+                        firstInvalidField = field;
+                    }
+                    // Hiển thị thông báo lỗi inline
+                    let errorSpan = field.parentElement?.parentElement?.querySelector('.text-danger');
+                    if (!errorSpan) {
+                        errorSpan = document.createElement('span');
+                        errorSpan.className = 'text-danger';
+                        errorSpan.style.display = 'block';
+                        field.parentElement?.appendChild(errorSpan);
+                    }
+                    errorSpan.textContent = 'Trường này là bắt buộc.';
+                }
+            });
+            
+            // Kiểm tra số tiền vay
+            const soTienVayInput = document.querySelector('.money-input');
+            if (soTienVayInput) {
+                const soTienVayStr = soTienVayInput.value.replace(/[^\d]/g, '');
+                if (!soTienVayStr || parseFloat(soTienVayStr) <= 0) {
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = soTienVayInput;
+                    showNotification('Vui lòng nhập số tiền vay hợp lệ.', 'error');
+                    return;
+                }
+            }
+            
+            // Kiểm tra lãi suất
+            const laiSuatInput = document.querySelector('input[name="LaiSuat"]');
+            if (laiSuatInput) {
+                const laiSuat = parseFloat(laiSuatInput.value);
+                if (isNaN(laiSuat) || laiSuat < 0 || laiSuat > 100) {
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = laiSuatInput;
+                    showNotification('Lãi suất phải từ 0 đến 100%.', 'error');
+                    return;
+                }
+            }
+            
+            // Kiểm tra kỳ hạn vay
+            const kyHanVayInput = document.querySelector('input[name="KyHanVay"]');
+            if (kyHanVayInput) {
+                const kyHanVay = parseInt(kyHanVayInput.value);
+                if (isNaN(kyHanVay) || kyHanVay <= 0) {
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = kyHanVayInput;
+                    showNotification('Kỳ hạn vay phải lớn hơn 0.', 'error');
+                    return;
+                }
+            }
+            
+            // Kiểm tra tài sản đảm bảo nếu có
+            const coTaiSanCheckbox = document.getElementById('coTaiSanDamBao');
+            if (coTaiSanCheckbox && coTaiSanCheckbox.checked) {
+                const allTyLeInputs = document.querySelectorAll('.ty-le-the-chap-input');
+                let totalTyLe = 0;
+                let hasValidTaiSan = false;
+                
+                allTyLeInputs.forEach(input => {
+                    const value = parseFloat(input.value);
+                    if (!isNaN(value)) {
+                        totalTyLe += value;
+                        hasValidTaiSan = true;
+                    }
+                });
+                
+                if (!hasValidTaiSan) {
+                    isValid = false;
+                    showNotification('Vui lòng nhập đầy đủ thông tin tài sản đảm bảo.', 'error');
+                    return;
+                }
+                
+                if (totalTyLe < 30) {
+                    isValid = false;
+                    showNotification(`Tổng tỷ lệ thế chấp hiện tại: ${totalTyLe.toFixed(2)}%. Tổng tỷ lệ thế chấp phải lớn hơn 30%.`, 'error');
+                    return;
+                }
+            }
+            
+            if (!isValid) {
+                if (firstInvalidField) {
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalidField.focus();
+                }
+                return;
+            }
+            
+            // Nếu tất cả hợp lệ, hiển thị modal
+            const modal = document.getElementById('submitModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                // Reset phân loại
+                document.querySelectorAll('input[name="phanLoai"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                // Load ghi chú nhân viên đã lưu trước đó (nếu có)
+                document.getElementById('ghiChuChuyenVien').value = savedGhiChuNhanVien || '';
+            }
+        }
+        
+        // Hàm đóng modal
+        function closeSubmitModal() {
+            const modal = document.getElementById('submitModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Hàm submit hồ sơ
+        async function submitLoan() {
+            const phanLoaiRadio = document.querySelector('input[name="phanLoai"]:checked');
+            if (!phanLoaiRadio) {
+                showNotification('Vui lòng chọn phân loại hồ sơ.', 'error');
+                return;
+            }
+            
+            // Kiểm tra ghi chú hồ sơ phải trống trước khi gửi
+            const ghiChuHoSoTextarea = document.getElementById('GhiChu');
+            if (ghiChuHoSoTextarea) {
+                const ghiChuHoSo = ghiChuHoSoTextarea.value.trim();
+                if (ghiChuHoSo.length > 0) {
+                    showNotification('Ghi chú hồ sơ phải trống trước khi gửi. Vui lòng xóa nội dung ghi chú và lưu nháp lại.', 'error');
+                    closeSubmitModal();
+                    return;
+                }
+            }
+            
+            const phanLoai = phanLoaiRadio.value;
+            const ghiChu = document.getElementById('ghiChuChuyenVien').value.trim();
+            const maKhoanVayInput = document.getElementById('maKhoanVay');
+            const maKhoanVay = maKhoanVayInput ? parseInt(maKhoanVayInput.value) : 0;
+            
+            if (maKhoanVay === 0) {
+                showNotification('Vui lòng lưu nháp trước khi gửi duyệt.', 'error');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('maKhoanVay', maKhoanVay.toString());
+                formData.append('phanLoai', phanLoai);
+                if (ghiChu) {
+                    formData.append('ghiChu', ghiChu);
+                }
+                const tokenInputSubmit = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenInputSubmit) {
+                    formData.append('__RequestVerificationToken', tokenInputSubmit.value);
+                }
+                
+                const response = await fetch('@Url.Action("SubmitForApproval", "Loan")', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeSubmitModal();
+                    showNotification('Đã gửi hồ sơ thành công!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '@Url.Action("SelectCustomer", "Loan")';
+                    }, 2000);
+                } else {
+                    showNotification(result.message || 'Có lỗi xảy ra khi gửi hồ sơ.', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting loan:', error);
+                showNotification('Có lỗi xảy ra khi gửi hồ sơ. Vui lòng thử lại.', 'error');
+            }
+        }
+        
+        // Xử lý validation messages từ jQuery Validation để hiển thị bằng showNotification
+        if (typeof $ !== 'undefined' && typeof $.validator !== 'undefined') {
+            // Override phương thức showErrors để hiển thị bằng custom notification
+            const originalShowErrors = $.validator.prototype.showErrors;
+            $.validator.prototype.showErrors = function(errors) {
+                // Gọi phương thức gốc để hiển thị inline errors
+                originalShowErrors.call(this, errors);
+                
+                // Thu thập tất cả các lỗi
+                const errorMessages = [];
+                for (const field in errors) {
+                    if (errors.hasOwnProperty(field)) {
+                        errorMessages.push(errors[field]);
+                    }
+                }
+                
+                // Hiển thị notification nếu có lỗi
+                if (errorMessages.length > 0) {
+                    showNotification(errorMessages.join('\\n'), 'error');
+                }
+            };
+        }
+        
+        // Hàm lưu nháp
+        async function saveDraft(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const form = document.getElementById('loanForm');
+            if (!form) {
+                showNotification('Không tìm thấy form.', 'error');
+                return false;
+            }
+            
+            // Ngăn scroll khi có lỗi validation
+            let originalScrollIntoView;
+            if (typeof Element !== 'undefined' && Element.prototype.scrollIntoView) {
+                originalScrollIntoView = Element.prototype.scrollIntoView;
+                Element.prototype.scrollIntoView = function() { 
+                    // Disable scroll
+                };
+            }
+            
+            try {
+                // Remove required từ các field tài sản khi lưu nháp (vì có thể bị ẩn)
+                const taiSanInputs = form.querySelectorAll('#taiSanSection [required]');
+                const removedRequired = [];
+                taiSanInputs.forEach(input => {
+                    if (input.hasAttribute('required')) {
+                        input.removeAttribute('required');
+                        removedRequired.push(input);
+                    }
+                });
+                
+                // Validate cơ bản (chỉ các field không bị ẩn)
+                const formData = new FormData(form);
+                
+                // Thu thập dữ liệu tài sản đảm bảo từ các input trong form (kể cả khi bị ẩn)
+                const taiSanSection = document.getElementById('taiSanSection');
+                const taiSanItems = taiSanSection ? taiSanSection.querySelectorAll('.tai-san-item') : [];
+                
+                console.log('Tìm thấy', taiSanItems.length, 'tài sản đảm bảo');
+                
+                // Xóa các giá trị tài sản cũ từ FormData (nếu có)
+                formData.delete('LoaiTaiSan');
+                formData.delete('TenTaiSanKhac');
+                formData.delete('DonViTaiSan');
+                formData.delete('SoLuongTaiSan');
+                formData.delete('GiaTriDinhGia');
+                formData.delete('TyLeTheChap');
+                formData.delete('NgayTheChap');
+                
+                taiSanItems.forEach((item, index) => {
+                    if (!item) return;
+                    
+                    const loaiSelect = item.querySelector('select[name="LoaiTaiSan"]');
+                    const tenTaiSanKhacInput = item.querySelector('input[name="TenTaiSanKhac"]');
+                    const donViSelect = item.querySelector('select[name="DonViTaiSan"]');
+                    const soLuongInput = item.querySelector('input[name="SoLuongTaiSan"]');
+                    const giaTriInput = item.querySelector('input[name="GiaTriDinhGia"]');
+                    const tyLeInput = item.querySelector('input[name="TyLeTheChap"]');
+                    const ngayTheChapInput = item.querySelector('input[name="NgayTheChap"]');
+                    
+                    const loaiTaiSan = (loaiSelect && loaiSelect.value) ? loaiSelect.value : '';
+                    // Luôn lấy giá trị (kể cả rỗng) để đảm bảo index đúng
+                    const tenTaiSanKhac = tenTaiSanKhacInput ? (tenTaiSanKhacInput.value || '') : '';
+                    const donViTaiSan = donViSelect ? (donViSelect.value || '') : '';
+                    const soLuongTaiSan = soLuongInput ? (soLuongInput.value || '') : '';
+                    let giaTriDinhGia = giaTriInput ? (giaTriInput.value || '') : '';
+                    const tyLeTheChap = tyLeInput ? (tyLeInput.value || '') : '';
+                    const ngayTheChap = ngayTheChapInput ? (ngayTheChapInput.value || '') : '';
+                    
+                    console.log(`Tài sản ${index + 1}:`, { loaiTaiSan, tenTaiSanKhac, donViTaiSan, soLuongTaiSan, giaTriDinhGia, tyLeTheChap, ngayTheChap });
+                    
+                    if (giaTriDinhGia) {
+                        giaTriDinhGia = giaTriDinhGia.replace(/[^\d]/g, '');
+                    }
+                    
+                    if (loaiTaiSan) {
+                        // Sử dụng append để thêm từng giá trị riêng biệt, giữ index đúng
+                        formData.append('LoaiTaiSan', loaiTaiSan);
+                        formData.append('TenTaiSanKhac', tenTaiSanKhac);
+                        formData.append('DonViTaiSan', donViTaiSan);
+                        formData.append('SoLuongTaiSan', soLuongTaiSan);
+                        formData.append('GiaTriDinhGia', giaTriDinhGia);
+                        formData.append('TyLeTheChap', tyLeTheChap);
+                        formData.append('NgayTheChap', ngayTheChap);
+                    }
+                });
+                
+                console.log('Dữ liệu tài sản đảm bảo sẽ gửi:', {
+                    loaiTaiSans: formData.getAll('LoaiTaiSan'),
+                    tenTaiSanKhacs: formData.getAll('TenTaiSanKhac'),
+                    donViTaiSans: formData.getAll('DonViTaiSan'),
+                    soLuongTaiSans: formData.getAll('SoLuongTaiSan'),
+                    giaTriDinhGias: formData.getAll('GiaTriDinhGia'),
+                    tyLeTheChaps: formData.getAll('TyLeTheChap')
+                });
+                
+                // Lấy MaKhoanVay từ form để đảm bảo update đúng hồ sơ khi edit
+                const maKhoanVayInputForSave = document.getElementById('maKhoanVay');
+                if (maKhoanVayInputForSave) {
+                    const maKhoanVayValue = maKhoanVayInputForSave.value || '0';
+                    formData.set('MaKhoanVay', maKhoanVayValue);
+                    console.log('MaKhoanVay from form:', maKhoanVayValue);
+                } else {
+                    console.warn('Không tìm thấy input MaKhoanVay trong form');
+                }
+                
+                // Thêm danh sách file cần xóa (nếu có)
+                if (filesToDelete.length > 0) {
+                    formData.set('FilesToDelete', filesToDelete.join(','));
+                    console.log('Files to delete:', filesToDelete);
+                }
+                
+                // Thêm các file đã upload vào FormData
+                console.log('Uploaded files object:', uploadedFiles);
+                for (const [loaiFile, files] of Object.entries(uploadedFiles)) {
+                    if (files && Array.isArray(files) && files.length > 0) {
+                        console.log(`Adding ${files.length} files for category: ${loaiFile}`);
+                        files.forEach((file, index) => {
+                            if (file && file instanceof File) {
+                                const fieldName = loaiFile === 'PhapLy' ? 'PhapLyFiles' : 
+                                                 loaiFile === 'TaiChinh' ? 'TaiChinhFiles' : 
+                                                 'TaiSanDamBaoFiles';
+                                formData.append(fieldName, file);
+                                console.log(`Added file: ${file.name} to ${fieldName}`);
+                            } else {
+                                console.warn(`Invalid file object at index ${index} for ${loaiFile}:`, file);
+                            }
+                        });
+                    } else {
+                        console.log(`No files for category: ${loaiFile}`);
+                    }
+                }
+                
+                // Disable button để tránh double submit
+                const btn = document.querySelector('.btn-save-draft');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span>Đang lưu...</span>';
+                }
+                
+                const tokenInputForFetch = document.querySelector('input[name="__RequestVerificationToken"]');
+                const tokenValue = tokenInputForFetch ? tokenInputForFetch.value : '';
+                
+                const response = await fetch('@Url.Action("SaveDraft", "Loan")', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Restore required attributes
+                removedRequired.forEach(input => {
+                    input.setAttribute('required', 'required');
+                });
+                
+                // Restore scrollIntoView
+                if (originalScrollIntoView) {
+                    Element.prototype.scrollIntoView = originalScrollIntoView;
+                }
+                
+                if (result.success) {
+                    // Cập nhật MaKhoanVay nếu là hồ sơ mới
+                    const maKhoanVayInput = document.getElementById('maKhoanVay');
+                    if (result.loanId && maKhoanVayInput && (!maKhoanVayInput.value || maKhoanVayInput.value === '0')) {
+                        maKhoanVayInput.value = result.loanId;
+                    }
+                    
+                    showNotification('Đã lưu nháp thành công!', 'success');
+                } else {
+                    showNotification(result.message || 'Có lỗi xảy ra khi lưu nháp.', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving draft:', error);
+                showNotification('Có lỗi xảy ra khi lưu nháp. Vui lòng thử lại.', 'error');
+            } finally {
+                // Enable button lại
+                const btn = document.querySelector('.btn-save-draft');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16L21 8V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M17 21V13H7V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M7 3V8H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Lưu nháp
+                    `;
+                }
+                
+                // Restore scrollIntoView
+                if (originalScrollIntoView) {
+                    Element.prototype.scrollIntoView = originalScrollIntoView;
+                }
+            }
+        }
+    </script>
+}
+
+<style>
+.loan-create-container {
+    padding: 24px 32px;
+    max-width: 1600px;
+    margin: 0 auto;
+    background: #f5f5f5;
+    min-height: 100vh;
+}
+
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    color: #666;
+}
+
+.breadcrumb-nav a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.breadcrumb-nav a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-nav span {
+    color: #999;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.page-description {
+    font-size: 16px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-save-draft,
+.btn-submit {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.btn-save-draft {
+    background: white;
+    color: #1a1a1a;
+    border: 1px solid #e5e7eb;
+}
+
+.btn-save-draft:hover {
+    background: #f9fafb;
+    border-color: #3b82f6;
+}
+
+.btn-submit {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-save-draft svg,
+.btn-submit svg {
+    width: 18px;
+    height: 18px;
+}
+
+.loan-create-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+}
+
+.loan-form-panel {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.form-section {
+    margin-bottom: 40px;
+}
+
+.section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.section-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.section-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.section-title-group {
+    flex: 1;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.section-subtitle {
+    font-size: 14px;
+    color: #666;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.form-control {
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.money-input-readonly {
+    background-color: #f9fafb;
+    cursor: not-allowed;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.money-input-readonly:focus {
+    border-color: #d1d5db;
+    box-shadow: none;
+    background-color: #f9fafb;
+}
+
+.text-muted {
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.input-with-suffix {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-suffix .form-control {
+    flex: 1;
+    padding-right: 60px;
+}
+
+.input-suffix {
+    position: absolute;
+    right: 14px;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.file-upload-area {
+    border: 2px dashed #e5e7eb;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 24px;
+    background: #f9fafb;
+}
+
+.file-upload-area:hover {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.upload-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    color: #3b82f6;
+}
+
+.upload-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.upload-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.upload-hint {
+    font-size: 13px;
+    color: #666;
+}
+
+.document-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.doc-category {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.category-header {
+    margin-bottom: 16px;
+}
+
+.category-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.file-list {
+    min-height: 60px;
+    margin-bottom: 12px;
+}
+
+.no-files {
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+    padding: 20px;
+}
+
+.btn-add-file {
+    padding: 8px 16px;
+    background: white;
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-file:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.file-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transform: translateY(-2px);
+}
+
+.file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.file-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.file-size {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.file-status {
+    font-size: 11px;
+    color: #22c55e;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.file-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+}
+
+.file-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-view-file {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.btn-view-file:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-remove-file {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-file:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+.tai-san-item {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.tai-san-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.tai-san-header h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.btn-remove-taisan {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-remove-taisan:hover {
+    background: #dc2626;
+}
+
+.btn-add-taisan {
+    padding: 12px 24px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-add-taisan:hover {
+    background: #2563eb;
+}
+
+.btn-add-taisan svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Right Panel Styles */
+.customer-info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.btn-change-customer {
+    padding: 6px 12px;
+    background: #f3f4f6;
+    color: #1a1a1a;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-change-customer:hover {
+    background: #e5e7eb;
+}
+
+.customer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.customer-avatar-section {
+    text-align: center;
+}
+
+.customer-avatar-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.customer-avatar-placeholder-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 600;
+    margin: 0 auto;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.customer-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.customer-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-align: center;
+}
+
+.customer-type-badge {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+}
+
+.vip-badge {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.customer-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.customer-info-row:last-of-type {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 13px;
+    color: #1a1a1a;
+    font-weight: 600;
+    text-align: right;
+    flex: 1;
+    margin-left: 12px;
+}
+
+.customer-detail-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid #e5e7eb;
+}
+
+.detail-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 12px;
+}
+
+.cic-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #f9fafb;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.cic-label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.cic-badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.cic-good {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.cic-unknown {
+    background: #f3f4f6;
+    color: #666;
+}
+
+.btn-view-history {
+    width: 100%;
+    padding: 10px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: block;
+    margin-top: 12px;
+}
+
+.btn-view-history:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.cic-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.cic-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cic-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.cic-info-row.full-width {
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cic-info-row:last-of-type {
+    border-bottom: none;
+}
+
+.cic-info-label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.cic-info-value {
+    font-size: 13px;
+    color: #1a1a1a;
+    font-weight: 600;
+    text-align: right;
+}
+
+.cic-info-row.full-width .cic-info-value {
+    text-align: left;
+}
+
+.workflow-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.workflow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.workflow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    position: relative;
+    padding-left: 8px;
+}
+
+.workflow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 23px;
+    top: 40px;
+    width: 2px;
+    height: calc(100% + 4px);
+    background: #e5e7eb;
+}
+
+.workflow-step.active:not(:last-child)::after {
+    background: #3b82f6;
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.workflow-step.active .step-icon {
+    background: #3b82f6;
+    color: white;
+}
+
+.step-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.step-content {
+    flex: 1;
+    padding-top: 4px;
+}
+
+.step-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.step-status {
+    font-size: 12px;
+    color: #666;
+}
+
+.active-status {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.support-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    text-align: center;
+}
+
+.support-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    color: #3b82f6;
+}
+
+.support-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.support-text {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.support-link {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.support-link:hover {
+    text-decoration: underline;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.text-danger {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 4px;
+    display: block;
+}
+
+@@media (max-width: 1400px) {
+    .loan-create-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .customer-info-panel {
+        order: -1;
+    }
+}
+
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: #f3f4f6;
+    color: #1a1a1a;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    background: #f3f4f6;
+    color: #374151;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+    background: #e5e7eb;
+}
+
+.btn-submit-modal {
+    padding: 0.75rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-submit-modal:hover {
+    background: #2563eb;
+}
+
+.classification-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.classification-card {
+    position: relative;
+    cursor: pointer;
+}
+
+.classification-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.card-content {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s;
+    background: white;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.classification-card:nth-child(1) .card-content {
+    border-color: #10b981;
+}
+
+.classification-card:nth-child(2) .card-content {
+    border-color: #f59e0b;
+}
+
+.classification-card:nth-child(3) .card-content {
+    border-color: #ef4444;
+}
+
+.classification-card input[type="radio"]:checked + .card-content {
+    border-width: 3px;
+    background: #f9fafb;
+}
+
+.classification-card:nth-child(1) input[type="radio"]:checked + .card-content {
+    background: #d1fae5;
+    border-color: #10b981;
+}
+
+.classification-card:nth-child(2) input[type="radio"]:checked + .card-content {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.classification-card:nth-child(3) input[type="radio"]:checked + .card-content {
+    background: #fee2e2;
+    border-color: #ef4444;
+}
+
+.classification-card:hover .card-content {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.classification-icon {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.classification-card:nth-child(1) .classification-icon {
+    color: #10b981;
+}
+
+.classification-card:nth-child(2) .classification-icon {
+    color: #f59e0b;
+}
+
+.classification-card:nth-child(3) .classification-icon {
+    color: #ef4444;
+}
+
+.classification-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+</style>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -122,4 +122,19 @@ public partial class NguoiDung
 
     [InverseProperty("NguoiTaoNavigation")]
     public virtual ICollection<TieuChiDanhGiaRuiRo> TieuChiDanhGiaRuiRos { get; set; } = new List<TieuChiDanhGiaRuiRo>();
+
+    [InverseProperty("NguoiTaoNavigation")]
+    public virtual ICollection<ThongTinCic> ThongTinCicNguoiTaoNavigations { get; set; } = new List<ThongTinCic>();
+
+    [InverseProperty("NguoiCapNhatNavigation")]
+    public virtual ICollection<ThongTinCic> ThongTinCicNguoiCapNhatNavigations { get; set; } = new List<ThongTinCic>();
+
+    [InverseProperty("NguoiTraCuuNavigation")]
+    public virtual ICollection<ThongTinCic> ThongTinCicNguoiTraCuuNavigations { get; set; } = new List<ThongTinCic>();
+
+    [InverseProperty("NguoiTraCuuNavigation")]
+    public virtual ICollection<LichSuTraCuuCic> LichSuTraCuuCicNguoiTraCuuNavigations { get; set; } = new List<LichSuTraCuuCic>();
+
+    [InverseProperty("NguoiTaoNavigation")]
+    public virtual ICollection<HoSoVayFileDinhKem> HoSoVayFileDinhKems { get; set; } = new List<HoSoVayFileDinhKem>();
 }

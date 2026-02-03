@@ -46,16 +46,16 @@ namespace QuanLyRuiRoTinDung.Services
                         && k.TrangThaiKhoanVay != "Từ chối")
                     .CountAsync();
 
-                // 3. Hồ sơ chờ phê duyệt (Đã duyệt nhưng chưa giải ngân, hoặc Đang xử lý)
+                // 3. Hồ sơ chờ phê duyệt (Nhân viên đã gửi đi, đang chờ duyệt)
                 viewModel.ChoPheDuyet = await _context.KhoanVays
                     .Where(k => k.MaNhanVienTinDung == maNhanVien 
-                        && (k.TrangThaiKhoanVay == "Đã duyệt" || k.TrangThaiKhoanVay == "Đang xử lý"))
+                        && k.TrangThaiKhoanVay == "Chờ duyệt")
                     .CountAsync();
 
-                // 4. Yêu cầu bổ sung (Chờ bổ sung)
+                // 4. Tổng hồ sơ nháp (của cả khách hàng cá nhân và doanh nghiệp)
                 viewModel.YeuCauBoSung = await _context.KhoanVays
                     .Where(k => k.MaNhanVienTinDung == maNhanVien 
-                        && k.TrangThaiKhoanVay == "Chờ bổ sung")
+                        && k.TrangThaiKhoanVay == "Nháp")
                     .CountAsync();
 
                 // 5. Hồ sơ cần xử lý hôm nay (các hồ sơ đang xử lý, chờ bổ sung, đã duyệt)

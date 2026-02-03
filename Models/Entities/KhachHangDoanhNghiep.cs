@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -34,6 +34,10 @@ public partial class KhachHangDoanhNghiep
     [StringLength(100)]
     public string? NguoiDaiDienPhapLuat { get; set; }
 
+    [Column("SoCCCD_NguoiDaiDienPhapLuat")]
+    [StringLength(20)]
+    public string? SoCccdNguoiDaiDienPhapLuat { get; set; }
+
     [StringLength(20)]
     public string? SoDienThoai { get; set; }
 
@@ -49,8 +53,36 @@ public partial class KhachHangDoanhNghiep
     [StringLength(50)]
     public string? Quan { get; set; }
 
+    [StringLength(50)]
+    public string? Phuong { get; set; }
+
     [StringLength(100)]
     public string? LinhVucKinhDoanh { get; set; }
+
+    [StringLength(500)]
+    public string? AnhGiayPhepKinhDoanh { get; set; }
+
+    [StringLength(500)]
+    public string? AnhBaoCaoTaichinh { get; set; }
+
+    [StringLength(500)]
+    public string? AnhGiayToLienQuanKhac { get; set; }
+
+    [Column("CCCDTruoc")]
+    [StringLength(500)]
+    public string? CccdTruoc { get; set; }
+
+    [Column("CCCDSau")]
+    [StringLength(500)]
+    public string? CccdSau { get; set; }
+
+    [StringLength(500)]
+    public string? AnhNguoiDaiDien { get; set; }
+
+    public DateOnly? NgaySinh { get; set; }
+
+    [StringLength(10)]
+    public string? GioiTinh { get; set; }
 
     public int? SoLuongNhanVien { get; set; }
 

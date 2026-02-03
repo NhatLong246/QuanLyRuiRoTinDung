@@ -1,0 +1,665 @@
+@model QuanLyRuiRoTinDung.Models.Entities.KhachHangDoanhNghiep
+@{
+    ViewData["Title"] = "Tạo khách hàng doanh nghiệp";
+    Layout = "_DashboardLayout";
+}
+
+<div class="form-container">
+    <div class="form-header">
+        <div class="header-top">
+            <a href="@Url.Action("Index", "Customer")" class="back-button" title="Quay lại">
+                <img src="~/asset/image/icons8-back-arrow-80.png" alt="Quay lại" />
+            </a>
+            <div class="header-content">
+                <h1 class="form-title">Tạo khách hàng doanh nghiệp</h1>
+                <p class="form-subtitle">Điền thông tin doanh nghiệp</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success success-notification">
+            <div class="success-icon">✓</div>
+            <div class="success-message">
+                <strong>Thành công!</strong>
+                <p>@TempData["SuccessMessage"]</p>
+            </div>
+        </div>
+    }
+
+    <form asp-action="CreateDoanhNghiep" method="post" enctype="multipart/form-data" class="customer-form">
+        @Html.AntiForgeryToken()
+        
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger validation-summary"></div>
+        }
+
+        <!-- 1. Thông tin doanh nghiệp -->
+        <div class="form-section">
+            <h3 class="section-title">Thông tin doanh nghiệp</h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label asp-for="TenCongTy" class="form-label">Tên công ty <span class="required">*</span></label>
+                    <input asp-for="TenCongTy" class="form-control" required data-val="true" data-val-required="Tên công ty là bắt buộc." />
+                    <span asp-validation-for="TenCongTy" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="MaSoThue" class="form-label">Mã số thuế <span class="required">*</span></label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="maSoThueInput"
+                           name="MaSoThueDisplay"
+                           placeholder="0123456789-001" 
+                           maxlength="14" />
+                    <input type="hidden" asp-for="MaSoThue" id="maSoThueHidden" name="MaSoThue" />
+                    <small class="form-text text-muted">Định dạng: 10 chữ số + 3 chữ số phụ (VD: 0123456789-001)</small>
+                    <span id="maSoThueError" class="text-danger validation-error" style="display: none;"></span>
+                    <span asp-validation-for="MaSoThue" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="SoGiayPhepKinhDoanh" class="form-label">Tên giấy phép kinh doanh</label>
+                    <input asp-for="SoGiayPhepKinhDoanh" class="form-control" />
+                    <span asp-validation-for="SoGiayPhepKinhDoanh" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NgayCapGiayPhep" class="form-label">Ngày cấp giấy phép</label>
+                    <input asp-for="NgayCapGiayPhep" 
+                           type="date" 
+                           class="form-control" 
+                           id="ngayCapGiayPhep"
+                           max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="NgayCapGiayPhep" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NgayDangKy" class="form-label">Ngày đăng ký thành lập</label>
+                    <input asp-for="NgayDangKy" 
+                           type="date" 
+                           class="form-control" 
+                           id="ngayDangKy"
+                           max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="NgayDangKy" class="text-danger validation-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Thông tin người đại diện pháp luật -->
+        <div class="form-section">
+            <h3 class="section-title">Thông tin người đại diện pháp luật</h3>
+            <div class="form-grid form-grid-single-row">
+                <div class="form-group">
+                    <label asp-for="NguoiDaiDienPhapLuat" class="form-label">Người đại diện pháp luật</label>
+                    <input asp-for="NguoiDaiDienPhapLuat" class="form-control" />
+                    <span asp-validation-for="NguoiDaiDienPhapLuat" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-label">Số CCCD người đại diện <span class="required">*</span></label>
+                    <input asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-control" maxlength="12" pattern="\d{12}" placeholder="Nhập 12 chữ số" required data-val="true" data-val-required="Số CCCD người đại diện là bắt buộc." />
+                    <span asp-validation-for="SoCccdNguoiDaiDienPhapLuat" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NgaySinh" class="form-label">Ngày sinh người đại diện</label>
+                    <input asp-for="NgaySinh" type="date" class="form-control" id="ngaySinhNguoiDaiDien" max="@DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="NgaySinh" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="GioiTinh" class="form-label">Giới tính người đại diện</label>
+                    <select asp-for="GioiTinh" class="form-control">
+                        <option value="">-- Chọn --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                    <span asp-validation-for="GioiTinh" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Thông tin kinh doanh -->
+        <div class="form-section">
+            <h3 class="section-title">Thông tin kinh doanh</h3>
+            <div class="form-grid form-grid-business">
+                <div class="form-group">
+                    <label asp-for="LinhVucKinhDoanh" class="form-label">Lĩnh vực kinh doanh</label>
+                    <input asp-for="LinhVucKinhDoanh" class="form-control" />
+                    <span asp-validation-for="LinhVucKinhDoanh" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="SoLuongNhanVien" class="form-label">Số lượng nhân viên</label>
+                    <input asp-for="SoLuongNhanVien" type="number" class="form-control" id="soLuongNhanVien" min="0" step="1" />
+                    <span asp-validation-for="SoLuongNhanVien" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="DoanhThuHangNam" class="form-label">Doanh thu hàng năm (VNĐ)</label>
+                    <input type="text" class="form-control" id="doanhThuInput" placeholder="Nhập số tiền (VD: 1000000000)" />
+                    <small class="form-text text-muted">Số tiền sẽ được hiển thị với định dạng: 1.000.000.000</small>
+                    <input type="hidden" asp-for="DoanhThuHangNam" id="doanhThuHidden" />
+                    <span asp-validation-for="DoanhThuHangNam" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="TongTaiSan" class="form-label">Tổng tài sản (VNĐ)</label>
+                    <input type="text" class="form-control" id="tongTaiSanInput" placeholder="Nhập số tiền (VD: 5000000000)" />
+                    <small class="form-text text-muted">Số tiền sẽ được hiển thị với định dạng: 5.000.000.000</small>
+                    <input type="hidden" asp-for="TongTaiSan" id="tongTaiSanHidden" />
+                    <span asp-validation-for="TongTaiSan" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="VonDieuLe" class="form-label">Vốn điều lệ (VNĐ)</label>
+                    <input type="text" class="form-control" id="vonDieuLeInput" placeholder="Nhập số tiền (VD: 2000000000)" />
+                    <small class="form-text text-muted">Số tiền sẽ được hiển thị với định dạng: 2.000.000.000</small>
+                    <input type="hidden" asp-for="VonDieuLe" id="vonDieuLeHidden" />
+                    <span asp-validation-for="VonDieuLe" class="text-danger validation-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Địa chỉ -->
+        <div class="form-section">
+            <h3 class="section-title">Địa chỉ</h3>
+            <div class="form-grid form-grid-address">
+                <div class="form-group">
+                    <label asp-for="DiaChi" class="form-label">Địa chỉ trụ sở chính</label>
+                    <input asp-for="DiaChi" class="form-control" />
+                    <span asp-validation-for="DiaChi" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ThanhPho" class="form-label">Thành phố/Tỉnh</label>
+                    <input asp-for="ThanhPho" class="form-control" />
+                    <span asp-validation-for="ThanhPho" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Quan" class="form-label">Quận/Huyện</label>
+                    <input asp-for="Quan" class="form-control" />
+                    <span asp-validation-for="Quan" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Phuong" class="form-label">Phường/Xã</label>
+                    <input asp-for="Phuong" class="form-control" />
+                    <span asp-validation-for="Phuong" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Thông tin liên hệ -->
+        <div class="form-section">
+            <h3 class="section-title">Thông tin liên hệ</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label asp-for="SoDienThoai" class="form-label">Số điện thoại</label>
+                    <input asp-for="SoDienThoai" class="form-control" maxlength="10" pattern="\d{10}" placeholder="Nhập 10 chữ số" />
+                    <span asp-validation-for="SoDienThoai" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <input asp-for="Email" type="email" class="form-control" data-val="true" data-val-email="Vui lòng nhập địa chỉ email hợp lệ." data-msg-email="Vui lòng nhập địa chỉ email hợp lệ." />
+                    <span asp-validation-for="Email" class="text-danger validation-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Tài liệu và ảnh -->
+        <div class="form-section">
+            <h3 class="section-title">Tài liệu và ảnh</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Ảnh giấy phép kinh doanh</label>
+                    <input type="file" name="anhGiayPhepKinhDoanhFiles" accept="image/*,.pdf" class="form-control" multiple />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG, PDF</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhGiayPhepKinhDoanh))
+                    {
+                        <div class="image-preview">
+                            @{
+                                var files = Model.AnhGiayPhepKinhDoanh.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                            }
+                            @foreach (var file in files)
+                            {
+                                <img src="@file" alt="Giấy phép kinh doanh" style="max-width: 200px; margin-top: 0.5rem; margin-right: 0.5rem;" />
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh báo cáo tài chính</label>
+                    <input type="file" name="anhBaoCaoTaichinhFiles" accept="image/*,.pdf" class="form-control" multiple />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG, PDF</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhBaoCaoTaichinh))
+                    {
+                        <div class="image-preview">
+                            @{
+                                var files = Model.AnhBaoCaoTaichinh.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                            }
+                            @foreach (var file in files)
+                            {
+                                <img src="@file" alt="Báo cáo tài chính" style="max-width: 200px; margin-top: 0.5rem; margin-right: 0.5rem;" />
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh giấy tờ liên quan khác</label>
+                    <input type="file" name="anhGiayToLienQuanKhacFiles" accept="image/*,.pdf" class="form-control" multiple />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG, PDF</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhGiayToLienQuanKhac))
+                    {
+                        <div class="image-preview">
+                            @{
+                                var files = Model.AnhGiayToLienQuanKhac.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                            }
+                            @foreach (var file in files)
+                            {
+                                <img src="@file" alt="Giấy tờ liên quan" style="max-width: 200px; margin-top: 0.5rem; margin-right: 0.5rem;" />
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh mặt trước CCCD người đại diện</label>
+                    <input type="file" name="cccdTruocFile" accept="image/*,.pdf" class="form-control" />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG, PDF</small>
+                    @if (!string.IsNullOrEmpty(Model.CccdTruoc))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.CccdTruoc" alt="CCCD mặt trước" style="max-width: 200px; margin-top: 0.5rem;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh mặt sau CCCD người đại diện</label>
+                    <input type="file" name="cccdSauFile" accept="image/*,.pdf" class="form-control" />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG, PDF</small>
+                    @if (!string.IsNullOrEmpty(Model.CccdSau))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.CccdSau" alt="CCCD mặt sau" style="max-width: 200px; margin-top: 0.5rem;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh người đại diện pháp luật</label>
+                    <input type="file" name="anhNguoiDaiDienFile" accept="image/*" class="form-control" />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhNguoiDaiDien))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.AnhNguoiDaiDien" alt="Ảnh người đại diện" style="max-width: 200px; margin-top: 0.5rem; border-radius: 50%;" />
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="@Url.Action("Index", "Dashboard")" class="btn btn-secondary">Hủy</a>
+            <button type="submit" class="btn btn-primary">Tạo khách hàng</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="~/js/customer-doanhnghiep.js"></script>
+}
+
+<style>
+.form-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.form-header {
+    margin-bottom: 2rem;
+}
+
+.header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+.back-button:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    transform: translateX(-2px);
+}
+
+.back-button img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.form-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.customer-form {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-section {
+    margin-bottom: 2.5rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Layout cho phần Địa chỉ - tất cả cùng 1 hàng */
+.form-grid-address {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@@media (max-width: 1024px) {
+    .form-grid-address {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@@media (max-width: 640px) {
+    .form-grid-address {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Layout cho phần Thông tin người đại diện pháp luật - tất cả cùng 1 hàng */
+.form-grid-single-row {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@@media (max-width: 1024px) {
+    .form-grid-single-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@@media (max-width: 640px) {
+    .form-grid-single-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Layout cho phần Thông tin kinh doanh - 2 hàng bằng nhau */
+.form-grid-business {
+    grid-template-columns: repeat(6, 1fr); /* Dùng 6 cột để chia đều cho 2 hàng */
+}
+
+/* Hàng 1: Lĩnh vực kinh doanh, Số lượng nhân viên, Doanh thu hàng năm (mỗi trường 2 cột) */
+.form-grid-business .form-group:nth-child(1),
+.form-grid-business .form-group:nth-child(2),
+.form-grid-business .form-group:nth-child(3) {
+    grid-column: span 2;
+}
+
+/* Hàng 2: Tổng tài sản và Vốn điều lệ (mỗi trường 3 cột để bằng hàng 1) */
+.form-grid-business .form-group:nth-child(4),
+.form-grid-business .form-group:nth-child(5) {
+    grid-column: span 3;
+}
+
+@@media (max-width: 1024px) {
+    .form-grid-business {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .form-grid-business .form-group:nth-child(4),
+    .form-grid-business .form-group:nth-child(5) {
+        grid-column: span 1;
+    }
+}
+
+@@media (max-width: 640px) {
+    .form-grid-business {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-grid-business .form-group:nth-child(4),
+    .form-grid-business .form-group:nth-child(5) {
+        grid-column: span 1;
+    }
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.required {
+    color: #ef4444;
+}
+
+.form-control {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control.input-validation-error {
+    border-color: #ef4444;
+}
+
+.validation-error {
+    display: block !important;
+    color: #ef4444 !important;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+    min-height: 1.25rem;
+}
+
+.field-validation-error {
+    display: block !important;
+    color: #ef4444 !important;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+.field-validation-valid {
+    display: none;
+}
+
+.input-validation-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.validation-summary {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: #991b1b;
+}
+
+.validation-summary ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+}
+
+.validation-summary li {
+    margin-bottom: 0.25rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4b5563;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.success-notification {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.success-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #10b981;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.success-message {
+    flex: 1;
+}
+
+.success-message strong {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.success-message p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+</style>

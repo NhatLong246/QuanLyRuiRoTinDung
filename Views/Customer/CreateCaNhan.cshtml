@@ -1,0 +1,890 @@
+@model QuanLyRuiRoTinDung.Models.Entities.KhachHangCaNhan
+@{
+    ViewData["Title"] = "Tạo khách hàng cá nhân";
+    Layout = "_DashboardLayout";
+}
+
+<div class="form-container">
+    <div class="form-header">
+        <div class="header-top">
+            <a href="@Url.Action("Index", "Customer")" class="back-button" title="Quay lại">
+                <img src="~/asset/image/icons8-back-arrow-80.png" alt="Quay lại" />
+            </a>
+            <div class="header-content">
+                <h1 class="form-title">Tạo khách hàng cá nhân</h1>
+                <p class="form-subtitle">Điền thông tin khách hàng cá nhân</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success success-notification">
+            <div class="success-icon">✓</div>
+            <div class="success-message">
+                <strong>Thành công!</strong>
+                <p>@TempData["SuccessMessage"]</p>
+            </div>
+        </div>
+    }
+
+    <form asp-action="CreateCaNhan" method="post" enctype="multipart/form-data" class="customer-form">
+        @Html.AntiForgeryToken()
+        
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger validation-summary"></div>
+        }
+
+        <div class="form-section">
+            <h3 class="section-title">Thông tin cá nhân</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label asp-for="HoTen" class="form-label">Họ và tên <span class="required">*</span></label>
+                    <input asp-for="HoTen" class="form-control" required data-val="true" data-val-required="Họ và tên là bắt buộc." />
+                    <span asp-validation-for="HoTen" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NgaySinh" class="form-label">Ngày sinh <span class="required">*</span></label>
+                    <input asp-for="NgaySinh" type="date" class="form-control" required data-val="true" data-val-required="Ngày sinh là bắt buộc." />
+                    <span asp-validation-for="NgaySinh" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="GioiTinh" class="form-label">Giới tính <span class="required">*</span></label>
+                    <select asp-for="GioiTinh" class="form-control" required data-val="true" data-val-required="Giới tính là bắt buộc.">
+                        <option value="">-- Chọn --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                    <span asp-validation-for="GioiTinh" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="SoCmnd" class="form-label">Số CCCD <span class="required">*</span></label>
+                    <input asp-for="SoCmnd" class="form-control" required maxlength="12" pattern="[0-9]{12}" placeholder="Nhập 12 chữ số" data-val="true" data-val-required="Số CCCD là bắt buộc." />
+                    <span asp-validation-for="SoCmnd" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NgayCapCmnd" class="form-label">Ngày cấp CMND/CCCD</label>
+                    <input asp-for="NgayCapCmnd" type="date" class="form-control" />
+                    <span asp-validation-for="NgayCapCmnd" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NoiCapCmnd" class="form-label">Nơi cấp CMND/CCCD</label>
+                    <input asp-for="NoiCapCmnd" class="form-control" />
+                    <span asp-validation-for="NoiCapCmnd" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title">Thông tin liên hệ</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label asp-for="SoDienThoai" class="form-label">Số điện thoại <span class="required">*</span></label>
+                    <input asp-for="SoDienThoai" class="form-control" maxlength="10" pattern="[0-9]{10}" placeholder="Nhập 10 chữ số" required data-val="true" data-val-required="Số điện thoại là bắt buộc." />
+                    <span asp-validation-for="SoDienThoai" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Email" class="form-label">Email <span class="required">*</span></label>
+                    <input asp-for="Email" type="email" class="form-control" required data-val="true" data-val-required="Email là bắt buộc." data-val-email="Vui lòng nhập địa chỉ email hợp lệ." data-msg-email="Vui lòng nhập địa chỉ email hợp lệ." />
+                    <span asp-validation-for="Email" class="text-danger validation-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title">Địa chỉ</h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label asp-for="DiaChi" class="form-label">Địa chỉ thường trú <span class="required">*</span></label>
+                    <input asp-for="DiaChi" class="form-control" required data-val="true" data-val-required="Địa chỉ thường trú là bắt buộc." />
+                    <span asp-validation-for="DiaChi" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ThanhPho" class="form-label">Thành phố/Tỉnh <span class="required">*</span></label>
+                    <input asp-for="ThanhPho" class="form-control" required data-val="true" data-val-required="Thành phố/Tỉnh là bắt buộc." />
+                    <span asp-validation-for="ThanhPho" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Quan" class="form-label">Quận/Huyện <span class="required">*</span></label>
+                    <input asp-for="Quan" class="form-control" required data-val="true" data-val-required="Quận/Huyện là bắt buộc." />
+                    <span asp-validation-for="Quan" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Phuong" class="form-label">Phường/Xã <span class="required">*</span></label>
+                    <input asp-for="Phuong" class="form-control" required data-val="true" data-val-required="Phường/Xã là bắt buộc." />
+                    <span asp-validation-for="Phuong" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title">Thông tin nghề nghiệp</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label asp-for="TinhTrangHonNhan" class="form-label">Tình trạng hôn nhân <span class="required">*</span></label>
+                    <select asp-for="TinhTrangHonNhan" class="form-control" required data-val="true" data-val-required="Tình trạng hôn nhân là bắt buộc.">
+                        <option value="">-- Chọn --</option>
+                        <option value="Độc thân">Độc thân</option>
+                        <option value="Đã kết hôn">Đã kết hôn</option>
+                        <option value="Ly hôn">Ly hôn</option>
+                    </select>
+                    <span asp-validation-for="TinhTrangHonNhan" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NgheNghiep" class="form-label">Nghề nghiệp <span class="required">*</span></label>
+                    <input asp-for="NgheNghiep" class="form-control" required data-val="true" data-val-required="Nghề nghiệp là bắt buộc." />
+                    <span asp-validation-for="NgheNghiep" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ThuNhapHangThang" class="form-label">Thu nhập hàng tháng (VNĐ) <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="thuNhapInput" placeholder="Nhập số tiền (VD: 3000000)" required />
+                    <small class="form-text text-muted">Số tiền sẽ được hiển thị với định dạng: 3.000.000</small>
+                    <input type="hidden" asp-for="ThuNhapHangThang" id="thuNhapHidden" />
+                    <span asp-validation-for="ThuNhapHangThang" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="TenCongTy" class="form-label">Tên công ty</label>
+                    <input asp-for="TenCongTy" class="form-control" />
+                    <span asp-validation-for="TenCongTy" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="SoNamLamViec" class="form-label">Số năm làm việc <span class="required">*</span></label>
+                    <input asp-for="SoNamLamViec" type="number" class="form-control" required data-val="true" data-val-required="Số năm làm việc là bắt buộc." />
+                    <span asp-validation-for="SoNamLamViec" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title">Tài liệu và ảnh</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Ảnh mặt trước CCCD/CMND</label>
+                    <input type="file" name="cccdTruocFile" accept="image/*,.pdf" class="form-control" />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG, PDF</small>
+                    @if (!string.IsNullOrEmpty(Model.CccdTruoc))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.CccdTruoc" alt="CCCD mặt trước" style="max-width: 200px; margin-top: 0.5rem;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh mặt sau CCCD/CMND</label>
+                    <input type="file" name="cccdSauFile" accept="image/*,.pdf" class="form-control" />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG, PDF</small>
+                    @if (!string.IsNullOrEmpty(Model.CccdSau))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.CccdSau" alt="CCCD mặt sau" style="max-width: 200px; margin-top: 0.5rem;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh đại diện</label>
+                    <input type="file" name="anhDaiDienFile" accept="image/*" class="form-control" />
+                    <small class="form-text text-muted">Chấp nhận: JPG, PNG</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhDaiDien))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.AnhDaiDien" alt="Ảnh đại diện" style="max-width: 200px; margin-top: 0.5rem; border-radius: 50%;" />
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="@Url.Action("Index", "Dashboard")" class="btn btn-secondary">Hủy</a>
+            <button type="submit" class="btn btn-primary">Tạo khách hàng</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Custom validation messages tiếng Việt - Phải đặt TRƯỚC khi unobtrusive validation load
+        $(document).ready(function() {
+            var checkCmndUrl = '@Url.Action("CheckCmndExists", "Customer")';
+            var checkPhoneUrl = '@Url.Action("CheckPhoneExists", "Customer")';
+            var checkEmailUrl = '@Url.Action("CheckEmailExists", "Customer")';
+            // Override jQuery validation messages NGAY LẬP TỨC
+            if (typeof $.validator !== 'undefined') {
+                $.validator.messages.email = "Vui lòng nhập địa chỉ email hợp lệ.";
+                $.validator.messages.required = "Trường này là bắt buộc.";
+                $.validator.messages.number = "Vui lòng nhập số hợp lệ.";
+                $.validator.messages.maxlength = $.validator.format("Vui lòng nhập tối đa {0} ký tự.");
+                $.validator.messages.minlength = $.validator.format("Vui lòng nhập tối thiểu {0} ký tự.");
+            }
+
+            // Đợi unobtrusive validation load xong rồi override lại
+            setTimeout(function() {
+                if (typeof $.validator !== 'undefined' && $.validator.messages) {
+                    $.validator.messages.email = "Vui lòng nhập địa chỉ email hợp lệ.";
+                }
+                
+                // Override cho từng email input
+                $('input[type="email"]').each(function() {
+                    var $input = $(this);
+                    $input.attr('data-val-email', 'Vui lòng nhập địa chỉ email hợp lệ.');
+                    $input.attr('data-msg-email', 'Vui lòng nhập địa chỉ email hợp lệ.');
+                    
+                    // Update validator rules nếu form đã được init
+                    var form = $input.closest('form');
+                    if (form.length) {
+                        var validator = form.data('validator');
+                        if (validator && validator.settings && validator.settings.messages) {
+                            var fieldName = $input.attr('name');
+                            if (fieldName) {
+                                if (!validator.settings.messages[fieldName]) {
+                                    validator.settings.messages[fieldName] = {};
+                                }
+                                validator.settings.messages[fieldName].email = "Vui lòng nhập địa chỉ email hợp lệ.";
+                            }
+                        }
+                    }
+                });
+            }, 500);
+
+            // Format số tiền với dấu chấm
+            const thuNhapInput = document.getElementById('thuNhapInput');
+            const thuNhapHidden = document.getElementById('thuNhapHidden');
+            
+            if (thuNhapInput && thuNhapHidden) {
+                thuNhapInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\./g, ''); // Loại bỏ dấu chấm hiện có
+                    if (value && !isNaN(value)) {
+                        // Format với dấu chấm ngăn cách 3 số
+                        let formatted = parseInt(value).toLocaleString('vi-VN').replace(/,/g, '.');
+                        e.target.value = formatted;
+                        // Lưu giá trị số vào hidden field
+                        thuNhapHidden.value = value;
+                    } else {
+                        thuNhapHidden.value = '';
+                    }
+                });
+
+                // Khi submit form, đảm bảo giá trị được gửi đi
+                document.querySelector('form')?.addEventListener('submit', function() {
+                    if (thuNhapInput.value) {
+                        let value = thuNhapInput.value.replace(/\./g, '');
+                        thuNhapHidden.value = value;
+                    }
+                });
+            }
+
+            // Validation client-side cho CCCD - chỉ giữ số
+            const cccdInput = document.querySelector('[name="SoCmnd"]');
+            if (cccdInput) {
+                cccdInput.addEventListener('input', function (e) {
+                    let value = e.target.value.replace(/\D/g, ''); // Chỉ giữ số
+                    if (value.length > 12) value = value.substring(0, 12);
+                    e.target.value = value;
+                });
+            }
+
+            // Validation client-side cho số điện thoại - chỉ giữ số
+            document.querySelector('[name="SoDienThoai"]')?.addEventListener('input', function (e) {
+                let value = e.target.value.replace(/\D/g, ''); // Chỉ giữ số
+                if (value.length > 10) value = value.substring(0, 10);
+                e.target.value = value;
+            });
+
+            // Validation real-time cho ngày sinh - phải đủ 18 tuổi
+            const ngaySinhInput = document.querySelector('[name="NgaySinh"]');
+            
+            if (ngaySinhInput) {
+                function validateNgaySinh() {
+                    const input = ngaySinhInput;
+                    // Tìm error span - có thể là .validation-error hoặc span[data-valmsg-for]
+                    let errorSpan = input.parentElement.querySelector('span.validation-error') ||
+                                   input.parentElement.querySelector('span[data-valmsg-for="NgaySinh"]') ||
+                                   input.parentElement.querySelector('span.text-danger');
+                    
+                    // Nếu không tìm thấy, tạo mới
+                    if (!errorSpan) {
+                        errorSpan = document.createElement('span');
+                        errorSpan.className = 'text-danger validation-error field-validation-error';
+                        errorSpan.setAttribute('data-valmsg-for', 'NgaySinh');
+                        input.parentElement.appendChild(errorSpan);
+                    }
+                    
+                    if (input.value) {
+                        const ngaySinh = new Date(input.value);
+                        const today = new Date();
+                        let tuoi = today.getFullYear() - ngaySinh.getFullYear();
+                        const monthDiff = today.getMonth() - ngaySinh.getMonth();
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < ngaySinh.getDate())) {
+                            tuoi--;
+                        }
+                        
+                        // Hiển thị lỗi inline
+                        if (tuoi < 18) {
+                            input.classList.add('input-validation-error');
+                            errorSpan.textContent = 'Khách hàng phải đủ 18 tuổi.';
+                            errorSpan.style.display = 'block';
+                            errorSpan.style.color = '#ef4444';
+                            errorSpan.style.fontSize = '0.875rem';
+                            errorSpan.style.marginTop = '0.5rem';
+                        } else {
+                            input.classList.remove('input-validation-error');
+                            // Chỉ xóa nếu là lỗi của chúng ta
+                            if (errorSpan.textContent.includes('18 tuổi')) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } else {
+                        input.classList.remove('input-validation-error');
+                        if (errorSpan.textContent.includes('18 tuổi')) {
+                            errorSpan.textContent = '';
+                            errorSpan.style.display = 'none';
+                        }
+                    }
+                }
+
+                ngaySinhInput.addEventListener('change', validateNgaySinh);
+                ngaySinhInput.addEventListener('blur', validateNgaySinh);
+            }
+
+            // Validation real-time cho ngày cấp CCCD - phải lớn hơn ngày sinh 16 năm
+            const ngayCapInput = document.querySelector('[name="NgayCapCmnd"]');
+            const ngaySinhInputForCap = document.querySelector('[name="NgaySinh"]');
+            
+            if (ngayCapInput && ngaySinhInputForCap) {
+                function validateNgayCap() {
+                    const input = ngayCapInput;
+                    // Tìm error span
+                    let errorSpan = input.parentElement.querySelector('span.validation-error') ||
+                                   input.parentElement.querySelector('span[data-valmsg-for="NgayCapCmnd"]') ||
+                                   input.parentElement.querySelector('span.text-danger');
+                    
+                    // Nếu không tìm thấy, tạo mới
+                    if (!errorSpan) {
+                        errorSpan = document.createElement('span');
+                        errorSpan.className = 'text-danger validation-error field-validation-error';
+                        errorSpan.setAttribute('data-valmsg-for', 'NgayCapCmnd');
+                        input.parentElement.appendChild(errorSpan);
+                    }
+                    
+                    if (input.value && ngaySinhInputForCap.value) {
+                        const ngaySinh = new Date(ngaySinhInputForCap.value);
+                        const ngayCap = new Date(input.value);
+                        const minNgayCap = new Date(ngaySinh);
+                        minNgayCap.setFullYear(minNgayCap.getFullYear() + 16);
+                        
+                        // Hiển thị lỗi inline
+                        if (ngayCap < minNgayCap) {
+                            input.classList.add('input-validation-error');
+                            errorSpan.textContent = 'Ngày cấp CCCD phải lớn hơn ngày sinh ít nhất 16 năm.';
+                            errorSpan.style.display = 'block';
+                            errorSpan.style.color = '#ef4444';
+                            errorSpan.style.fontSize = '0.875rem';
+                            errorSpan.style.marginTop = '0.5rem';
+                        } else {
+                            input.classList.remove('input-validation-error');
+                            // Chỉ xóa nếu là lỗi của chúng ta
+                            if (errorSpan.textContent.includes('16 năm')) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } else {
+                        input.classList.remove('input-validation-error');
+                        if (errorSpan.textContent.includes('16 năm')) {
+                            errorSpan.textContent = '';
+                            errorSpan.style.display = 'none';
+                        }
+                    }
+                }
+
+                ngayCapInput.addEventListener('change', validateNgayCap);
+                ngayCapInput.addEventListener('blur', validateNgayCap);
+                
+                // Cũng validate khi ngày sinh thay đổi
+                if (ngaySinhInputForCap) {
+                    ngaySinhInputForCap.addEventListener('change', function() {
+                        if (ngayCapInput.value) {
+                            validateNgayCap();
+                        }
+                    });
+                }
+            }
+
+            // Validation real-time cho Số năm làm việc - không âm và không lớn hơn tuổi
+            const soNamInput = document.querySelector('[name="SoNamLamViec"]');
+            if (soNamInput) {
+                function validateSoNamLamViec() {
+                    const input = soNamInput;
+                    let errorSpan = input.parentElement.querySelector('span.validation-error') ||
+                                   input.parentElement.querySelector('span[data-valmsg-for="SoNamLamViec"]') ||
+                                   input.parentElement.querySelector('span.text-danger');
+
+                    if (!errorSpan) {
+                        errorSpan = document.createElement('span');
+                        errorSpan.className = 'text-danger validation-error field-validation-error';
+                        errorSpan.setAttribute('data-valmsg-for', 'SoNamLamViec');
+                        input.parentElement.appendChild(errorSpan);
+                    }
+
+                    const value = input.value ? parseInt(input.value, 10) : null;
+                    const ngaySinhEl = document.querySelector('[name="NgaySinh"]');
+                    let hasError = false;
+
+                    if (value !== null) {
+                        if (isNaN(value) || value < 0) {
+                            input.classList.add('input-validation-error');
+                            errorSpan.textContent = 'Số năm làm việc không được âm.';
+                            hasError = true;
+                        } else if (ngaySinhEl && ngaySinhEl.value) {
+                            const ngaySinh = new Date(ngaySinhEl.value);
+                            const today = new Date();
+                            let tuoi = today.getFullYear() - ngaySinh.getFullYear();
+                            const monthDiff = today.getMonth() - ngaySinh.getMonth();
+                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < ngaySinh.getDate())) {
+                                tuoi--;
+                            }
+                            if (value > tuoi) {
+                                input.classList.add('input-validation-error');
+                                errorSpan.textContent = 'Số năm làm việc không thể lớn hơn tuổi của khách hàng.';
+                                hasError = true;
+                            }
+                        }
+                    }
+
+                    if (!hasError) {
+                        input.classList.remove('input-validation-error');
+                        if (errorSpan.textContent.includes('Số năm làm việc')) {
+                            errorSpan.textContent = '';
+                            errorSpan.style.display = 'none';
+                        }
+                    } else {
+                        errorSpan.style.display = 'block';
+                        errorSpan.style.color = '#ef4444';
+                        errorSpan.style.fontSize = '0.875rem';
+                        errorSpan.style.marginTop = '0.5rem';
+                    }
+                }
+
+                soNamInput.addEventListener('input', validateSoNamLamViec);
+                soNamInput.addEventListener('blur', validateSoNamLamViec);
+
+                const ngaySinhForSoNam = document.querySelector('[name="NgaySinh"]');
+                if (ngaySinhForSoNam) {
+                    ngaySinhForSoNam.addEventListener('change', function () {
+                        if (soNamInput.value) {
+                            validateSoNamLamViec();
+                        }
+                    });
+                }
+            }
+
+            // Đảm bảo email validation message là tiếng Việt
+            const emailInput = document.querySelector('[name="Email"]');
+            if (emailInput) {
+                // Override HTML5 validation message
+                emailInput.addEventListener('invalid', function(e) {
+                    if (e.target.validity.typeMismatch) {
+                        e.target.setCustomValidity('Vui lòng nhập địa chỉ email hợp lệ.');
+                    } else {
+                        e.target.setCustomValidity('');
+                    }
+                });
+
+                emailInput.addEventListener('input', function(e) {
+                    e.target.setCustomValidity('');
+                });
+            }
+
+            // Sau khi unobtrusive validation load, override lại messages
+            setTimeout(function() {
+                if (typeof $.validator !== 'undefined' && $.validator.messages) {
+                    $.validator.messages.email = "Vui lòng nhập địa chỉ email hợp lệ.";
+                    $.validator.messages.required = "Trường này là bắt buộc.";
+                }
+                
+                // Override cho tất cả required fields
+                $('input[required]').each(function() {
+                    var $input = $(this);
+                    var fieldName = $input.attr('name');
+                    if (fieldName && !$input.attr('data-val-required')) {
+                        var label = $input.closest('.form-group').find('label').text().replace('*', '').trim();
+                        var customMessage = label + " là bắt buộc.";
+                        $input.attr('data-val-required', customMessage);
+                        $input.attr('data-val', 'true');
+                    }
+                });
+                
+                // Override cho tất cả email inputs bằng cách update data attribute
+                $('input[type="email"]').each(function() {
+                    var $input = $(this);
+                    $input.attr('data-val-email', 'Vui lòng nhập địa chỉ email hợp lệ.');
+                    $input.attr('data-msg-email', 'Vui lòng nhập địa chỉ email hợp lệ.');
+                    
+                    // Nếu form đã được validate, update rules
+                    var form = $input.closest('form');
+                    if (form.length && form.data('validator')) {
+                        var validator = form.data('validator');
+                        if (validator) {
+                            validator.settings.messages[this.name] = {
+                                email: "Vui lòng nhập địa chỉ email hợp lệ."
+                            };
+                        }
+                    }
+                });
+            }, 500);
+
+            // ===== Validation bất đồng bộ (AJAX) kiểm tra trùng CCCD / SĐT / Email =====
+            function setupAjaxUniqueValidation(inputSelector, url, fieldName, message) {
+                const input = document.querySelector(inputSelector);
+                if (!input) return;
+
+                async function validate() {
+                    const rawValue = (input.value || '').trim();
+                    if (!rawValue) return;
+
+                    const params = new URLSearchParams();
+                    params.append(fieldName, rawValue);
+
+                    try {
+                        const response = await fetch(url + '?' + params.toString(), { method: 'GET' });
+                        if (!response.ok) return;
+                        const data = await response.json();
+                        const exists = data && (data.exists === true);
+
+                        let errorSpan = input.parentElement.querySelector('span.validation-error') ||
+                                        input.parentElement.querySelector('span.text-danger') ||
+                                        input.parentElement.querySelector('span[data-valmsg-for]');
+
+                        if (!errorSpan) {
+                            errorSpan = document.createElement('span');
+                            errorSpan.className = 'text-danger validation-error field-validation-error';
+                            errorSpan.setAttribute('data-valmsg-for', input.getAttribute('name') || '');
+                            input.parentElement.appendChild(errorSpan);
+                        }
+
+                        if (exists) {
+                            input.classList.add('input-validation-error');
+                            errorSpan.textContent = message;
+                            errorSpan.style.display = 'block';
+                            errorSpan.style.color = '#ef4444';
+                            errorSpan.style.fontSize = '0.875rem';
+                            errorSpan.style.marginTop = '0.5rem';
+                        } else if (errorSpan.textContent === message) {
+                            input.classList.remove('input-validation-error');
+                            errorSpan.textContent = '';
+                            errorSpan.style.display = 'none';
+                        }
+                    } catch (e) {
+                        console.error('Lỗi kiểm tra trùng dữ liệu cho', fieldName, e);
+                    }
+                }
+
+                input.addEventListener('blur', function () {
+                    // Chỉ kiểm tra khi dữ liệu có vẻ hợp lệ để tránh gọi quá nhiều
+                    if (fieldName === 'soCmnd' && input.value && input.value.length === 12) {
+                        validate();
+                    } else if (fieldName === 'phone' && input.value && input.value.length === 10) {
+                        validate();
+                    } else if (fieldName === 'email' && input.value) {
+                        validate();
+                    }
+                });
+            }
+
+            // CCCD trùng
+            setupAjaxUniqueValidation('[name="SoCmnd"]', checkCmndUrl, 'soCmnd', 'Số CMND/CCCD này đã được sử dụng bởi khách hàng khác.');
+            // Số điện thoại trùng
+            setupAjaxUniqueValidation('[name="SoDienThoai"]', checkPhoneUrl, 'phone', 'Số điện thoại này đã được sử dụng bởi khách hàng khác.');
+            // Email trùng
+            setupAjaxUniqueValidation('[name="Email"]', checkEmailUrl, 'email', 'Email này đã được sử dụng bởi khách hàng khác.');
+        });
+    </script>
+}
+
+<style>
+.form-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.form-header {
+    margin-bottom: 2rem;
+}
+
+.header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+.back-button:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    transform: translateX(-2px);
+}
+
+.back-button img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.form-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.customer-form {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-section {
+    margin-bottom: 2.5rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.required {
+    color: #ef4444;
+}
+
+.form-control {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control.input-validation-error {
+    border-color: #ef4444;
+}
+
+.validation-error {
+    display: block !important;
+    color: #ef4444 !important;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+    min-height: 1.25rem;
+}
+
+.field-validation-error {
+    display: block !important;
+    color: #ef4444 !important;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+.field-validation-valid {
+    display: none;
+}
+
+.input-validation-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.validation-summary {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: #991b1b;
+}
+
+.validation-summary ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+}
+
+.validation-summary li {
+    margin-bottom: 0.25rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4b5563;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.success-notification {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.success-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #10b981;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.success-message {
+    flex: 1;
+}
+
+.success-message strong {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.success-message p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+</style>

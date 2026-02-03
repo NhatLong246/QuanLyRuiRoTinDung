@@ -32,6 +32,16 @@ public partial class KhoanVayTaiSan
     [StringLength(500)]
     public string? GhiChu { get; set; }
 
+    // Các trường cho loại tài sản "Khác"
+    [StringLength(200)]
+    public string? TenTaiSanKhac { get; set; }
+
+    [StringLength(50)]
+    public string? DonVi { get; set; }
+
+    [Column(TypeName = "decimal(18, 2)")]
+    public decimal? SoLuong { get; set; }
+
     [ForeignKey("MaKhoanVay")]
     [InverseProperty("KhoanVayTaiSans")]
     public virtual KhoanVay MaKhoanVayNavigation { get; set; } = null!;

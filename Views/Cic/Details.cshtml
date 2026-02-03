@@ -1,0 +1,657 @@
+@model QuanLyRuiRoTinDung.Models.Entities.ThongTinCic
+@{
+    ViewData["Title"] = "Chi tiết CIC";
+    Layout = "_DashboardLayout";
+}
+
+<div class="cic-details-container">
+    <!-- Header -->
+    <div class="details-header">
+        <div class="header-left">
+            <a href="@Url.Action("Index")" class="btn-back">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Quay lại
+            </a>
+            <div class="header-title">
+                <h1>Chi tiết thông tin CIC</h1>
+                <p class="subtitle">Mã CIC: <strong>@Model.MaCicCode</strong></p>
+            </div>
+        </div>
+        <div class="header-badges">
+            <span class="badge badge-type @(Model.LoaiKhachHang == "CaNhan" ? "badge-person" : "badge-company")">
+                @(Model.LoaiKhachHang == "CaNhan" ? "Cá nhân" : "Doanh nghiệp")
+            </span>
+            @if (!string.IsNullOrEmpty(Model.XepHangTinDungCic))
+            {
+                <span class="badge badge-rating">@Model.XepHangTinDungCic</span>
+            }
+        </div>
+    </div>
+
+    <div class="details-content">
+        <!-- Thông tin cơ bản -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Thông tin định danh
+            </h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Họ tên / Tên công ty</label>
+                    <div class="info-value">@(Model.HoTen ?? "N/A")</div>
+                </div>
+                <div class="info-item">
+                    <label>Số CMND/CCCD</label>
+                    <div class="info-value">@Model.SoCmndCccd</div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.MaSoThue))
+                {
+                    <div class="info-item">
+                        <label>Mã số thuế</label>
+                        <div class="info-value">@Model.MaSoThue</div>
+                    </div>
+                }
+                <div class="info-item">
+                    <label>Mã khách hàng hệ thống</label>
+                    <div class="info-value">@(Model.MaKhachHang?.ToString() ?? "Chưa liên kết")</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Điểm tín dụng và xếp hạng -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Điểm tín dụng và xếp hạng
+            </h2>
+            <div class="score-grid">
+                <div class="score-card @(Model.DiemTinDungCic >= 700 ? "score-high" : Model.DiemTinDungCic >= 500 ? "score-medium" : "score-low")">
+                    <div class="score-label">Điểm tín dụng CIC</div>
+                    <div class="score-value">@(Model.DiemTinDungCic?.ToString() ?? "N/A")</div>
+                    <div class="score-range">/ 1000</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Xếp hạng</div>
+                    <div class="score-value">@(Model.XepHangTinDungCic ?? "N/A")</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Mức độ rủi ro</div>
+                    <div class="score-value risk-@(Model.MucDoRuiRo?.ToLower().Replace(" ", "-") ?? "unknown")">
+                        @(Model.MucDoRuiRo ?? "Chưa đánh giá")
+                    </div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Khả năng trả nợ</div>
+                    <div class="score-value">@(Model.KhaNangTraNo ?? "Chưa đánh giá")</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê khoản vay -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Thống kê khoản vay từ CIC
+            </h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Tổng số khoản vay</div>
+                        <div class="stat-number">@Model.TongSoKhoanVayCic</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Đang vay</div>
+                        <div class="stat-number">@Model.SoKhoanVayDangVayCic</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Đã trả xong</div>
+                        <div class="stat-number">@Model.SoKhoanVayDaTraXongCic</div>
+                    </div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Quá hạn</div>
+                        <div class="stat-number">@Model.SoKhoanVayQuaHanCic</div>
+                    </div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-icon">🚫</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Nợ xấu</div>
+                        <div class="stat-number">@Model.SoKhoanVayNoXauCic</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dư nợ -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Dư nợ từ CIC
+            </h2>
+            <div class="debt-grid">
+                <div class="debt-card">
+                    <div class="debt-label">Tổng dư nợ</div>
+                    <div class="debt-value">@Model.TongDuNoCic.ToString("N0") ₫</div>
+                </div>
+                <div class="debt-card warning">
+                    <div class="debt-label">Dư nợ quá hạn</div>
+                    <div class="debt-value">@Model.DuNoQuaHanCic.ToString("N0") ₫</div>
+                </div>
+                <div class="debt-card danger">
+                    <div class="debt-label">Dư nợ nợ xấu</div>
+                    <div class="debt-value">@Model.DuNoNoXauCic.ToString("N0") ₫</div>
+                </div>
+                <div class="debt-card">
+                    <div class="debt-label">Dư nợ tối đa từng có</div>
+                    <div class="debt-value">@Model.DuNoToiDaCic.ToString("N0") ₫</div>
+                </div>
+                <div class="debt-card">
+                    <div class="debt-label">Tổng giá trị đã vay</div>
+                    <div class="debt-value">@Model.TongGiaTriVayCic.ToString("N0") ₫</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lịch sử tín dụng -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Lịch sử tín dụng
+            </h2>
+            <div class="history-grid">
+                <div class="history-item">
+                    <div class="history-label">Số lần quá hạn</div>
+                    <div class="history-value">@Model.SoLanQuaHanCic lần</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-label">Số lần nợ xấu</div>
+                    <div class="history-value">@Model.SoLanNoXauCic lần</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-label">Số ngày quá hạn tối đa</div>
+                    <div class="history-value">@Model.SoNgayQuaHanToiDaCic ngày</div>
+                </div>
+                @if (Model.NgayQuaHanLanCuoiCic.HasValue)
+                {
+                    <div class="history-item">
+                        <div class="history-label">Ngày quá hạn lần cuối</div>
+                        <div class="history-value">@Model.NgayQuaHanLanCuoiCic.Value.ToString("dd/MM/yyyy")</div>
+                    </div>
+                }
+                @if (Model.NgayNoXauLanCuoiCic.HasValue)
+                {
+                    <div class="history-item">
+                        <div class="history-label">Ngày nợ xấu lần cuối</div>
+                        <div class="history-value">@Model.NgayNoXauLanCuoiCic.Value.ToString("dd/MM/yyyy")</div>
+                    </div>
+                }
+                <div class="history-item">
+                    <div class="history-label">Thời gian trả nợ tốt</div>
+                    <div class="history-value">@Model.ThoiGianTraNoTotCic tháng</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-label">Tỷ lệ trả nợ đúng hạn</div>
+                    <div class="history-value">@Model.TyLeTraNoDungHanCic.ToString("F2")%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tổ chức tín dụng đã vay -->
+        @if (Model.SoToChucTinDungDaVay > 0)
+        {
+            <div class="details-section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M3 21H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M5 21V7L13 2L21 7V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 9V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M15 9V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Tổ chức tín dụng đã vay
+                </h2>
+                <div class="bank-info">
+                    <div class="bank-count">Đã vay tại <strong>@Model.SoToChucTinDungDaVay</strong> tổ chức tín dụng</div>
+                    @if (!string.IsNullOrEmpty(Model.DanhSachToChucTinDung))
+                    {
+                        <div class="bank-list">
+                            <pre class="bank-json">@Model.DanhSachToChucTinDung</pre>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Đánh giá và khuyến nghị -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Đánh giá và khuyến nghị
+            </h2>
+            <div class="recommendation-card @(Model.KhuyenNghiChoVay == "ChoVay" ? "rec-approve" : Model.KhuyenNghiChoVay == "CanThanTrong" ? "rec-caution" : "rec-reject")">
+                <div class="recommendation-header">
+                    <div class="recommendation-title">
+                        @(Model.KhuyenNghiChoVay == "ChoVay" ? "✓ Khuyến nghị: Cho vay" : 
+                          Model.KhuyenNghiChoVay == "CanThanTrong" ? "⚠ Khuyến nghị: Cần thận trọng" : 
+                          Model.KhuyenNghiChoVay == "KhongChoVay" ? "✗ Khuyến nghị: Không cho vay" : "Chưa có khuyến nghị")
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.DanhGiaTongQuat))
+                {
+                    <div class="recommendation-content">
+                        <div class="content-label">Đánh giá tổng quan:</div>
+                        <div class="content-text">@Model.DanhGiaTongQuat</div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.LyDoKhuyenNghi))
+                {
+                    <div class="recommendation-content">
+                        <div class="content-label">Lý do khuyến nghị:</div>
+                        <div class="content-text">@Model.LyDoKhuyenNghi</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Thông tin tra cứu -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Thông tin tra cứu
+            </h2>
+            <div class="lookup-info">
+                <div class="lookup-item">
+                    <label>Ngày tra cứu lần cuối</label>
+                    <div>@(Model.NgayTraCuuCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</div>
+                </div>
+                <div class="lookup-item">
+                    <label>Kết quả tra cứu</label>
+                    <div>@(Model.KetQuaTraCuu ?? "N/A")</div>
+                </div>
+                @if (Model.NguoiTraCuuNavigation != null)
+                {
+                    <div class="lookup-item">
+                        <label>Người tra cứu</label>
+                        <div>@Model.NguoiTraCuuNavigation.HoTen</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cic-details-container {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--border-gray);
+}
+
+.header-left {
+    flex: 1;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-gray-light);
+    color: var(--text-dark);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 16px;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: var(--border-gray);
+    transform: translateX(-2px);
+}
+
+.btn-back svg {
+    width: 18px;
+    height: 18px;
+}
+
+.header-title h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: var(--text-gray);
+}
+
+.header-badges {
+    display: flex;
+    gap: 12px;
+}
+
+.details-content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.details-section {
+    background: var(--bg-white);
+    padding: 28px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-title svg {
+    width: 24px;
+    height: 24px;
+    color: var(--primary-blue);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-item label {
+    font-size: 13px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.info-item .info-value {
+    font-size: 16px;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.score-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.score-card {
+    background: var(--bg-gray);
+    padding: 24px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.score-card.score-high {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+}
+
+.score-card.score-medium {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+}
+
+.score-card.score-low {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+}
+
+.score-label {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin-bottom: 8px;
+}
+
+.score-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.score-range {
+    font-size: 14px;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background: var(--bg-gray);
+    padding: 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-card.danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+}
+
+.stat-icon {
+    font-size: 32px;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin-bottom: 4px;
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.debt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.debt-card {
+    background: var(--bg-gray);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.debt-card.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+}
+
+.debt-card.danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+}
+
+.debt-label {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin-bottom: 8px;
+}
+
+.debt-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.history-item {
+    background: var(--bg-gray);
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.history-label {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin-bottom: 8px;
+}
+
+.history-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.bank-info {
+    background: var(--bg-gray);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.bank-count {
+    font-size: 16px;
+    color: var(--text-dark);
+    margin-bottom: 16px;
+}
+
+.bank-json {
+    background: var(--bg-white);
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    overflow-x: auto;
+}
+
+.recommendation-card {
+    padding: 24px;
+    border-radius: 12px;
+    border-left: 4px solid;
+}
+
+.recommendation-card.rec-approve {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--success-green);
+}
+
+.recommendation-card.rec-caution {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--warning-yellow);
+}
+
+.recommendation-card.rec-reject {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--danger-red);
+}
+
+.recommendation-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.recommendation-content {
+    margin-bottom: 16px;
+}
+
+.recommendation-content:last-child {
+    margin-bottom: 0;
+}
+
+.content-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.content-text {
+    font-size: 14px;
+    color: var(--text-gray);
+    line-height: 1.6;
+}
+
+.lookup-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.lookup-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lookup-item label {
+    font-size: 13px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.lookup-item div {
+    font-size: 15px;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+</style>

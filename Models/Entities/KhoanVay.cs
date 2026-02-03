@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -28,8 +28,10 @@ public partial class KhoanVay
     public decimal SoTienVay { get; set; }
 
     [Column(TypeName = "decimal(5, 2)")]
+    [Range(0, 100, ErrorMessage = "Lãi suất phải từ 0 đến 100%.")]
     public decimal LaiSuat { get; set; }
 
+    [Range(1, int.MaxValue, ErrorMessage = "Thời hạn vay phải lớn hơn 0 tháng.")]
     public int KyHanVay { get; set; }
 
     [StringLength(50)]
@@ -106,6 +108,9 @@ public partial class KhoanVay
     [StringLength(1000)]
     public string? GhiChu { get; set; }
 
+    [StringLength(1000)]
+    public string? GhiChuNhanVien { get; set; }
+
     [StringLength(500)]
     public string? DuongDanHoSo { get; set; }
 
@@ -127,6 +132,9 @@ public partial class KhoanVay
 
     [InverseProperty("MaKhoanVayNavigation")]
     public virtual ICollection<KhoanVayTaiSan> KhoanVayTaiSans { get; set; } = new List<KhoanVayTaiSan>();
+
+    [InverseProperty("MaKhoanVayNavigation")]
+    public virtual ICollection<HoSoVayFileDinhKem> HoSoVayFileDinhKems { get; set; } = new List<HoSoVayFileDinhKem>();
 
     [InverseProperty("MaKhoanVayNavigation")]
     public virtual ICollection<LichSuTraNo> LichSuTraNos { get; set; } = new List<LichSuTraNo>();
