@@ -1,0 +1,206 @@
+@{
+    Layout = "_QuanLyRuiRoLayout";
+    ViewData["Title"] = "Phân loại Mức độ Rủi ro";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/quanlyruiro.css" asp-append-version="true" />
+}
+
+<div class="page-header">
+    <div class="header-content">
+        <div>
+            <h1 class="page-title">Phân loại Mức độ Rủi ro</h1>
+            <p class="page-subtitle">Phân loại các khoản vay theo mức độ rủi ro: Thấp, Trung bình, Cao</p>
+        </div>
+        <a href="@Url.Action("Index", "QuanLyRuiRo")" class="btn-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19L5 12L12 5"/>
+            </svg>
+            Quay lại
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card stat-low">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">125</div>
+            <div class="stat-label">Rủi ro Thấp</div>
+            <div class="stat-percentage">45.5%</div>
+        </div>
+    </div>
+    <div class="stat-card stat-medium">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">98</div>
+            <div class="stat-label">Rủi ro Trung bình</div>
+            <div class="stat-percentage">35.6%</div>
+        </div>
+    </div>
+    <div class="stat-card stat-high">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.71 21H20.29A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z"/>
+                <path d="M12 9V13"/>
+                <path d="M12 17H12.01"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">52</div>
+            <div class="stat-label">Rủi ro Cao</div>
+            <div class="stat-percentage">18.9%</div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Section -->
+<div class="content-section">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Danh sách Phân loại</h2>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="all">Tất cả</button>
+                <button class="tab-btn" data-tab="low">Thấp</button>
+                <button class="tab-btn" data-tab="medium">Trung bình</button>
+                <button class="tab-btn" data-tab="high">Cao</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <form class="filter-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Mã khoản vay</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="Nhập mã khoản vay..." />
+                    </div>
+                    <div class="form-group">
+                        <label>Tên khách hàng</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="Nhập tên khách hàng..." />
+                    </div>
+                    <div class="form-group">
+                        <label>Điểm số</label>
+                        <div class="range-inputs">
+                            <input type="number" class="form-control form-control-sm" placeholder="Từ" />
+                            <span>-</span>
+                            <input type="number" class="form-control form-control-sm" placeholder="Đến" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mức độ rủi ro</label>
+                        <select class="form-control form-control-sm">
+                            <option value="">Tất cả</option>
+                            <option value="low">Thấp</option>
+                            <option value="medium">Trung bình</option>
+                            <option value="high">Cao</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="button" class="btn btn-primary btn-sm">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21L16.65 16.65"/>
+                            </svg>
+                            Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" /></th>
+                            <th>Mã khoản vay</th>
+                            <th>Tên khách hàng</th>
+                            <th>Số tiền vay</th>
+                            <th>Điểm số</th>
+                            <th>Mức độ rủi ro</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="checkbox" /></td>
+                            <td><span class="code-badge">KV-2024-001</span></td>
+                            <td>Nguyễn Văn A</td>
+                            <td>500,000,000 VNĐ</td>
+                            <td><span class="score-badge score-high">75.5</span></td>
+                            <td><span class="risk-badge risk-high">Cao</span></td>
+                            <td><span class="risk-badge risk-high">Cao</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="Xem chi tiết">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox" /></td>
+                            <td><span class="code-badge">KV-2024-002</span></td>
+                            <td>Công ty ABC</td>
+                            <td>2,000,000,000 VNĐ</td>
+                            <td><span class="score-badge score-medium">58.2</span></td>
+                            <td><span class="risk-badge risk-medium">Trung bình</span></td>
+                            <td><span class="risk-badge risk-medium">Trung bình</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="Xem chi tiết">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox" /></td>
+                            <td><span class="code-badge">KV-2024-003</span></td>
+                            <td>Trần Thị B</td>
+                            <td>300,000,000 VNĐ</td>
+                            <td><span class="score-badge score-low">32.8</span></td>
+                            <td><span class="risk-badge risk-low">Thấp</span></td>
+                            <td><span class="risk-badge risk-low">Thấp</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="Xem chi tiết">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/quanlyruiro.js" asp-append-version="true"></script>
+}
+

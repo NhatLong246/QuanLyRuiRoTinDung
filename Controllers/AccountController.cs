@@ -19,9 +19,14 @@ namespace QuanLyRuiRoTinDung.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
-            // Nếu đã đăng nhập, redirect về Dashboard
+            // Nếu đã đăng nhập, redirect dựa trên vai trò
             if (HttpContext.Session.GetString("MaNguoiDung") != null)
             {
+                var tenVaiTro = HttpContext.Session.GetString("TenVaiTro");
+                if (tenVaiTro == "QuanLyRuiRo")
+                {
+                    return RedirectToAction("Index", "QuanLyRuiRo");
+                }
                 return RedirectToAction("Index", "Dashboard");
             }
 
@@ -62,9 +67,11 @@ namespace QuanLyRuiRoTinDung.Controllers
                 HttpContext.Session.SetString("HoTen", nguoiDung.HoTen ?? "");
                 HttpContext.Session.SetString("MaVaiTro", nguoiDung.MaVaiTro.ToString());
                 
+                string tenVaiTro = "";
                 if (nguoiDung.MaVaiTroNavigation != null)
                 {
-                    HttpContext.Session.SetString("TenVaiTro", nguoiDung.MaVaiTroNavigation.TenVaiTro ?? "");
+                    tenVaiTro = nguoiDung.MaVaiTroNavigation.TenVaiTro ?? "";
+                    HttpContext.Session.SetString("TenVaiTro", tenVaiTro);
                 }
 
                 // Cập nhật lần đăng nhập cuối
@@ -72,10 +79,16 @@ namespace QuanLyRuiRoTinDung.Controllers
 
                 _logger.LogInformation("User {TenDangNhap} logged in successfully", model.TenDangNhap);
 
-                // Redirect to returnUrl or Dashboard
+                // Redirect to returnUrl or based on role
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
+                }
+
+                // Redirect based on role
+                if (tenVaiTro == "QuanLyRuiRo")
+                {
+                    return RedirectToAction("Index", "QuanLyRuiRo");
                 }
 
                 return RedirectToAction("Index", "Dashboard");

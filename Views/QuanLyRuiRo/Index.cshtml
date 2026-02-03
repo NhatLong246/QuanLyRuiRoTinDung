@@ -1,0 +1,98 @@
+﻿@{
+    Layout = "_QuanLyRuiRoLayout";
+    ViewData["Title"] = "Quản lý Rủi ro Tín dụng";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/quanlyruiro.css" asp-append-version="true" />
+}
+
+<div class="page-header">
+    <h1 class="page-title">Quản lý Rủi ro Tín dụng</h1>
+    <p class="page-subtitle">Bộ phận đánh giá, kiểm soát và giám sát rủi ro tín dụng</p>
+</div>
+
+<div class="function-grid">
+    <a href="@Url.Action("ThamDinhRuiRoTinDung", "QuanLyRuiRo")" class="function-card">
+        <div class="function-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                <path d="M14 2V8H20"/>
+                <path d="M16 13H8"/>
+                <path d="M16 17H8"/>
+            </svg>
+        </div>
+        <h3 class="function-title">Thẩm định Rủi ro Tín dụng</h3>
+        <p class="function-description">Đánh giá và phân tích rủi ro tín dụng cho các khoản vay, xác định mức độ rủi ro và đưa ra kết luận</p>
+        <div class="function-arrow">→</div>
+    </a>
+
+    <a href="@Url.Action("PhanLoaiMucDoRuiRo", "QuanLyRuiRo")" class="function-card">
+        <div class="function-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 7H17M7 12H17M7 17H17"/>
+                <path d="M3 3V21H21" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h3 class="function-title">Phân loại Mức độ Rủi ro</h3>
+        <p class="function-description">Phân loại các khoản vay theo mức độ rủi ro: Thấp, Trung bình, Cao để quản lý hiệu quả</p>
+        <div class="function-arrow">→</div>
+    </a>
+
+    <a href="@Url.Action("XayDungTieuChi", "QuanLyRuiRo")" class="function-card">
+        <div class="function-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                <path d="M2 17L12 22L22 17"/>
+                <path d="M2 12L12 17L22 12"/>
+            </svg>
+        </div>
+        <h3 class="function-title">Xây dựng Tiêu chí Đánh giá</h3>
+        <p class="function-description">Thiết lập và quản lý các tiêu chí đánh giá rủi ro, trọng số và thang điểm</p>
+        <div class="function-arrow">→</div>
+    </a>
+
+    <a href="@Url.Action("TheoDoiDanhMucTinDung", "QuanLyRuiRo")" class="function-card">
+        <div class="function-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3V21H21"/>
+                <path d="M7 16L12 11L16 15L21 10"/>
+                <path d="M21 10H16V15" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h3 class="function-title">Theo dõi Danh mục Tín dụng</h3>
+        <p class="function-description">Giám sát tổng thể danh mục tín dụng, tỷ lệ nợ xấu và xu hướng rủi ro</p>
+        <div class="function-arrow">→</div>
+    </a>
+
+    <a href="@Url.Action("PhatHienSomNoXau", "QuanLyRuiRo")" class="function-card">
+        <div class="function-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.71 21H20.29A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z"/>
+                <path d="M12 9V13"/>
+                <path d="M12 17H12.01"/>
+            </svg>
+        </div>
+        <h3 class="function-title">Phát hiện sớm Nợ xấu</h3>
+        <p class="function-description">Cảnh báo và phát hiện sớm các khoản vay có dấu hiệu quá hạn hoặc nợ xấu</p>
+        <div class="function-arrow">→</div>
+    </a>
+
+    <a href="@Url.Action("DeXuatBienPhapXuLy", "QuanLyRuiRo")" class="function-card">
+        <div class="function-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                <path d="M2 17L12 22L22 17"/>
+                <path d="M2 12L12 17L22 12"/>
+                <path d="M9 9L15 15M15 9L9 15" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h3 class="function-title">Đề xuất Biện pháp Xử lý</h3>
+        <p class="function-description">Đưa ra các đề xuất và biện pháp xử lý rủi ro cho từng trường hợp cụ thể</p>
+        <div class="function-arrow">→</div>
+    </a>
+</div>
+
+@section Scripts {
+    <script src="~/js/quanlyruiro.js" asp-append-version="true"></script>
+}

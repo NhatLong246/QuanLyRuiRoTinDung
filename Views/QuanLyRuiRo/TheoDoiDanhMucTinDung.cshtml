@@ -1,0 +1,234 @@
+@{
+    Layout = "_QuanLyRuiRoLayout";
+    ViewData["Title"] = "Theo dõi Danh mục Tín dụng";
+}
+
+<div class="page-header">
+    <div class="header-content">
+        <div>
+            <h1 class="page-title">Theo dõi Danh mục Tín dụng</h1>
+            <p class="page-subtitle">Giám sát tổng thể danh mục tín dụng, tỷ lệ nợ xấu và xu hướng rủi ro</p>
+        </div>
+        <a href="@Url.Action("Index", "QuanLyRuiRo")" class="btn-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19L5 12L12 5"/>
+            </svg>
+            Quay lại
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <div class="summary-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                <path d="M2 17L12 22L22 17"/>
+                <path d="M2 12L12 17L22 12"/>
+            </svg>
+        </div>
+        <div class="summary-content">
+            <div class="summary-label">Tổng số khoản vay</div>
+            <div class="summary-value">275</div>
+            <div class="summary-change positive">+12 tháng này</div>
+        </div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22S22 17.52 22 12S17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z"/>
+            </svg>
+        </div>
+        <div class="summary-content">
+            <div class="summary-label">Tổng dư nợ</div>
+            <div class="summary-value">125,500 tỷ</div>
+            <div class="summary-change positive">+5.2%</div>
+        </div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.71 21H20.29A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z"/>
+                <path d="M12 9V13"/>
+                <path d="M12 17H12.01"/>
+            </svg>
+        </div>
+        <div class="summary-content">
+            <div class="summary-label">Tỷ lệ nợ xấu</div>
+            <div class="summary-value">2.8%</div>
+            <div class="summary-change negative">-0.3%</div>
+        </div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                <path d="M2 17L12 22L22 17"/>
+                <path d="M2 12L12 17L22 12"/>
+            </svg>
+        </div>
+        <div class="summary-content">
+            <div class="summary-label">Điểm rủi ro TB</div>
+            <div class="summary-value">52.3</div>
+            <div class="summary-change positive">-2.1</div>
+        </div>
+    </div>
+</div>
+
+<div class="content-section">
+    <!-- Risk Distribution Chart -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Phân bố Rủi ro</h3>
+            <select class="form-control form-control-sm">
+                <option value="thang">Tháng này</option>
+                <option value="quy">Quý này</option>
+                <option value="nam">Năm nay</option>
+            </select>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <div class="risk-distribution">
+                    <div class="risk-item">
+                        <div class="risk-bar-container">
+                            <div class="risk-bar risk-low" style="width: 45.5%;">
+                                <span class="risk-bar-label">45.5%</span>
+                            </div>
+                        </div>
+                        <div class="risk-info">
+                            <span class="risk-name">Rủi ro Thấp</span>
+                            <span class="risk-count">125 khoản</span>
+                        </div>
+                    </div>
+                    <div class="risk-item">
+                        <div class="risk-bar-container">
+                            <div class="risk-bar risk-medium" style="width: 35.6%;">
+                                <span class="risk-bar-label">35.6%</span>
+                            </div>
+                        </div>
+                        <div class="risk-info">
+                            <span class="risk-name">Rủi ro Trung bình</span>
+                            <span class="risk-count">98 khoản</span>
+                        </div>
+                    </div>
+                    <div class="risk-item">
+                        <div class="risk-bar-container">
+                            <div class="risk-bar risk-high" style="width: 18.9%;">
+                                <span class="risk-bar-label">18.9%</span>
+                            </div>
+                        </div>
+                        <div class="risk-info">
+                            <span class="risk-name">Rủi ro Cao</span>
+                            <span class="risk-count">52 khoản</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Details -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Chi tiết Danh mục</h3>
+            <div class="header-actions">
+                <button class="btn btn-primary btn-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3V21H21"/>
+                        <path d="M7 16L12 11L16 15L21 10"/>
+                        <path d="M21 10H16V15" stroke-linecap="round"/>
+                    </svg>
+                    Xuất báo cáo
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ngày danh mục</th>
+                            <th>Tổng số khoản vay</th>
+                            <th>Tổng số tiền vay</th>
+                            <th>Tổng dư nợ</th>
+                            <th>Tỷ lệ nợ xấu</th>
+                            <th>Điểm rủi ro TB</th>
+                            <th>Rủi ro Thấp</th>
+                            <th>Rủi ro TB</th>
+                            <th>Rủi ro Cao</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>31/01/2024</td>
+                            <td>275</td>
+                            <td>150,000 tỷ</td>
+                            <td>125,500 tỷ</td>
+                            <td><span class="badge badge-success">2.8%</span></td>
+                            <td>52.3</td>
+                            <td>125</td>
+                            <td>98</td>
+                            <td>52</td>
+                            <td>
+                                <button class="btn-icon" title="Xem chi tiết">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>31/12/2023</td>
+                            <td>263</td>
+                            <td>142,500 tỷ</td>
+                            <td>119,300 tỷ</td>
+                            <td><span class="badge badge-warning">3.1%</span></td>
+                            <td>54.4</td>
+                            <td>118</td>
+                            <td>95</td>
+                            <td>50</td>
+                            <td>
+                                <button class="btn-icon" title="Xem chi tiết">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>30/11/2023</td>
+                            <td>258</td>
+                            <td>138,000 tỷ</td>
+                            <td>115,800 tỷ</td>
+                            <td><span class="badge badge-warning">3.2%</span></td>
+                            <td>55.1</td>
+                            <td>115</td>
+                            <td>93</td>
+                            <td>50</td>
+                            <td>
+                                <button class="btn-icon" title="Xem chi tiết">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/quanlyruiro.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/quanlyruiro.js" asp-append-version="true"></script>
+}
