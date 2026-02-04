@@ -371,6 +371,8 @@
         // ==========================================
         // VALIDATION REALTIME CHO NGƯỜI ĐẠI DIỆN PHÁP LUẬT
         // ==========================================
+        // Sử dụng IIFE để tránh xung đột biến với customer-doanhnghiep.js
+        (function() {
         $(document).ready(function() {
             const crossCheckUrl = '/Customer/CrossCheckWithCIC';
             const crossValidateCICUrl = '/Customer/CrossValidateCIC';
@@ -385,15 +387,15 @@
             let hasGiayPhepError = false;
             let hasTenCongTyError = false;
 
-            const cccdInput = document.getElementById('cccdNguoiDaiDienInput');
-            const nguoiDaiDienInput = document.getElementById('nguoiDaiDienInput');
-            const ngaySinhInput = document.getElementById('ngaySinhNguoiDaiDienInput');
-            const gioiTinhInput = document.getElementById('gioiTinhInput');
-            const phoneInput = document.querySelector('[name="SoDienThoai"]');
-            const emailInput = document.querySelector('[name="Email"]');
-            const maSoThueInput = document.getElementById('maSoThueInput');
-            const tenCongTyInput = document.getElementById('tenCongTyInput');
-            const giayPhepInput = document.getElementById('giayPhepInput');
+            const cccdInputEl = document.getElementById('cccdNguoiDaiDienInput');
+            const nguoiDaiDienInputEl = document.getElementById('nguoiDaiDienInput');
+            const ngaySinhInputEl = document.getElementById('ngaySinhNguoiDaiDienInput');
+            const gioiTinhInputEl = document.getElementById('gioiTinhInput');
+            const phoneInputEl = document.querySelector('[name="SoDienThoai"]');
+            const emailInputEl = document.querySelector('[name="Email"]');
+            const maSoThueInputEl = document.getElementById('maSoThueInput');
+            const tenCongTyInputEl = document.getElementById('tenCongTyInput');
+            const giayPhepInputEl = document.getElementById('giayPhepInput');
 
             // Hàm hiển thị validation label
             function showValidationLabel(elementId, message, type = 'error') {
@@ -435,9 +437,9 @@
             // KIỂM TRA MÃ SỐ THUẾ VỚI CIC
             // ==========================================
             async function validateMaSoThueWithCIC() {
-                const maSoThue = maSoThueInput?.value?.replace(/-/g, '')?.trim() || '';
-                const tenCongTy = tenCongTyInput?.value?.trim() || '';
-                const cccd = cccdInput?.value?.trim() || '';
+                const maSoThue = maSoThueInputEl?.value?.replace(/-/g, '')?.trim() || '';
+                const tenCongTy = tenCongTyInputEl?.value?.trim() || '';
+                const cccd = cccdInputEl?.value?.trim() || '';
 
                 // Chỉ validate khi Mã số thuế đủ 13 số
                 if (maSoThue.length !== 13) {
@@ -458,8 +460,8 @@
 
                     hasCICValidationErrors = false;
                     hideCICValidationLabels();
-                    tenCongTyInput?.classList.remove('input-error');
-                    cccdInput?.classList.remove('input-error');
+                    tenCongTyInputEl?.classList.remove('input-error');
+                    cccdInputEl?.classList.remove('input-error');
 
                     if (data.hasCicRecord) {
                         // Hiển thị thông tin CIC tham chiếu
@@ -469,7 +471,7 @@
                             existingRef.id = 'cicReferenceInfo';
                             existingRef.className = 'cic-reference-info';
                             // Thêm vào sau form-group của Mã số thuế
-                            const formSection = maSoThueInput.closest('.form-section');
+                            const formSection = maSoThueInputEl.closest('.form-section');
                             const formGrid = formSection.querySelector('.form-grid');
                             formGrid.insertAdjacentElement('afterend', existingRef);
                         }
@@ -498,14 +500,14 @@
                             hasCICValidationErrors = true;
                             showValidationLabel('tenCongTyValidationLabel', 
                                 `Tên công ty không khớp với CIC. CIC: ${data.cicTenCongTy}`, 'error');
-                            tenCongTyInput?.classList.add('input-error');
+                            tenCongTyInputEl?.classList.add('input-error');
                         }
 
                         if (data.cccdMismatch && cccd) {
                             hasCICValidationErrors = true;
                             showValidationLabel('cccdValidationLabel', 
                                 `CCCD người đại diện không khớp với CIC. CIC: ${data.cicCccd}`, 'error');
-                            cccdInput?.classList.add('input-error');
+                            cccdInputEl?.classList.add('input-error');
                         }
                     }
 
@@ -515,13 +517,13 @@
             }
 
             // Gắn sự kiện cho Mã số thuế
-            if (maSoThueInput) {
-                maSoThueInput.addEventListener('blur', validateMaSoThueWithCIC);
+            if (maSoThueInputEl) {
+                maSoThueInputEl.addEventListener('blur', validateMaSoThueWithCIC);
             }
 
             // Gắn sự kiện cho Tên công ty (validate khi thay đổi)
-            if (tenCongTyInput) {
-                tenCongTyInput.addEventListener('blur', async function() {
+            if (tenCongTyInputEl) {
+                tenCongTyInputEl.addEventListener('blur', async function() {
                     const tenCongTy = this.value.trim();
                     if (!tenCongTy) return;
 
@@ -558,8 +560,8 @@
             // ==========================================
             // KIỂM TRA SỐ GIẤY PHÉP KINH DOANH TRÙNG
             // ==========================================
-            if (giayPhepInput) {
-                giayPhepInput.addEventListener('blur', async function() {
+            if (giayPhepInputEl) {
+                giayPhepInputEl.addEventListener('blur', async function() {
                     const soGiayPhep = this.value.trim();
                     if (!soGiayPhep) {
                         hasGiayPhepError = false;
@@ -594,10 +596,10 @@
 
             // Hàm kiểm tra cross-check với CIC, khách hàng cá nhân và doanh nghiệp khác
             async function validateNguoiDaiDien() {
-                const soCccd = cccdInput?.value?.trim() || '';
-                const nguoiDaiDien = nguoiDaiDienInput?.value?.trim() || '';
-                const ngaySinh = ngaySinhInput?.value || '';
-                const gioiTinh = gioiTinhInput?.value || '';
+                const soCccd = cccdInputEl?.value?.trim() || '';
+                const nguoiDaiDien = nguoiDaiDienInputEl?.value?.trim() || '';
+                const ngaySinh = ngaySinhInputEl?.value || '';
+                const gioiTinh = gioiTinhInputEl?.value || '';
 
                 // Chỉ validate khi CCCD đủ 12 số
                 if (soCccd.length !== 12) {
@@ -622,9 +624,9 @@
                     hideAllValidationLabels();
 
                     // Xóa class input-error
-                    nguoiDaiDienInput?.classList.remove('input-error');
-                    ngaySinhInput?.classList.remove('input-error');
-                    gioiTinhInput?.classList.remove('input-error');
+                    nguoiDaiDienInputEl?.classList.remove('input-error');
+                    ngaySinhInputEl?.classList.remove('input-error');
+                    gioiTinhInputEl?.classList.remove('input-error');
 
                     if (data.hasWarnings && data.warnings && data.warnings.length > 0) {
                         data.warnings.forEach(warning => {
@@ -632,13 +634,13 @@
                             
                             if (warning.fieldName === 'NguoiDaiDienPhapLuat' || warning.fieldName === 'HoTen') {
                                 showValidationLabel('hoTenValidationLabel', warning.message, 'error');
-                                nguoiDaiDienInput?.classList.add('input-error');
+                                nguoiDaiDienInputEl?.classList.add('input-error');
                             } else if (warning.fieldName === 'NgaySinh') {
                                 showValidationLabel('ngaySinhValidationLabel', warning.message, 'error');
-                                ngaySinhInput?.classList.add('input-error');
+                                ngaySinhInputEl?.classList.add('input-error');
                             } else if (warning.fieldName === 'GioiTinh') {
                                 showValidationLabel('gioiTinhValidationLabel', warning.message, 'error');
-                                gioiTinhInput?.classList.add('input-error');
+                                gioiTinhInputEl?.classList.add('input-error');
                             }
                         });
                     }
@@ -669,14 +671,14 @@
             const debouncedValidate = debounce(validateNguoiDaiDien, 500);
 
             // Gắn sự kiện cho CCCD
-            if (cccdInput) {
-                cccdInput.addEventListener('input', function(e) {
+            if (cccdInputEl) {
+                cccdInputEl.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/\D/g, '');
                     if (value.length > 12) value = value.substring(0, 12);
                     e.target.value = value;
                     debouncedValidate();
                 });
-                cccdInput.addEventListener('blur', function() {
+                cccdInputEl.addEventListener('blur', function() {
                     validateNguoiDaiDien();
                     // Cũng validate với CIC nếu đã có MST
                     validateMaSoThueWithCIC();
@@ -684,33 +686,33 @@
             }
 
             // Gắn sự kiện cho Người đại diện
-            if (nguoiDaiDienInput) {
-                nguoiDaiDienInput.addEventListener('input', debouncedValidate);
-                nguoiDaiDienInput.addEventListener('blur', validateNguoiDaiDien);
+            if (nguoiDaiDienInputEl) {
+                nguoiDaiDienInputEl.addEventListener('input', debouncedValidate);
+                nguoiDaiDienInputEl.addEventListener('blur', validateNguoiDaiDien);
             }
 
             // Gắn sự kiện cho Ngày sinh
-            if (ngaySinhInput) {
-                ngaySinhInput.addEventListener('change', validateNguoiDaiDien);
+            if (ngaySinhInputEl) {
+                ngaySinhInputEl.addEventListener('change', validateNguoiDaiDien);
             }
 
             // Gắn sự kiện cho Giới tính
-            if (gioiTinhInput) {
-                gioiTinhInput.addEventListener('change', validateNguoiDaiDien);
+            if (gioiTinhInputEl) {
+                gioiTinhInputEl.addEventListener('change', validateNguoiDaiDien);
             }
 
             // ==========================================
             // KIỂM TRA SĐT VÀ EMAIL TRÙNG
             // ==========================================
             
-            if (phoneInput) {
-                phoneInput.addEventListener('input', function(e) {
+            if (phoneInputEl) {
+                phoneInputEl.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/\D/g, '');
                     if (value.length > 10) value = value.substring(0, 10);
                     e.target.value = value;
                 });
 
-                phoneInput.addEventListener('blur', async function() {
+                phoneInputEl.addEventListener('blur', async function() {
                     const phone = this.value.trim();
                     if (phone.length !== 10) return;
 
@@ -738,8 +740,8 @@
                 });
             }
 
-            if (emailInput) {
-                emailInput.addEventListener('blur', async function() {
+            if (emailInputEl) {
+                emailInputEl.addEventListener('blur', async function() {
                     const email = this.value.trim();
                     if (!email) return;
 
@@ -796,6 +798,7 @@
                 }
             });
         });
+        })(); // Đóng IIFE
     </script>
 }
 
