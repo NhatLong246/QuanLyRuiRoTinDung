@@ -1,7 +1,7 @@
 @model List<QuanLyRuiRoTinDung.Models.Entities.TheoDoiNoXau>
 
 @{
-    ViewData["Title"] = "Theo dõi Nợ xấu - Quản lý Lãnh đạo";
+    ViewData["Title"] = "Thống kê Nợ xấu - Quản lý Lãnh đạo";
 }
 
 <div class="container-fluid">
@@ -9,7 +9,7 @@
         <div class="col-12">
             <h1 class="h2">
                 <i class="fas fa-list me-2"></i>
-                Theo dõi Nợ xấu
+                Thống kê Nợ xấu
             </h1>
             <p class="text-muted">Giám sát các khoản vay nợ xấu và tỷ lệ nợ xấu</p>
         </div>
@@ -194,10 +194,10 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-light">
-                    <h6 class="card-title mb-0">Phân bố nợ xấu theo thời gian quá hạn</h6>
+                    <h6 class="card-title mb-0">Tổng số dư nợ xấu trong 6 tháng gần nhất</h6>
                 </div>
-                <div class="card-body">
-                    <canvas id="badDebtChart" height="200"></canvas>
+                <div class="card-body" style="height: 320px; position: relative; padding-bottom: 50px;">
+                    <canvas id="badDebtChart"></canvas>
                 </div>
             </div>
         </div>
@@ -205,10 +205,10 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-light">
-                    <h6 class="card-title mb-0">Trạng thái xử lý nợ xấu</h6>
+                    <h6 class="card-title mb-0">Tổng số nợ xấu trong 6 tháng</h6>
                 </div>
-                <div class="card-body" style="height: 280px; position: relative;">
-                    <canvas id="statusChart"></canvas>
+                <div class="card-body" style="height: 320px; position: relative; padding-bottom: 50px;">
+                    <canvas id="totalBadDebt6MonthsChart"></canvas>
                 </div>
             </div>
         </div>
@@ -262,63 +262,190 @@
                 document.getElementById('badDebtId').value = badDebtId;
             });
 
-            // Bad Debt Chart
-            const overdueDays = @Html.Raw(Json.Serialize(Model?.GroupBy(x => 
-                x.SoNgayQuaHan > 90 ? "> 90 ngày" : (x.SoNgayQuaHan > 30 ? "30-90 ngày" : "< 30 ngày"))
-                .Select(g => new { Label = g.Key, Count = g.Count() }).ToList()));
-
-            const ctx1 = document.getElementById('badDebtChart').getContext('2d');
-            new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: overdueDays.map(x => x.label),
-                    datasets: [{
-                        label: 'Số khoản nợ xấu',
-                        data: overdueDays.map(x => x.count),
-                        backgroundColor: ['#198754', '#ffc107', '#dc3545']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+            // Total Bad Debt Balance 6 Months Chart
+            fetch('@Url.Action("GetChartData", "LanhDao", new { type = "totalBadDebtBalance6Months" })')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status);
                     }
-                }
-            });
-
-            // Status Chart
-            const statuses = @Html.Raw(Json.Serialize(Model?.GroupBy(x => x.TrangThai)
-                .Select(g => new { Label = g.Key, Count = g.Count() }).ToList()));
-
-            const ctx2 = document.getElementById('statusChart').getContext('2d');
-            new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: statuses.map(x => x.label),
-                    datasets: [{
-                        data: statuses.map(x => x.count),
-                        backgroundColor: ['#0d6efd', '#198754', '#0dcaf0']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    aspectRatio: 1.5,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Bad debt balance chart data received:', data);
+                    console.log('Labels:', data?.Labels || data?.labels);
+                    console.log('Data:', data?.Data || data?.data);
+                    
+                    // Hỗ trợ cả Labels/Data và labels/data
+                    const labels = data?.Labels || data?.labels;
+                    const chartData = data?.Data || data?.data;
+                    
+                    if (!data || !labels || !chartData) {
+                        console.error('Invalid chart data structure:', data);
+                        return;
                     }
-                }
-            });
+                    
+                    const ctx1 = document.getElementById('badDebtChart');
+                    if (!ctx1) {
+                        console.error('Canvas element not found');
+                        return;
+                    }
+                    
+                    // Format số tiền
+                    const formatCurrency = (value) => {
+                        if (value >= 1000000000) {
+                            return (value / 1000000000).toFixed(1) + ' tỷ';
+                        } else if (value >= 1000000) {
+                            return (value / 1000000).toFixed(1) + ' triệu';
+                        } else if (value >= 1000) {
+                            return (value / 1000).toFixed(1) + ' nghìn';
+                        }
+                        return value.toLocaleString('vi-VN');
+                    };
+                    
+                    new Chart(ctx1.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Tổng số dư nợ xấu (VNĐ)',
+                                data: chartData,
+                                backgroundColor: '#dc3545',
+                                borderColor: '#c82333',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    bottom: 20
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom',
+                                    padding: 10
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Tổng số dư nợ xấu: ' + context.parsed.y.toLocaleString('vi-VN') + ' VNĐ';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return formatCurrency(value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading bad debt balance chart data:', error);
+                    const ctx1 = document.getElementById('badDebtChart');
+                    if (ctx1) {
+                        const ctx = ctx1.getContext('2d');
+                        ctx.fillStyle = '#999';
+                        ctx.font = '16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Không thể tải dữ liệu biểu đồ', ctx1.width / 2, ctx1.height / 2);
+                    }
+                });
+
+            // Total Bad Debt 6 Months Chart
+            fetch('@Url.Action("GetChartData", "LanhDao", new { type = "totalBadDebt6Months" })')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Chart data received:', data);
+                    console.log('Labels:', data?.Labels || data?.labels);
+                    console.log('Data:', data?.Data || data?.data);
+                    
+                    // Hỗ trợ cả Labels/Data và labels/data
+                    const labels = data?.Labels || data?.labels;
+                    const chartData = data?.Data || data?.data;
+                    
+                    if (!data || !labels || !chartData) {
+                        console.error('Invalid chart data structure:', data);
+                        return;
+                    }
+                    
+                    const ctx2 = document.getElementById('totalBadDebt6MonthsChart');
+                    if (!ctx2) {
+                        console.error('Canvas element not found');
+                        return;
+                    }
+                    
+                    new Chart(ctx2.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Số khoản nợ xấu',
+                                data: chartData,
+                                backgroundColor: '#dc3545',
+                                borderColor: '#c82333',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    bottom: 20
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom',
+                                    padding: 10
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Số khoản nợ xấu: ' + context.parsed.y;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1,
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading chart data:', error);
+                    const ctx2 = document.getElementById('totalBadDebt6MonthsChart');
+                    if (ctx2) {
+                        const ctx = ctx2.getContext('2d');
+                        ctx.fillStyle = '#999';
+                        ctx.font = '14px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Không thể tải dữ liệu biểu đồ', ctx2.width / 2, ctx2.height / 2);
+                    }
+                });
         });
     </script>
 }
@@ -340,7 +467,7 @@
     }
 
     /* Chart size constraints */
-    #statusChart {
+    #totalBadDebt6MonthsChart {
         max-height: 270px !important;
         height: 270px !important;
     }

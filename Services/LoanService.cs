@@ -99,24 +99,40 @@ namespace QuanLyRuiRoTinDung.Services
             khoanVay.TongDaThanhToan = 0;
             khoanVay.SoNgayQuaHan = 0;
 
-            // Tính số tiền trả hàng tháng nếu là trả góp đều
-            if (khoanVay.HinhThucTraNo == "Trả góp đều" && khoanVay.KyHanVay > 0)
+            // Tính số tiền trả hàng tháng dựa trên hình thức trả nợ
+            // Chỉ tính lại nếu chưa có giá trị (để đảm bảo giá trị từ form được giữ nguyên)
+            if (!khoanVay.SoTienTraHangThang.HasValue || khoanVay.SoTienTraHangThang.Value == 0)
             {
-                // Công thức tính trả góp đều: PMT = PV * (r(1+r)^n) / ((1+r)^n - 1)
-                // PV = Số tiền vay, r = Lãi suất tháng, n = Số kỳ
-                decimal laiSuatThang = khoanVay.LaiSuat / 100 / 12;
-                int soKy = khoanVay.KyHanVay;
-                decimal soTienVay = khoanVay.SoTienVay;
+                if (khoanVay.HinhThucTraNo == "Trả góp đều" && khoanVay.KyHanVay > 0)
+                {
+                    // Công thức tính trả góp đều: PMT = PV * (r(1+r)^n) / ((1+r)^n - 1)
+                    // PV = Số tiền vay, r = Lãi suất tháng, n = Số kỳ
+                    decimal laiSuatThang = khoanVay.LaiSuat / 100 / 12;
+                    int soKy = khoanVay.KyHanVay;
+                    decimal soTienVay = khoanVay.SoTienVay;
 
-                if (laiSuatThang > 0)
-                {
-                    decimal tuSo = laiSuatThang * (decimal)Math.Pow((double)(1 + laiSuatThang), soKy);
-                    decimal mauSo = (decimal)Math.Pow((double)(1 + laiSuatThang), soKy) - 1;
-                    khoanVay.SoTienTraHangThang = soTienVay * (tuSo / mauSo);
+                    if (laiSuatThang > 0)
+                    {
+                        decimal tuSo = laiSuatThang * (decimal)Math.Pow((double)(1 + laiSuatThang), soKy);
+                        decimal mauSo = (decimal)Math.Pow((double)(1 + laiSuatThang), soKy) - 1;
+                        khoanVay.SoTienTraHangThang = soTienVay * (tuSo / mauSo);
+                    }
+                    else
+                    {
+                        khoanVay.SoTienTraHangThang = soTienVay / soKy;
+                    }
                 }
-                else
+                else if (khoanVay.HinhThucTraNo == "Trả gốc cuối kỳ" && khoanVay.LaiSuat > 0)
                 {
-                    khoanVay.SoTienTraHangThang = soTienVay / soKy;
+                    // Chỉ trả lãi hàng tháng, gốc trả cuối kỳ
+                    // Lãi hàng tháng = Số tiền vay * (Lãi suất / 100) / 12
+                    decimal laiSuatThang = khoanVay.LaiSuat / 100 / 12;
+                    khoanVay.SoTienTraHangThang = khoanVay.SoTienVay * laiSuatThang;
+                }
+                else if (khoanVay.HinhThucTraNo == "Trả gốc lãi cuối kỳ")
+                {
+                    // Trả toàn bộ gốc và lãi cuối kỳ, hàng tháng = 0
+                    khoanVay.SoTienTraHangThang = 0;
                 }
             }
 
@@ -463,7 +479,7 @@ namespace QuanLyRuiRoTinDung.Services
             existingLoan.NguoiCapNhat = nguoiCapNhat;
             existingLoan.NgayCapNhat = DateTime.Now;
 
-            // Tính lại số tiền trả hàng tháng
+            // Tính lại số tiền trả hàng tháng dựa trên hình thức trả nợ
             if (existingLoan.HinhThucTraNo == "Trả góp đều" && existingLoan.KyHanVay > 0)
             {
                 decimal laiSuatThang = existingLoan.LaiSuat / 100 / 12;
@@ -480,6 +496,23 @@ namespace QuanLyRuiRoTinDung.Services
                 {
                     existingLoan.SoTienTraHangThang = soTienVay / soKy;
                 }
+            }
+            else if (existingLoan.HinhThucTraNo == "Trả gốc cuối kỳ" && existingLoan.LaiSuat > 0)
+            {
+                // Chỉ trả lãi hàng tháng, gốc trả cuối kỳ
+                // Lãi hàng tháng = Số tiền vay * (Lãi suất / 100) / 12
+                decimal laiSuatThang = existingLoan.LaiSuat / 100 / 12;
+                existingLoan.SoTienTraHangThang = existingLoan.SoTienVay * laiSuatThang;
+            }
+            else if (existingLoan.HinhThucTraNo == "Trả gốc lãi cuối kỳ")
+            {
+                // Trả toàn bộ gốc và lãi cuối kỳ, hàng tháng = 0
+                existingLoan.SoTienTraHangThang = 0;
+            }
+            else
+            {
+                // Nếu không khớp với các hình thức trên, giữ nguyên giá trị từ form
+                existingLoan.SoTienTraHangThang = khoanVay.SoTienTraHangThang;
             }
 
             // Xóa tài sản đảm bảo cũ

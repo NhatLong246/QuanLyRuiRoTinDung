@@ -1,7 +1,7 @@
-@model QuanLyRuiRoTinDung.Models.LoginViewModel
+@model QuanLyRuiRoTinDung.Models.VerifyOtpViewModel
 @{
     Layout = "_LoginLayout";
-    ViewData["Title"] = "Đăng nhập Hệ thống";
+    ViewData["Title"] = "Xác thực mã OTP";
 }
 
 <div class="login-container">
@@ -39,75 +39,67 @@
         </div>
     </div>
 
-    <!-- Right Panel: Login Form -->
+    <!-- Right Panel: Verify OTP Form -->
     <div class="login-right-panel">
         <div class="login-form-wrapper">
             <!-- Form Title -->
             <div class="form-header" data-animate="form-header">
-                <h2 class="form-title">Đăng nhập Hệ thống</h2>
-                <p class="form-subtitle">Module Nhân viên Tín dụng</p>
+                <h2 class="form-title">Xác thực mã OTP</h2>
+                <p class="form-subtitle">Nhập mã xác nhận đã gửi đến email của bạn</p>
             </div>
 
-            <!-- Login Form -->
-            <form asp-action="Login" asp-controller="Account" method="post" class="login-form" id="loginForm">
+            <!-- Success/Error Messages -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success" role="alert">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <!-- Verify OTP Form -->
+            <form asp-action="VerifyOtp" asp-controller="Account" method="post" class="login-form" id="verifyOtpForm">
                 @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="ReturnUrl" value="@ViewData["ReturnUrl"]" />
+                <input type="hidden" asp-for="Email" />
 
-                <!-- Username Field -->
+                <!-- Email Display (Read-only) -->
                 <div class="form-group" data-animate="input-1">
-                    <label asp-for="TenDangNhap" class="form-label">
-                        Tên đăng nhập / Mã nhân viên
-                    </label>
+                    <label class="form-label">Email</label>
                     <div class="input-wrapper">
-                        <input asp-for="TenDangNhap" 
-                               class="form-control" 
-                               placeholder="Nhập mã nhân viên (VD: NV12345)"
-                               autocomplete="username" />
+                        <input type="email" value="@Model.Email" class="form-control" readonly />
                         <span class="input-icon input-icon-left">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="currentColor"/>
+                                <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/>
                             </svg>
                         </span>
                     </div>
-                    <span asp-validation-for="TenDangNhap" class="text-danger"></span>
                 </div>
 
-                <!-- Password Field -->
+                <!-- OTP Code Field -->
                 <div class="form-group" data-animate="input-2">
-                    <label asp-for="MatKhau" class="form-label">Mật khẩu</label>
+                    <label asp-for="OtpCode" class="form-label">Mã xác nhận (6 chữ số)</label>
                     <div class="input-wrapper">
-                        <input asp-for="MatKhau" 
-                               type="password" 
+                        <input asp-for="OtpCode" 
+                               type="text" 
                                class="form-control" 
-                               placeholder="Nhập mật khẩu"
-                               autocomplete="current-password"
-                               id="passwordInput" />
+                               placeholder="Nhập mã 6 chữ số"
+                               maxlength="6"
+                               autocomplete="off"
+                               id="otpInput"
+                               style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: bold;" />
                         <span class="input-icon input-icon-left">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 3C13.66 3 15 4.34 15 6V8H9V6C9 4.34 10.34 3 12 3ZM18 20H6V10H18V20ZM12 17C13.1 17 14 16.1 14 15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15C10 16.1 10.9 17 12 17Z" fill="currentColor"/>
+                                <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 7C13.4 7 14.8 8.6 14.8 10V11H16V15H8V11H9.2V10C9.2 8.6 10.6 7 12 7ZM12 8.2C11.2 8.2 10.4 8.7 10.4 10V11H13.6V10C13.6 8.7 12.8 8.2 12 8.2Z" fill="currentColor"/>
                             </svg>
                         </span>
-                        <button type="button" class="input-icon password-toggle" id="passwordToggle">
-                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5C17 19.5 21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12C15 10.34 13.66 9 12 9Z" fill="currentColor"/>
-                            </svg>
-                            <svg class="eye-off-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
-                                <path d="M12 7C14.76 7 17 9.24 17 12C17 12.65 16.87 13.26 16.64 13.82L19.56 16.74C21.07 15.49 22.26 13.86 23 12C21.27 7.61 17 4.5 12 4.5C10.6 4.5 9.26 4.75 8.09 5.2L10.17 7.28C10.74 7.1 11.35 7 12 7ZM2 4.27L4.28 6.55L4.73 7L7.53 9.8C7.19 10.5 7 11.22 7 12C7 14.76 9.24 17 12 17C12.78 17 13.5 16.81 14.2 16.47L16.74 19.01C15.49 20.52 13.86 21.71 12 22.5C7 22.5 2.73 19.39 1 15C1.94 13.06 3.24 11.4 4.78 10.11L2 7.33V4.27ZM12 9C11.22 9 10.5 9.19 9.8 9.53L14.47 14.2C14.81 13.5 15 12.78 15 12C15 9.24 12.76 7 10 7H12V9ZM3.27 2L5 3.73L20.27 19L18.54 20.73L12.81 15H12C9.24 15 7 12.76 7 10C7 9.27 7.19 8.55 7.53 7.85L3.27 2Z" fill="currentColor"/>
-                            </svg>
-                        </button>
                     </div>
-                    <span asp-validation-for="MatKhau" class="text-danger"></span>
-                </div>
-
-                <!-- Remember & Forgot -->
-                <div class="form-options" data-animate="options">
-                    <div class="form-check">
-                        <input asp-for="GhiNhoDangNhap" class="form-check-input" type="checkbox" id="rememberMe" />
-                        <label class="form-check-label" for="rememberMe">
-                            Ghi nhớ đăng nhập
-                        </label>
-                    </div>
-                    <a asp-action="ForgotPassword" asp-controller="Account" class="forgot-password-link">Quên mật khẩu?</a>
+                    <span asp-validation-for="OtpCode" class="text-danger"></span>
+                    <small class="form-text text-muted">Mã xác nhận có hiệu lực trong 10 phút</small>
                 </div>
 
                 <!-- Error Messages -->
@@ -123,7 +115,7 @@
 
                 <!-- Submit Button -->
                 <button type="submit" class="btn-login" data-animate="button">
-                    <span class="btn-text">Đăng nhập</span>
+                    <span class="btn-text">Xác thực</span>
                     <span class="btn-loader" style="display: none;">
                         <svg class="spinner" viewBox="0 0 24 24" fill="none">
                             <circle class="spinner-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="31.416" stroke-dashoffset="31.416">
@@ -133,6 +125,13 @@
                         </svg>
                     </span>
                 </button>
+
+                <!-- Back to Forgot Password -->
+                <div class="text-center mt-3">
+                    <a asp-action="ForgotPassword" asp-controller="Account" class="forgot-password-link">
+                        ← Quay lại
+                    </a>
+                </div>
             </form>
 
             <!-- Support & Version Info -->
@@ -153,6 +152,19 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
-    <script src="~/js/login.js" asp-append-version="true"></script>
+    <script>
+        // Chỉ cho phép nhập số
+        document.addEventListener('DOMContentLoaded', function() {
+            const otpInput = document.getElementById('otpInput');
+            if (otpInput) {
+                otpInput.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+                
+                // Tự động focus vào input
+                otpInput.focus();
+            }
+        });
+    </script>
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

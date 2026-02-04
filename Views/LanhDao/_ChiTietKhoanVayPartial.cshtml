@@ -1,6 +1,7 @@
 @using QuanLyRuiRoTinDung.Models.Entities
 @using System.Linq
 @using System.IO
+@using System.Text.Json
 @model KhoanVay
 
 <div class="row">
@@ -323,28 +324,22 @@
                             var displayFileName = file.TenFile.Length > 30 ? file.TenFile.Substring(0, 30) + "..." : file.TenFile;
                             
                             <div class="col-md-6 col-lg-4 col-xl-3">
-                                <div class="file-card h-100" data-file-url="@fileUrl" data-file-name="@file.TenFile" data-file-type="@fileExtension" data-can-preview="@canPreview.ToString().ToLower()">
+                                <div class="file-card h-100">
                                     <div class="file-preview-container">
                                         @if (isImage)
                                         {
-                                            <div class="file-preview-image" style="background-image: url('@fileUrl'); background-size: cover; background-position: center; cursor: pointer;" onclick="openFilePreview('@fileUrl', '@file.TenFile', 'image')">
-                                                <div class="file-preview-overlay">
-                                                    <i class="fas fa-eye fa-2x text-white"></i>
-                                                </div>
+                                            <div class="file-preview-image" style="background-image: url('@fileUrl'); background-size: cover; background-position: center;">
                                             </div>
                                         }
                                         else if (isPdf)
                                         {
-                                            <div class="file-preview-pdf" onclick="openFilePreview('@fileUrl', '@file.TenFile', 'pdf')" style="cursor: pointer;">
+                                            <div class="file-preview-pdf">
                                                 <i class="fas fa-file-pdf fa-4x text-danger"></i>
-                                                <div class="file-preview-overlay">
-                                                    <i class="fas fa-eye fa-2x text-white"></i>
-                                                </div>
                                             </div>
                                         }
                                         else
                                         {
-                                            <div class="file-preview-other" onclick="openFilePreview('@fileUrl', '@file.TenFile', '@fileExtension')" style="cursor: pointer;">
+                                            <div class="file-preview-other">
                                                 @{
                                                     var fileIcon = fileExtension switch
                                                     {
@@ -355,9 +350,6 @@
                                                     };
                                                 }
                                                 <i class="fas @fileIcon fa-4x"></i>
-                                                <div class="file-preview-overlay">
-                                                    <i class="fas fa-external-link-alt fa-2x text-white"></i>
-                                                </div>
                                             </div>
                                         }
                                     </div>
@@ -373,10 +365,8 @@
                                             }
                                         </small>
                                         <a href="@fileUrl" 
-                                           target="_blank" 
-                                           class="btn btn-sm btn-primary w-100"
-                                           download="@file.TenFile"
-                                           onclick="event.stopPropagation();">
+                                           class="btn btn-sm btn-success w-100"
+                                           download="@file.TenFile">
                                             <i class="fas fa-download me-1"></i>Tải xuống
                                         </a>
                                     </div>
@@ -508,6 +498,10 @@
                                 <p class="mb-0"><strong id="confirmCustomerId_@Model.MaKhoanVay">-</strong></p>
                             </div>
                             <div class="col-md-6 mb-2">
+                                <small class="text-muted">Tên khách hàng:</small>
+                                <p class="mb-0"><strong id="confirmCustomerName_@Model.MaKhoanVay">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
                                 <small class="text-muted">Loại khách hàng:</small>
                                 <p class="mb-0"><strong id="confirmCustomerType_@Model.MaKhoanVay">-</strong></p>
                             </div>
@@ -552,8 +546,10 @@
     (function() {
         const formId = 'decisionForm_@Model.MaKhoanVay';
         const loanCode = '@Model.MaKhoanVayCode';
-        // Sử dụng modal chung từ file chính
-        const modalId = 'confirmDecisionModal';
+        const loanId = @Model.MaKhoanVay;
+        // Sử dụng modal với suffix
+        const modalId = 'confirmDecisionModal_' + loanId;
+        const suffix = '_' + loanId;
         
         // Đảm bảo object global tồn tại
         if (!window.loanDecisionData) {
@@ -568,18 +564,33 @@
             @{
                 var latestDanhGia = Model.DanhGiaRuiRos?.OrderByDescending(d => d.NgayDanhGia ?? DateTime.MinValue).FirstOrDefault();
                 var riskLevel = latestDanhGia?.MucDoRuiRo ?? Model.MucDoRuiRo ?? "Chưa xác định";
+                var loaiKhachHang = Model.LoaiKhachHang ?? "Chưa xác định";
+                var mucDichVay = Model.MucDichVay ?? "Chưa xác định";
+                var maKhachHang = Model.MaKhachHang.ToString();
+                var tenKhachHang = ViewBag.TenKhachHang as string ?? $"KH-{Model.MaKhachHang}";
             }
-            return {
-                loanCode: '@Model.MaKhoanVayCode',
-                customerId: '@Model.MaKhachHang',
-                customerType: '@Model.LoaiKhachHang',
-                loanAmount: '@Model.SoTienVay.ToString("N0") VND',
-                loanPurpose: '@Model.MucDichVay',
-                riskLevel: '@riskLevel'
-            };
+            // Sử dụng JSON để encode đúng cách, tránh HTML entities
+            var loanInfoJson = @Html.Raw(JsonSerializer.Serialize(new {
+                loanCode = Model.MaKhoanVayCode,
+                customerId = maKhachHang,
+                customerName = tenKhachHang,
+                customerType = loaiKhachHang,
+                loanAmount = Model.SoTienVay.ToString("N0") + " VND",
+                loanPurpose = mucDichVay,
+                riskLevel = riskLevel
+            }));
+            return loanInfoJson;
         }
         
-        // Hàm hiển thị modal xác nhận - sử dụng modal chung từ file chính
+        // Hàm decode HTML entities
+        function decodeHtmlEntities(text) {
+            if (!text) return text;
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            return textarea.value;
+        }
+        
+        // Hàm hiển thị modal xác nhận
         function showConfirmModal(decision, loanInfo) {
             const confirmModalEl = document.getElementById(modalId);
             if (!confirmModalEl) {
@@ -588,23 +599,31 @@
             }
             
             const confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
-            const confirmHeader = document.getElementById('confirmModalHeader');
-            const confirmMessage = document.getElementById('confirmMessage');
-            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
-            const rejectReasonSection = document.getElementById('rejectReasonSection');
-            const confirmAlert = document.getElementById('confirmAlert');
+            const confirmHeader = document.getElementById('confirmModalHeader' + suffix);
+            const confirmMessage = document.getElementById('confirmMessage' + suffix);
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn' + suffix);
+            const rejectReasonSection = document.getElementById('rejectReasonSection' + suffix);
+            const confirmAlert = document.getElementById('confirmAlert' + suffix);
             
             if (!confirmHeader || !confirmMessage || !confirmSubmitBtn || !confirmAlert) {
-                console.error('Không tìm thấy các phần tử trong modal xác nhận!');
+                console.error('Không tìm thấy các phần tử trong modal xác nhận!', suffix);
                 return;
             }
             
-            // Điền thông tin khoản vay
-            document.getElementById('confirmLoanCode').textContent = loanInfo.loanCode || '-';
-            document.getElementById('confirmCustomerId').textContent = loanInfo.customerId || '-';
-            document.getElementById('confirmCustomerType').textContent = loanInfo.customerType || '-';
-            document.getElementById('confirmLoanAmount').textContent = loanInfo.loanAmount || '-';
-            document.getElementById('confirmLoanPurpose').textContent = loanInfo.loanPurpose || '-';
+            // Điền thông tin khoản vay với suffix đúng và decode HTML entities
+            const loanCodeEl = document.getElementById('confirmLoanCode' + suffix);
+            const customerIdEl = document.getElementById('confirmCustomerId' + suffix);
+            const customerNameEl = document.getElementById('confirmCustomerName' + suffix);
+            const customerTypeEl = document.getElementById('confirmCustomerType' + suffix);
+            const loanAmountEl = document.getElementById('confirmLoanAmount' + suffix);
+            const loanPurposeEl = document.getElementById('confirmLoanPurpose' + suffix);
+            
+            if (loanCodeEl) loanCodeEl.textContent = decodeHtmlEntities(loanInfo.loanCode) || '-';
+            if (customerIdEl) customerIdEl.textContent = decodeHtmlEntities(loanInfo.customerId) || '-';
+            if (customerNameEl) customerNameEl.textContent = decodeHtmlEntities(loanInfo.customerName) || '-';
+            if (customerTypeEl) customerTypeEl.textContent = decodeHtmlEntities(loanInfo.customerType) || '-';
+            if (loanAmountEl) loanAmountEl.textContent = decodeHtmlEntities(loanInfo.loanAmount) || '-';
+            if (loanPurposeEl) loanPurposeEl.textContent = decodeHtmlEntities(loanInfo.loanPurpose) || '-';
             
             if (decision === 'approve') {
                 // Chấp nhận
@@ -656,15 +675,23 @@
                 return;
             }
             
+            // Kiểm tra xem có đang trong modal không (để tránh duplicate event listener)
+            const isInModal = form.closest('#loanDetailModal') !== null;
+            
+            // Nếu đang trong modal của PheDuyetKhoanVay, không thêm event listener ở đây
+            // Vì đã có event delegation trong file chính
+            if (isInModal) {
+                return;
+            }
+            
             const approveBtn = form.querySelector('.btn-approve');
             const rejectBtn = form.querySelector('.btn-reject');
             
-            // Xử lý nút Chấp nhận
-            if (approveBtn) {
-                const newApproveBtn = approveBtn.cloneNode(true);
-                approveBtn.parentNode.replaceChild(newApproveBtn, approveBtn);
+            // Kiểm tra xem button đã có event listener chưa
+            if (approveBtn && !approveBtn.hasAttribute('data-listener-attached')) {
+                approveBtn.setAttribute('data-listener-attached', 'true');
                 
-                newApproveBtn.addEventListener('click', function(e) {
+                approveBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     
@@ -673,12 +700,10 @@
                 });
             }
             
-            // Xử lý nút Từ chối
-            if (rejectBtn) {
-                const newRejectBtn = rejectBtn.cloneNode(true);
-                rejectBtn.parentNode.replaceChild(newRejectBtn, rejectBtn);
+            if (rejectBtn && !rejectBtn.hasAttribute('data-listener-attached')) {
+                rejectBtn.setAttribute('data-listener-attached', 'true');
                 
-                newRejectBtn.addEventListener('click', function(e) {
+                rejectBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     
@@ -686,9 +711,6 @@
                     showConfirmModal('reject', loanInfo);
                 });
             }
-            
-            // Không cần xử lý nút xác nhận ở đây nữa vì đã được xử lý trong file chính
-            // Event listener trong file chính sẽ tự động xử lý khi nút được click
         }
         
         // Chạy ngay lập tức
@@ -696,32 +718,6 @@
     })();
 </script>
 
-<!-- Modal Preview File -->
-<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="filePreviewModalLabel">
-                    <i class="fas fa-file me-2"></i><span id="filePreviewTitle">Xem file</span>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0" style="min-height: 500px;">
-                <div id="filePreviewContent" class="text-center p-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Đang tải...</span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <a id="filePreviewDownload" href="#" class="btn btn-primary" download>
-                    <i class="fas fa-download me-2"></i>Tải xuống
-                </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
     .file-card {
@@ -734,7 +730,6 @@
 
     .file-card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
     }
 
     .file-preview-container {
@@ -762,23 +757,6 @@
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
 
-    .file-preview-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .file-card:hover .file-preview-overlay {
-        opacity: 1;
-    }
 
     .file-info {
         background: white;
@@ -789,85 +767,5 @@
         line-height: 1.4;
     }
 
-    #filePreviewContent {
-        min-height: 500px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #filePreviewContent img {
-        max-width: 100%;
-        max-height: 70vh;
-        object-fit: contain;
-    }
-
-    #filePreviewContent iframe {
-        width: 100%;
-        height: 70vh;
-        border: none;
-    }
 </style>
-
-<script>
-    function openFilePreview(fileUrl, fileName, fileType) {
-        const modal = new bootstrap.Modal(document.getElementById('filePreviewModal'));
-        const modalTitle = document.getElementById('filePreviewTitle');
-        const modalContent = document.getElementById('filePreviewContent');
-        const downloadLink = document.getElementById('filePreviewDownload');
-        
-        modalTitle.textContent = fileName;
-        downloadLink.href = fileUrl;
-        downloadLink.download = fileName;
-        
-        // Hiển thị loading
-        modalContent.innerHTML = `
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Đang tải...</span>
-            </div>
-            <p class="mt-3 text-muted">Đang tải file...</p>
-        `;
-        
-        modal.show();
-        
-        // Load nội dung file
-        if (fileType === 'image' || fileType === 'jpg' || fileType === 'jpeg' || fileType === 'png' || fileType === 'gif') {
-            // Hiển thị hình ảnh
-            const img = document.createElement('img');
-            img.src = fileUrl;
-            img.onload = function() {
-                modalContent.innerHTML = '';
-                modalContent.appendChild(img);
-            };
-            img.onerror = function() {
-                modalContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Không thể tải hình ảnh. Vui lòng thử tải xuống.
-                    </div>
-                `;
-            };
-        } else if (fileType === 'pdf') {
-            // Hiển thị PDF
-            const iframe = document.createElement('iframe');
-            iframe.src = fileUrl + '#toolbar=1';
-            iframe.onload = function() {
-                modalContent.innerHTML = '';
-                modalContent.appendChild(iframe);
-            };
-            iframe.onerror = function() {
-                modalContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Không thể tải PDF. Vui lòng thử tải xuống.
-                    </div>
-                `;
-            };
-        } else {
-            // Mở trong tab mới cho các file khác
-            window.open(fileUrl, '_blank');
-            modal.hide();
-        }
-    }
-</script>
 

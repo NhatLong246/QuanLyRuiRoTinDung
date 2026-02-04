@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using QuanLyRuiRoTinDung.Models.EF;
 using QuanLyRuiRoTinDung.Models.Entities;
 using System.IO;
+using ClosedXML.Excel;
 
 namespace QuanLyRuiRoTinDung.Controllers
 {
@@ -150,10 +151,17 @@ namespace QuanLyRuiRoTinDung.Controllers
             // Luôn lọc theo trạng thái "Chờ duyệt"
             var fixedStatus = "Chờ duyệt";
             
+            // Lấy danh sách MaKhoanVay đã có đánh giá rủi ro (có DanhGiaRuiRo với MucDoRuiRo không rỗng)
+            var assessedLoanIds = await _context.DanhGiaRuiRos
+                .Where(d => !string.IsNullOrEmpty(d.MucDoRuiRo))
+                .Select(d => d.MaKhoanVay)
+                .Distinct()
+                .ToListAsync();
+            
             var khoanVayQuery = _context.KhoanVays
                 .Include(k => k.MaNhanVienTinDungNavigation)
                 .Include(k => k.MaLoaiVayNavigation)
-                .Where(k => k.TrangThaiKhoanVay == fixedStatus)
+                .Where(k => k.TrangThaiKhoanVay == fixedStatus && assessedLoanIds.Contains(k.MaKhoanVay))
                 .AsQueryable();
 
             // Tìm kiếm theo mã khoản vay
@@ -424,7 +432,7 @@ namespace QuanLyRuiRoTinDung.Controllers
             return View(noXauList);
         }
 
-        // Danh sách khoản vay đã quyết định (đã phê duyệt và từ chối)
+        // Danh sách khoản vay đã quyết định (đã phê duyệt, từ chối và đã giải ngân)
         public async Task<IActionResult> DanhSachKhoanVayDaQuyetDinh(string search = "", string tab = "approved")
         {
             var approvedQuery = _context.KhoanVays
@@ -439,6 +447,12 @@ namespace QuanLyRuiRoTinDung.Controllers
                 .Where(k => k.TrangThaiKhoanVay == "Từ chối")
                 .AsQueryable();
 
+            var disbursedQuery = _context.KhoanVays
+                .Include(k => k.MaNhanVienTinDungNavigation)
+                .Include(k => k.NguoiPheDuyetNavigation)
+                .Where(k => k.TrangThaiKhoanVay == "Đã giải ngân")
+                .AsQueryable();
+
             // Tìm kiếm
             if (!string.IsNullOrEmpty(search))
             {
@@ -447,6 +461,10 @@ namespace QuanLyRuiRoTinDung.Controllers
                     k.MaKhachHang.ToString().Contains(search));
                 
                 rejectedQuery = rejectedQuery.Where(k => 
+                    k.MaKhoanVayCode.Contains(search) ||
+                    k.MaKhachHang.ToString().Contains(search));
+
+                disbursedQuery = disbursedQuery.Where(k => 
                     k.MaKhoanVayCode.Contains(search) ||
                     k.MaKhachHang.ToString().Contains(search));
             }
@@ -459,10 +477,15 @@ namespace QuanLyRuiRoTinDung.Controllers
                 .OrderByDescending(k => k.NgayPheDuyet)
                 .ToListAsync();
 
+            var disbursedLoans = await disbursedQuery
+                .OrderByDescending(k => k.NgayPheDuyet)
+                .ToListAsync();
+
             ViewBag.Search = search;
             ViewBag.Tab = tab;
             ViewBag.ApprovedLoans = approvedLoans;
             ViewBag.RejectedLoans = rejectedLoans;
+            ViewBag.DisbursedLoans = disbursedLoans;
 
             return View();
         }
@@ -481,6 +504,206 @@ namespace QuanLyRuiRoTinDung.Controllers
             return View(statisticData);
         }
 
+        // Xuất Excel cho trang Thống kê Hiệu quả
+        [HttpGet]
+        public async Task<IActionResult> ExportThongKeHieuQua()
+        {
+            try
+            {
+                var statisticData = await GetCreditOperationStatistics();
+                var monthlySummary = await GetMonthlySummary();
+                var totalInterestData = await GetTotalInterestData();
+
+                using (var workbook = new XLWorkbook())
+                {
+                    // Sheet 1: Tổng quan
+                    var wsTongQuat = workbook.Worksheets.Add("Tổng quan");
+                    
+                    // Tiêu đề
+                    wsTongQuat.Cell(1, 1).Value = "BÁO CÁO THỐNG KÊ HIỆU QUẢ HOẠT ĐỘNG TÍN DỤNG";
+                    wsTongQuat.Range(1, 1, 1, 3).Merge().Style.Font.Bold = true;
+                    wsTongQuat.Range(1, 1, 1, 3).Style.Font.FontSize = 16;
+                    wsTongQuat.Range(1, 1, 1, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    
+                    wsTongQuat.Cell(2, 1).Value = $"Ngày xuất báo cáo: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                    wsTongQuat.Range(2, 1, 2, 3).Merge();
+                    wsTongQuat.Range(2, 1, 2, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                    // Thông tin tổng quan
+                    wsTongQuat.Cell(4, 1).Value = "CHỈ TIÊU";
+                    wsTongQuat.Cell(4, 2).Value = "GIÁ TRỊ";
+                    wsTongQuat.Range(4, 1, 4, 2).Style.Font.Bold = true;
+                    wsTongQuat.Range(4, 1, 4, 2).Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+                    int row = 5;
+                    wsTongQuat.Cell(row++, 1).Value = "Tháng này - Nộp hồ sơ";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.LoansThisMonth;
+
+                    wsTongQuat.Cell(row++, 1).Value = "Tháng trước - Nộp hồ sơ";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.LoansLastMonth;
+
+                    wsTongQuat.Cell(row++, 1).Value = "Phê duyệt tháng này";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.ApprovedThisMonth;
+
+                    wsTongQuat.Cell(row++, 1).Value = "Từ chối tháng này";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.RejectedThisMonth;
+
+                    wsTongQuat.Cell(row++, 1).Value = "Tỷ lệ phê duyệt (%)";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.ApprovalRate;
+                    wsTongQuat.Cell(row - 1, 2).Style.NumberFormat.Format = "0.00";
+
+                    wsTongQuat.Cell(row++, 1).Value = "Tỷ lệ nợ xấu (%)";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.BadDebtRatio;
+                    wsTongQuat.Cell(row - 1, 2).Style.NumberFormat.Format = "0.00";
+
+                    wsTongQuat.Cell(row++, 1).Value = "Vốn vay trung bình (VNĐ)";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.AverageLoanAmount;
+                    wsTongQuat.Cell(row - 1, 2).Style.NumberFormat.Format = "#,##0";
+
+                    wsTongQuat.Cell(row++, 1).Value = "Thời gian xử lý trung bình (ngày)";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.AvgProcessingDays;
+                    wsTongQuat.Cell(row - 1, 2).Style.NumberFormat.Format = "0.0";
+
+                    wsTongQuat.Cell(row++, 1).Value = "Tỷ lệ hoàn thành đúng hạn (%)";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.OnTimeCompletionRate;
+                    wsTongQuat.Cell(row - 1, 2).Style.NumberFormat.Format = "0.00";
+
+                    wsTongQuat.Cell(row++, 1).Value = "Chất lượng danh mục (%)";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.PortfolioQuality;
+                    wsTongQuat.Cell(row - 1, 2).Style.NumberFormat.Format = "0.00";
+
+                    wsTongQuat.Cell(row++, 1).Value = "Xếp hạng chất lượng";
+                    wsTongQuat.Cell(row - 1, 2).Value = statisticData.QualityGrade;
+
+                    // Điều chỉnh độ rộng cột
+                    wsTongQuat.Column(1).Width = 35;
+                    wsTongQuat.Column(2).Width = 20;
+
+                    // Sheet 2: Tổng lãi 6 tháng
+                    var wsTongLai = workbook.Worksheets.Add("Tổng lãi 6 tháng");
+                    wsTongLai.Cell(1, 1).Value = "THÁNG";
+                    wsTongLai.Cell(1, 2).Value = "TỔNG LÃI (VNĐ)";
+                    wsTongLai.Cell(1, 3).Value = "SO VỚI THÁNG TRƯỚC (%)";
+                    wsTongLai.Range(1, 1, 1, 3).Style.Font.Bold = true;
+                    wsTongLai.Range(1, 1, 1, 3).Style.Fill.BackgroundColor = XLColor.LightGreen;
+
+                    if (totalInterestData != null && totalInterestData.Labels != null && totalInterestData.Data != null)
+                    {
+                        var labels = ((System.Collections.IList)totalInterestData.Labels).Cast<string>().ToList();
+                        var data = ((System.Collections.IList)totalInterestData.Data).Cast<decimal>().ToList();
+                        
+                        for (int i = 0; i < labels.Count && i < data.Count; i++)
+                        {
+                            wsTongLai.Cell(i + 2, 1).Value = labels[i];
+                            wsTongLai.Cell(i + 2, 2).Value = data[i];
+                            wsTongLai.Cell(i + 2, 2).Style.NumberFormat.Format = "#,##0";
+                            
+                            // Tính phần trăm so với tháng trước
+                            if (i > 0)
+                            {
+                                var previousMonthValue = data[i - 1];
+                                var currentMonthValue = data[i];
+                                
+                                if (previousMonthValue == 0)
+                                {
+                                    if (currentMonthValue > 0)
+                                    {
+                                        wsTongLai.Cell(i + 2, 3).Value = "Tăng từ 0";
+                                        wsTongLai.Cell(i + 2, 3).Style.Font.FontColor = XLColor.Green;
+                                    }
+                                    else
+                                    {
+                                        wsTongLai.Cell(i + 2, 3).Value = "-";
+                                    }
+                                }
+                                else
+                                {
+                                    var percentChange = ((currentMonthValue - previousMonthValue) / previousMonthValue) * 100;
+                                    wsTongLai.Cell(i + 2, 3).Value = percentChange;
+                                    wsTongLai.Cell(i + 2, 3).Style.NumberFormat.Format = "0.00";
+                                    
+                                    if (percentChange > 0)
+                                    {
+                                        wsTongLai.Cell(i + 2, 3).Style.Font.FontColor = XLColor.Green;
+                                    }
+                                    else if (percentChange < 0)
+                                    {
+                                        wsTongLai.Cell(i + 2, 3).Style.Font.FontColor = XLColor.Red;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // Tháng đầu tiên không có tháng trước để so sánh
+                                wsTongLai.Cell(i + 2, 3).Value = "-";
+                            }
+                        }
+                    }
+
+                    wsTongLai.Column(1).Width = 15;
+                    wsTongLai.Column(2).Width = 25;
+                    wsTongLai.Column(3).Width = 25;
+
+                    // Sheet 3: So sánh nộp hồ sơ vs phê duyệt
+                    var wsSoSanh = workbook.Worksheets.Add("So sánh nộp hồ sơ vs phê duyệt");
+                    wsSoSanh.Cell(1, 1).Value = "THÁNG";
+                    wsSoSanh.Cell(1, 2).Value = "NỘP HỒ SƠ";
+                    wsSoSanh.Cell(1, 3).Value = "PHÊ DUYỆT";
+                    wsSoSanh.Cell(1, 4).Value = "TỪ CHỐI";
+                    wsSoSanh.Cell(1, 5).Value = "TỶ LỆ PHÊ DUYỆT (%)";
+                    wsSoSanh.Cell(1, 6).Value = "TỔNG VỐN VAY (VNĐ)";
+                    wsSoSanh.Range(1, 1, 1, 6).Style.Font.Bold = true;
+                    wsSoSanh.Range(1, 1, 1, 6).Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+                    if (monthlySummary != null)
+                    {
+                        var summaryList = ((System.Collections.IList)monthlySummary).Cast<dynamic>().ToList();
+                        int summaryRow = 2;
+                        foreach (var summary in summaryList)
+                        {
+                            wsSoSanh.Cell(summaryRow, 1).Value = summary.Month;
+                            wsSoSanh.Cell(summaryRow, 2).Value = summary.Submitted;
+                            wsSoSanh.Cell(summaryRow, 3).Value = summary.Approved;
+                            wsSoSanh.Cell(summaryRow, 4).Value = summary.Rejected;
+                            
+                            var approvalRate = summary.Submitted > 0 
+                                ? Math.Round((decimal)summary.Approved / summary.Submitted * 100, 1) 
+                                : 0;
+                            wsSoSanh.Cell(summaryRow, 5).Value = approvalRate;
+                            wsSoSanh.Cell(summaryRow, 5).Style.NumberFormat.Format = "0.0";
+                            
+                            wsSoSanh.Cell(summaryRow, 6).Value = summary.TotalLoanAmount;
+                            wsSoSanh.Cell(summaryRow, 6).Style.NumberFormat.Format = "#,##0";
+                            
+                            summaryRow++;
+                        }
+                    }
+
+                    wsSoSanh.Column(1).Width = 15;
+                    wsSoSanh.Column(2).Width = 15;
+                    wsSoSanh.Column(3).Width = 15;
+                    wsSoSanh.Column(4).Width = 15;
+                    wsSoSanh.Column(5).Width = 20;
+                    wsSoSanh.Column(6).Width = 25;
+
+                    // Xuất file
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        var content = stream.ToArray();
+                        var fileName = $"ThongKeHieuQua_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                        return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting ThongKeHieuQua to Excel");
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi xuất báo cáo Excel.";
+                return RedirectToAction(nameof(ThongKeHieuQua));
+            }
+        }
+
         // API endpoint để lấy dữ liệu biểu đồ
         [HttpGet]
         public async Task<IActionResult> GetChartData(string type)
@@ -492,10 +715,12 @@ namespace QuanLyRuiRoTinDung.Controllers
                     "loanByStatus" => await GetLoanStatusChartData(),
                     "riskLevel" => await GetRiskLevelChartData(),
                     "badDebtTrend" => await GetBadDebtTrendData(),
-                    "approvalRate" => await GetApprovalRateData(),
+                    "approvalRate" => await GetTotalInterestData(),
                     "badDebtBreakdown" => await GetBadDebtBreakdownChartData(),
                     "riskDistribution" => await GetRiskDistributionData(),
                     "badDebtRatio" => await GetBadDebtRatioChartData(),
+                    "totalBadDebt6Months" => await GetTotalBadDebt6MonthsData(),
+                    "totalBadDebtBalance6Months" => await GetTotalBadDebtBalance6MonthsData(),
                     _ => null
                 };
 
@@ -607,11 +832,20 @@ namespace QuanLyRuiRoTinDung.Controllers
                                 k.NgayNopHoSo.Value.Year == lastMonth.Year &&
                                 k.NgayNopHoSo.Value.Month == lastMonth.Month);
             
-            var approvedThisMonth = await _context.KhoanVays
+            // Tính số khoản đã phê duyệt tháng này (bao gồm cả đã giải ngân)
+            var approvedPhêDuyetThisMonth = await _context.KhoanVays
                 .CountAsync(k => k.TrangThaiKhoanVay == "Đã phê duyệt" && 
                                 k.NgayPheDuyet.HasValue &&
                                 k.NgayPheDuyet.Value.Year == now.Year && 
                                 k.NgayPheDuyet.Value.Month == now.Month);
+            
+            var approvedGiaiNganThisMonth = await _context.KhoanVays
+                .CountAsync(k => k.TrangThaiKhoanVay == "Đã giải ngân" && 
+                                k.NgayGiaiNgan.HasValue &&
+                                k.NgayGiaiNgan.Value.Year == now.Year && 
+                                k.NgayGiaiNgan.Value.Month == now.Month);
+            
+            var approvedThisMonth = approvedPhêDuyetThisMonth + approvedGiaiNganThisMonth;
 
             var rejectedThisMonth = await _context.KhoanVays
                 .CountAsync(k => k.TrangThaiKhoanVay == "Từ chối" && 
@@ -813,6 +1047,8 @@ namespace QuanLyRuiRoTinDung.Controllers
             var trendData = new List<int>();
             foreach (var month in last12Months)
             {
+                // Sử dụng NgayPhanLoai (ngày phân loại) - ngày khoản vay được gọi là nợ xấu
+                // KHÔNG sử dụng NgayTao (ngày tạo record trong hệ thống)
                 var count = await _context.TheoDoiNoXaus
                     .CountAsync(n => n.NgayPhanLoai.Month == month.Month && 
                                     n.NgayPhanLoai.Year == month.Year);
@@ -826,35 +1062,288 @@ namespace QuanLyRuiRoTinDung.Controllers
             };
         }
 
-        private async Task<dynamic> GetApprovalRateData()
+        private async Task<dynamic> GetTotalBadDebt6MonthsData()
         {
-            var last12Months = Enumerable.Range(0, 12)
+            try
+            {
+                // Luôn bắt đầu từ tháng hiện tại
+                var now = DateTime.Now;
+                var currentMonth = new DateTime(now.Year, now.Month, 1);
+                
+                // Lấy tất cả các tháng có dữ liệu từ bảng TheoDoi_NoXau
+                var monthsWithData = await _context.TheoDoiNoXaus
+                    .Select(n => new { Year = n.NgayPhanLoai.Year, Month = n.NgayPhanLoai.Month })
+                    .Distinct()
+                    .ToListAsync();
+                
+                var monthsWithDataList = monthsWithData
+                    .Select(x => new DateTime(x.Year, x.Month, 1))
+                    .OrderByDescending(d => d)
+                    .ToList();
+                
+                List<DateTime> last6Months;
+                
+                if (monthsWithDataList.Any())
+                {
+                    // Bắt đầu từ tháng hiện tại
+                    var monthsToShow = new HashSet<DateTime> { currentMonth };
+                    
+                    // Thêm các tháng có dữ liệu từ tháng hiện tại về quá khứ (tối đa 5 tháng nữa)
+                    foreach (var monthWithData in monthsWithDataList)
+                    {
+                        if (monthWithData < currentMonth && monthsToShow.Count < 6)
+                        {
+                            monthsToShow.Add(monthWithData);
+                        }
+                    }
+                    
+                    // Nếu chưa đủ 6 tháng, thêm các tháng trước đó để đủ 6 tháng
+                    var sortedMonths = monthsToShow.OrderBy(d => d).ToList();
+                    var earliestMonth = sortedMonths.First();
+                    while (sortedMonths.Count < 6)
+                    {
+                        earliestMonth = earliestMonth.AddMonths(-1);
+                        sortedMonths.Insert(0, earliestMonth);
+                    }
+                    
+                    last6Months = sortedMonths.Take(6).ToList();
+                }
+                else
+                {
+                    // Nếu không có dữ liệu, vẫn hiển thị 6 tháng từ tháng hiện tại
+                    last6Months = Enumerable.Range(0, 6)
+                        .Select(i => currentMonth.AddMonths(-i))
+                        .OrderBy(d => d)
+                        .ToList();
+                }
+
+                var totalBadDebtData = new List<int>();
+                foreach (var month in last6Months)
+                {
+                    // Tính tổng số nợ xấu (số lượng khoản) trong tháng này
+                    // Sử dụng NgayPhanLoai (ngày phân loại) từ bảng TheoDoi_NoXau
+                    // NgayPhanLoai là DateOnly, so sánh theo Year và Month
+                    var count = await _context.TheoDoiNoXaus
+                        .CountAsync(n => n.NgayPhanLoai.Year == month.Year && 
+                                        n.NgayPhanLoai.Month == month.Month);
+                    totalBadDebtData.Add(count);
+                }
+
+                return new
+                {
+                    Labels = last6Months.Select(d => d.ToString("MM/yyyy")).ToList(),
+                    Data = totalBadDebtData
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in GetTotalBadDebt6MonthsData: {Message}", ex.Message);
+                // Trả về dữ liệu rỗng nếu có lỗi
+                var now = DateTime.Now;
+                var currentMonth = new DateTime(now.Year, now.Month, 1);
+                var last6Months = Enumerable.Range(0, 6)
+                    .Select(i => currentMonth.AddMonths(-i))
+                    .OrderBy(d => d)
+                    .ToList();
+                
+                return new
+                {
+                    Labels = last6Months.Select(d => d.ToString("MM/yyyy")).ToList(),
+                    Data = new List<int> { 0, 0, 0, 0, 0, 0 }
+                };
+            }
+        }
+
+        private async Task<dynamic> GetTotalBadDebtBalance6MonthsData()
+        {
+            try
+            {
+                // Luôn bắt đầu từ tháng hiện tại
+                var now = DateTime.Now;
+                var currentMonth = new DateTime(now.Year, now.Month, 1);
+                
+                // Lấy tất cả các tháng có dữ liệu từ bảng TheoDoi_NoXau
+                var monthsWithData = await _context.TheoDoiNoXaus
+                    .Select(n => new { Year = n.NgayPhanLoai.Year, Month = n.NgayPhanLoai.Month })
+                    .Distinct()
+                    .ToListAsync();
+                
+                var monthsWithDataList = monthsWithData
+                    .Select(x => new DateTime(x.Year, x.Month, 1))
+                    .OrderByDescending(d => d)
+                    .ToList();
+                
+                List<DateTime> last6Months;
+                
+                if (monthsWithDataList.Any())
+                {
+                    // Bắt đầu từ tháng hiện tại
+                    var monthsToShow = new HashSet<DateTime> { currentMonth };
+                    
+                    // Thêm các tháng có dữ liệu từ tháng hiện tại về quá khứ (tối đa 5 tháng nữa)
+                    foreach (var monthWithData in monthsWithDataList)
+                    {
+                        if (monthWithData < currentMonth && monthsToShow.Count < 6)
+                        {
+                            monthsToShow.Add(monthWithData);
+                        }
+                    }
+                    
+                    // Nếu chưa đủ 6 tháng, thêm các tháng trước đó để đủ 6 tháng
+                    var sortedMonths = monthsToShow.OrderBy(d => d).ToList();
+                    var earliestMonth = sortedMonths.First();
+                    while (sortedMonths.Count < 6)
+                    {
+                        earliestMonth = earliestMonth.AddMonths(-1);
+                        sortedMonths.Insert(0, earliestMonth);
+                    }
+                    
+                    last6Months = sortedMonths.Take(6).ToList();
+                }
+                else
+                {
+                    // Nếu không có dữ liệu, vẫn hiển thị 6 tháng từ tháng hiện tại
+                    last6Months = Enumerable.Range(0, 6)
+                        .Select(i => currentMonth.AddMonths(-i))
+                        .OrderBy(d => d)
+                        .ToList();
+                }
+
+                var totalBadDebtBalanceData = new List<decimal>();
+                foreach (var month in last6Months)
+                {
+                    // Tính tổng số dư nợ xấu trong tháng này
+                    // Sử dụng NgayPhanLoai (ngày phân loại) từ bảng TheoDoi_NoXau
+                    // Lấy SoDuNo từ TheoDoiNoXau, nếu null thì lấy TongDuNo từ KhoanVay
+                    var totalBalance = await _context.TheoDoiNoXaus
+                        .Where(n => n.NgayPhanLoai.Year == month.Year && 
+                                   n.NgayPhanLoai.Month == month.Month)
+                        .Include(n => n.MaKhoanVayNavigation)
+                        .ToListAsync();
+                    
+                    var balance = totalBalance.Sum(n => 
+                        n.SoDuNo ?? n.MaKhoanVayNavigation?.TongDuNo ?? 0);
+                    
+                    totalBadDebtBalanceData.Add(balance);
+                }
+
+                return new
+                {
+                    Labels = last6Months.Select(d => d.ToString("MM/yyyy")).ToList(),
+                    Data = totalBadDebtBalanceData
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in GetTotalBadDebtBalance6MonthsData: {Message}", ex.Message);
+                // Trả về dữ liệu rỗng nếu có lỗi
+                var now = DateTime.Now;
+                var currentMonth = new DateTime(now.Year, now.Month, 1);
+                var last6Months = Enumerable.Range(0, 6)
+                    .Select(i => currentMonth.AddMonths(-i))
+                    .OrderBy(d => d)
+                    .ToList();
+                
+                return new
+                {
+                    Labels = last6Months.Select(d => d.ToString("MM/yyyy")).ToList(),
+                    Data = new List<decimal> { 0, 0, 0, 0, 0, 0 }
+                };
+            }
+        }
+
+        private async Task<dynamic> GetTotalInterestData()
+        {
+            var last6Months = Enumerable.Range(0, 6)
                 .Select(i => DateTime.Now.AddMonths(-i))
                 .OrderBy(d => d)
                 .ToList();
 
-            var approvalRates = new List<decimal>();
-            foreach (var month in last12Months)
+            var totalInterests = new List<decimal>();
+            foreach (var month in last6Months)
             {
-                var submitted = await _context.KhoanVays
-                    .CountAsync(k => k.NgayNopHoSo.HasValue && 
-                                    k.NgayNopHoSo.Value.Month == month.Month && 
-                                    k.NgayNopHoSo.Value.Year == month.Year);
+                // Lấy các khoản vay đã giải ngân trong tháng này
+                var disbursedLoans = await _context.KhoanVays
+                    .Where(k => k.TrangThaiKhoanVay == "Đã giải ngân" && 
+                               k.NgayGiaiNgan.HasValue &&
+                               k.NgayGiaiNgan.Value.Month == month.Month && 
+                               k.NgayGiaiNgan.Value.Year == month.Year)
+                    .Select(k => new { k.SoTienVay, k.LaiSuat, k.KyHanVay, k.HinhThucTraNo })
+                    .ToListAsync();
                 
-                var approved = await _context.KhoanVays
-                    .CountAsync(k => k.TrangThaiKhoanVay == "Đã phê duyệt" && 
-                                    k.NgayNopHoSo.HasValue &&
-                                    k.NgayNopHoSo.Value.Month == month.Month && 
-                                    k.NgayNopHoSo.Value.Year == month.Year);
-
-                var rate = submitted > 0 ? (decimal)approved / submitted * 100 : 0;
-                approvalRates.Add(Math.Round(rate, 2));
+                // Tính tổng lãi theo hình thức trả nợ của từng khoản vay
+                // P: SoTienVay, r: LaiSuat (%), n: KyHanVay (tháng), i = r/12 (lãi suất tháng)
+                decimal totalInterest = 0;
+                foreach (var loan in disbursedLoans)
+                {
+                    if (loan.KyHanVay > 0 && loan.LaiSuat > 0)
+                    {
+                        decimal P = loan.SoTienVay; // Số tiền vay
+                        decimal r = loan.LaiSuat / 100m; // Lãi suất năm (dạng thập phân)
+                        decimal i = r / 12m; // Lãi suất tháng
+                        int n = loan.KyHanVay; // Số tháng vay
+                        string hinhThucTraNo = loan.HinhThucTraNo ?? "Trả góp đều"; // Mặc định là trả góp đều
+                        
+                        decimal L = 0; // Tổng lãi
+                        
+                        if (hinhThucTraNo == "Trả góp đều")
+                        {
+                            // 1️⃣ Trả góp đều (Annuity)
+                            // A = P × i(1+i)^n / ((1+i)^n - 1) (tiền trả hàng tháng)
+                            // T = A × n (tổng tiền phải trả)
+                            // L = T - P (tiền lãi)
+                            decimal onePlusI = 1m + i;
+                            decimal onePlusIToN = (decimal)Math.Pow((double)onePlusI, n);
+                            decimal numerator = P * i * onePlusIToN;
+                            decimal denominator = onePlusIToN - 1m;
+                            
+                            if (denominator > 0)
+                            {
+                                decimal A = numerator / denominator; // Tiền trả hàng tháng
+                                decimal T = A * n; // Tổng tiền phải trả
+                                L = T - P; // Tiền lãi
+                            }
+                        }
+                        else if (hinhThucTraNo == "Trả gốc cuối kỳ")
+                        {
+                            // 2️⃣ Trả gốc cuối kỳ (Interest-only)
+                            // Lãi hàng tháng = P × i
+                            // Tổng lãi = P × i × n
+                            L = P * i * n;
+                        }
+                        else if (hinhThucTraNo == "Trả gốc lãi cuối kỳ")
+                        {
+                            // 3️⃣ Trả gốc lãi cuối kỳ (Bullet loan)
+                            // Tổng lãi = P × i × n
+                            L = P * i * n;
+                        }
+                        else
+                        {
+                            // Mặc định: tính như trả góp đều
+                            decimal onePlusI = 1m + i;
+                            decimal onePlusIToN = (decimal)Math.Pow((double)onePlusI, n);
+                            decimal numerator = P * i * onePlusIToN;
+                            decimal denominator = onePlusIToN - 1m;
+                            
+                            if (denominator > 0)
+                            {
+                                decimal A = numerator / denominator;
+                                decimal T = A * n;
+                                L = T - P;
+                            }
+                        }
+                        
+                        totalInterest += L;
+                    }
+                }
+                
+                totalInterests.Add(Math.Round(totalInterest, 0));
             }
 
             return new
             {
-                Labels = last12Months.Select(d => d.ToString("MM/yyyy")).ToList(),
-                Data = approvalRates
+                Labels = last6Months.Select(d => d.ToString("MM/yyyy")).ToList(),
+                Data = totalInterests
             };
         }
 
@@ -933,11 +1422,20 @@ namespace QuanLyRuiRoTinDung.Controllers
                                     k.NgayNopHoSo.Value.Month == month.Month && 
                                     k.NgayNopHoSo.Value.Year == month.Year);
                 
-                var approved = await _context.KhoanVays
+                // Tính số khoản đã phê duyệt (bao gồm cả đã giải ngân vì sau phê duyệt sẽ chuyển sang giải ngân)
+                var approvedPhêDuyet = await _context.KhoanVays
                     .CountAsync(k => k.TrangThaiKhoanVay == "Đã phê duyệt" && 
-                                    k.NgayNopHoSo.HasValue &&
-                                    k.NgayNopHoSo.Value.Month == month.Month && 
-                                    k.NgayNopHoSo.Value.Year == month.Year);
+                                    k.NgayPheDuyet.HasValue &&
+                                    k.NgayPheDuyet.Value.Month == month.Month && 
+                                    k.NgayPheDuyet.Value.Year == month.Year);
+                
+                var approvedGiaiNgan = await _context.KhoanVays
+                    .CountAsync(k => k.TrangThaiKhoanVay == "Đã giải ngân" && 
+                                    k.NgayGiaiNgan.HasValue &&
+                                    k.NgayGiaiNgan.Value.Month == month.Month && 
+                                    k.NgayGiaiNgan.Value.Year == month.Year);
+                
+                var approved = approvedPhêDuyet + approvedGiaiNgan;
 
                 // Tính số khoản từ chối thực tế trong tháng (chỉ tính những khoản đã bị từ chối)
                 var rejected = await _context.KhoanVays
@@ -946,12 +1444,12 @@ namespace QuanLyRuiRoTinDung.Controllers
                                     k.NgayPheDuyet.Value.Month == month.Month && 
                                     k.NgayPheDuyet.Value.Year == month.Year);
 
-                // Tính tổng vốn vay đã phê duyệt trong tháng
+                // Tính tổng vốn vay đã giải ngân trong tháng
                 var totalLoanAmount = await _context.KhoanVays
-                    .Where(k => k.TrangThaiKhoanVay == "Đã phê duyệt" && 
-                               k.NgayPheDuyet.HasValue &&
-                               k.NgayPheDuyet.Value.Month == month.Month && 
-                               k.NgayPheDuyet.Value.Year == month.Year)
+                    .Where(k => k.TrangThaiKhoanVay == "Đã giải ngân" && 
+                               k.NgayGiaiNgan.HasValue &&
+                               k.NgayGiaiNgan.Value.Month == month.Month && 
+                               k.NgayGiaiNgan.Value.Year == month.Year)
                     .SumAsync(k => (decimal?)k.SoTienVay) ?? 0;
 
                 summary.Add(new
@@ -1029,7 +1527,7 @@ namespace QuanLyRuiRoTinDung.Controllers
             // Load thông tin phòng ban cho các nhân viên
             var phongBanIds = nhanViens
                 .Where(u => u.MaPhongBan.HasValue)
-                .Select(u => u.MaPhongBan.Value)
+                .Select(u => u.MaPhongBan!.Value)
                 .Distinct()
                 .ToList();
 

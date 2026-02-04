@@ -253,6 +253,10 @@
                                 <p class="mb-0"><strong id="confirmCustomerId">-</strong></p>
                             </div>
                             <div class="col-md-6 mb-2">
+                                <small class="text-muted">Tên khách hàng:</small>
+                                <p class="mb-0"><strong id="confirmCustomerName">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
                                 <small class="text-muted">Loại khách hàng:</small>
                                 <p class="mb-0"><strong id="confirmCustomerType">-</strong></p>
                             </div>
@@ -317,25 +321,40 @@
             let loanPurpose = '';
             let riskLevel = '';
             
-            // Tìm mã khách hàng (thường là phần tử thứ 2 trong card đầu tiên)
+            // Tìm thông tin khách hàng từ modal content
             const customerInfoCards = content.querySelectorAll('.card-body .row .col-md-6');
             if (customerInfoCards.length > 0) {
                 const firstCol = customerInfoCards[0];
                 const secondCol = customerInfoCards[1];
                 
-                // Mã khách hàng thường ở phần tử thứ 2
-                if (firstCol && firstCol.querySelectorAll('p strong').length > 1) {
-                    customerId = firstCol.querySelectorAll('p strong')[1]?.textContent?.trim() || '';
-                }
+                // Tìm tất cả các thẻ p trong cột đầu tiên
+                const firstColParagraphs = firstCol ? firstCol.querySelectorAll('p') : [];
                 
-                // Loại khách hàng thường ở phần tử thứ 3
-                if (firstCol && firstCol.querySelectorAll('p strong').length > 2) {
-                    customerType = firstCol.querySelectorAll('p strong')[2]?.textContent?.trim() || '';
-                }
+                // Tìm mã khách hàng và tên khách hàng
+                firstColParagraphs.forEach(p => {
+                    const label = p.querySelector('strong.text-muted')?.textContent?.trim() || '';
+                    const value = p.querySelector('span')?.textContent?.trim() || '';
+                    
+                    if (label.includes('Mã khoản vay')) {
+                        // Bỏ qua
+                    } else if (label.includes('Tên khách hàng')) {
+                        customerId = value; // Lưu tên khách hàng vào customerId
+                    } else if (label.includes('Loại khách hàng')) {
+                        customerType = value;
+                    }
+                });
                 
-                // Mục đích vay thường ở phần tử đầu tiên của cột thứ 2
-                if (secondCol && secondCol.querySelectorAll('p strong').length > 0) {
-                    loanPurpose = secondCol.querySelectorAll('p strong')[0]?.textContent?.trim() || '';
+                // Tìm mục đích vay từ cột thứ 2
+                if (secondCol) {
+                    const secondColParagraphs = secondCol.querySelectorAll('p');
+                    secondColParagraphs.forEach(p => {
+                        const label = p.querySelector('strong.text-muted')?.textContent?.trim() || '';
+                        const value = p.querySelector('span')?.textContent?.trim() || '';
+                        
+                        if (label.includes('Mục đích vay')) {
+                            loanPurpose = value;
+                        }
+                    });
                 }
             }
             
@@ -354,6 +373,7 @@
             return {
                 loanCode: loanCode || 'N/A',
                 customerId: customerId || 'N/A',
+                customerName: customerId || 'N/A', // Tên khách hàng được lưu trong customerId
                 customerType: customerType || 'N/A',
                 loanAmount: loanAmount || 'N/A',
                 loanPurpose: loanPurpose || 'N/A',
@@ -380,11 +400,19 @@
             const confirmAlert = document.getElementById('confirmAlert');
             
             // Điền thông tin khoản vay
-            document.getElementById('confirmLoanCode').textContent = loanInfo.loanCode || '-';
-            document.getElementById('confirmCustomerId').textContent = loanInfo.customerId || '-';
-            document.getElementById('confirmCustomerType').textContent = loanInfo.customerType || '-';
-            document.getElementById('confirmLoanAmount').textContent = loanInfo.loanAmount || '-';
-            document.getElementById('confirmLoanPurpose').textContent = loanInfo.loanPurpose || '-';
+            const loanCodeEl = document.getElementById('confirmLoanCode');
+            const customerIdEl = document.getElementById('confirmCustomerId');
+            const customerNameEl = document.getElementById('confirmCustomerName');
+            const customerTypeEl = document.getElementById('confirmCustomerType');
+            const loanAmountEl = document.getElementById('confirmLoanAmount');
+            const loanPurposeEl = document.getElementById('confirmLoanPurpose');
+            
+            if (loanCodeEl) loanCodeEl.textContent = loanInfo.loanCode || '-';
+            if (customerIdEl) customerIdEl.textContent = loanInfo.customerId || '-';
+            if (customerNameEl) customerNameEl.textContent = loanInfo.customerName || loanInfo.customerId || '-';
+            if (customerTypeEl) customerTypeEl.textContent = loanInfo.customerType || '-';
+            if (loanAmountEl) loanAmountEl.textContent = loanInfo.loanAmount || '-';
+            if (loanPurposeEl) loanPurposeEl.textContent = loanInfo.loanPurpose || '-';
             
             if (decision === 'approve') {
                 // Chấp nhận
@@ -535,8 +563,18 @@
             console.error('Không tìm thấy modal confirmDecisionModal!');
         }
         
+        // Flag để tránh xử lý nhiều lần
+        let isProcessingDecision = false;
+        
         // Hàm xử lý click cho các nút quyết định
         function handleDecisionButtonClick(e) {
+            // Tránh xử lý nhiều lần
+            if (isProcessingDecision) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
             const approveBtn = e.target.closest('.btn-approve');
             const rejectBtn = e.target.closest('.btn-reject');
             
@@ -544,15 +582,24 @@
                 e.preventDefault();
                 e.stopPropagation();
                 
+                // Đánh dấu đang xử lý
+                isProcessingDecision = true;
+                
                 const form = approveBtn.closest('form');
                 if (!form) {
                     console.error('Không tìm thấy form!');
+                    isProcessingDecision = false;
                     return;
                 }
                 
                 console.log('Chấp nhận được click');
                 const loanInfo = getLoanInfo(form);
                 showConfirmModal(form, 'approve', loanInfo);
+                
+                // Reset flag sau một khoảng thời gian ngắn
+                setTimeout(() => {
+                    isProcessingDecision = false;
+                }, 500);
                 return;
             }
             
@@ -560,9 +607,13 @@
                 e.preventDefault();
                 e.stopPropagation();
                 
+                // Đánh dấu đang xử lý
+                isProcessingDecision = true;
+                
                 const form = rejectBtn.closest('form');
                 if (!form) {
                     console.error('Không tìm thấy form!');
+                    isProcessingDecision = false;
                     return;
                 }
                 
@@ -570,29 +621,23 @@
                 // Không cần kiểm tra lý do từ chối ở đây nữa, sẽ nhập trong modal xác nhận
                 const loanInfo = getLoanInfo(form);
                 showConfirmModal(form, 'reject', loanInfo);
+                
+                // Reset flag sau một khoảng thời gian ngắn
+                setTimeout(() => {
+                    isProcessingDecision = false;
+                }, 500);
                 return;
             }
         }
         
         // Event delegation cho các nút quyết định trong modal
-        loanDetailContent.addEventListener('click', handleDecisionButtonClick);
-        
-        // Đảm bảo event listener được gắn lại sau khi content được load
-        loanDetailModal.addEventListener('shown.bs.modal', function() {
-            // Gắn lại event listener cho các button mới được load
-            const approveBtns = loanDetailContent.querySelectorAll('.btn-approve');
-            const rejectBtns = loanDetailContent.querySelectorAll('.btn-reject');
-            
-            approveBtns.forEach(btn => {
-                btn.removeEventListener('click', handleDecisionButtonClick);
-                btn.addEventListener('click', handleDecisionButtonClick);
-            });
-            
-            rejectBtns.forEach(btn => {
-                btn.removeEventListener('click', handleDecisionButtonClick);
-                btn.addEventListener('click', handleDecisionButtonClick);
-            });
-        });
+        // Chỉ cần một event listener duy nhất, không cần thêm trực tiếp vào từng button
+        if (loanDetailContent) {
+            // Loại bỏ event listener cũ nếu có
+            loanDetailContent.removeEventListener('click', handleDecisionButtonClick);
+            // Thêm event delegation (chỉ một lần)
+            loanDetailContent.addEventListener('click', handleDecisionButtonClick);
+        }
         
         // Lưu trữ nội dung đã load để có thể khôi phục lại
         let savedLoanContent = null;
@@ -647,21 +692,8 @@
                         oldScript.parentNode.replaceChild(newScript, oldScript);
                     });
                     
-                    // Đảm bảo event listener được gắn lại sau khi content được load
-                    setTimeout(() => {
-                        const approveBtns = loanDetailContent.querySelectorAll('.btn-approve');
-                        const rejectBtns = loanDetailContent.querySelectorAll('.btn-reject');
-                        
-                        console.log('Tìm thấy', approveBtns.length, 'nút chấp nhận và', rejectBtns.length, 'nút từ chối');
-                        
-                        approveBtns.forEach(btn => {
-                            btn.addEventListener('click', handleDecisionButtonClick);
-                        });
-                        
-                        rejectBtns.forEach(btn => {
-                            btn.addEventListener('click', handleDecisionButtonClick);
-                        });
-                    }, 100);
+                    // Event delegation đã xử lý tất cả click events, không cần thêm event listener trực tiếp
+                    // Event delegation sẽ tự động xử lý các button mới được load
                 })
                 .catch(error => {
                     console.error('Error loading loan detail:', error);
@@ -760,12 +792,16 @@
             confirmModalElForEvents.addEventListener('hide.bs.modal', function() {
                 // Đảm bảo khi modal xác nhận đóng, không reset modal chi tiết
                 isLoanDetailModalClosing = false;
+                // Reset flag để có thể click lại
+                isProcessingDecision = false;
             });
             
             confirmModalElForEvents.addEventListener('hidden.bs.modal', function() {
                 // Khi modal xác nhận đóng, đảm bảo modal chi tiết vẫn giữ nguyên nội dung
                 // Không làm gì cả, để modal chi tiết giữ nguyên trạng thái
                 isLoanDetailModalClosing = false;
+                // Reset flag để có thể click lại
+                isProcessingDecision = false;
                 
                 // Nếu modal chi tiết đang mở nhưng bị reset về loading, khôi phục lại nội dung
                 if (loanDetailModal.classList.contains('show') && savedLoanContent) {
@@ -786,19 +822,8 @@
                             oldScript.parentNode.replaceChild(newScript, oldScript);
                         });
                         
-                        // Đảm bảo event listener được gắn lại
-                        setTimeout(() => {
-                            const approveBtns = loanDetailContent.querySelectorAll('.btn-approve');
-                            const rejectBtns = loanDetailContent.querySelectorAll('.btn-reject');
-                            
-                            approveBtns.forEach(btn => {
-                                btn.addEventListener('click', handleDecisionButtonClick);
-                            });
-                            
-                            rejectBtns.forEach(btn => {
-                                btn.addEventListener('click', handleDecisionButtonClick);
-                            });
-                        }, 100);
+                        // Event delegation đã xử lý tất cả click events, không cần thêm event listener trực tiếp
+                        // Event delegation sẽ tự động xử lý các button mới được load
                     }
                 }
             });

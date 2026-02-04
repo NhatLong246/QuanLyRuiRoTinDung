@@ -2,6 +2,7 @@
     ViewData["Title"] = "Lịch sử phê duyệt - Quản lý Lãnh đạo";
     var approvedLoans = ViewBag.ApprovedLoans as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>();
     var rejectedLoans = ViewBag.RejectedLoans as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>();
+    var disbursedLoans = ViewBag.DisbursedLoans as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>();
     var currentTab = ViewBag.Tab as string ?? "approved";
     var search = ViewBag.Search as string ?? "";
 }
@@ -13,7 +14,7 @@
                 <i class="fas fa-history me-2"></i>
                 Lịch sử phê duyệt
             </h1>
-            <p class="text-muted">Xem tất cả các khoản vay đã được phê duyệt hoặc từ chối</p>
+            <p class="text-muted">Xem tất cả các khoản vay đã được phê duyệt, từ chối hoặc đã giải ngân</p>
         </div>
     </div>
 
@@ -45,6 +46,17 @@
                     role="tab"
                     onclick="window.location.href='@Url.Action("DanhSachKhoanVayDaQuyetDinh", new { search = search, tab = "approved" })'">
                 <i class="fas fa-check-circle me-2"></i>Đã đồng ý (@approvedLoans.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(currentTab == "disbursed" ? "active" : "")" 
+                    id="disbursed-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#disbursed" 
+                    type="button" 
+                    role="tab"
+                    onclick="window.location.href='@Url.Action("DanhSachKhoanVayDaQuyetDinh", new { search = search, tab = "disbursed" })'">
+                <i class="fas fa-money-bill-wave me-2"></i>Đã giải ngân (@disbursedLoans.Count)
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -111,6 +123,66 @@
                                     <td colspan="7" class="text-center text-muted py-4">
                                         <i class="fas fa-info-circle fa-2x mb-3"></i>
                                         <br>Không có khoản vay nào đã được phê duyệt
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disbursed Loans Tab -->
+        <div class="tab-pane fade @(currentTab == "disbursed" ? "show active" : "")" 
+             id="disbursed" 
+             role="tabpanel" 
+             aria-labelledby="disbursed-tab">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-money-bill-wave text-info me-2"></i>
+                        Khoản vay đã giải ngân
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã khoản vay</th>
+                                <th>Mã khách hàng</th>
+                                <th>Số tiền vay</th>
+                                <th>Lãi suất</th>
+                                <th>Kỳ hạn</th>
+                                <th>Ngày phê duyệt</th>
+                                <th>Ngày giải ngân</th>
+                                <th>Người phê duyệt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (disbursedLoans.Any())
+                            {
+                                @foreach (var loan in disbursedLoans)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-info">@loan.MaKhoanVayCode</span>
+                                        </td>
+                                        <td>@loan.MaKhachHang</td>
+                                        <td>@loan.SoTienVay.ToString("N0") VNĐ</td>
+                                        <td>@loan.LaiSuat%</td>
+                                        <td>@loan.KyHanVay tháng</td>
+                                        <td>@(loan.NgayPheDuyet?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>@(loan.NgayGiaiNgan?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>@loan.NguoiPheDuyetNavigation?.HoTen</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                        <br>Không có khoản vay nào đã được giải ngân
                                     </td>
                                 </tr>
                             }

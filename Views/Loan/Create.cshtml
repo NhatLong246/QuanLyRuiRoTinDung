@@ -149,15 +149,14 @@
                                 Số tiền trả hàng tháng (VND) <span class="text-muted">(Tự động tính)</span>
                             </label>
                             <div class="input-with-suffix">
-                                <input asp-for="SoTienTraHangThang" 
-                                       type="text" 
+                                <input type="text" 
                                        class="form-control money-input-readonly" 
                                        id="soTienTraHangThang"
                                        readonly 
                                        placeholder="Sẽ tự động tính khi nhập đủ thông tin" />
                                 <span class="input-suffix">VND</span>
                             </div>
-                            <input type="hidden" asp-for="SoTienTraHangThang" id="soTienTraHangThangHidden" />
+                            <input type="hidden" asp-for="SoTienTraHangThang" id="soTienTraHangThangHidden" name="SoTienTraHangThang" />
                             <span asp-validation-for="SoTienTraHangThang" class="text-danger"></span>
                         </div>
 
@@ -1781,11 +1780,11 @@
             }
             
             // Xử lý số tiền trả hàng tháng (đảm bảo hidden field có giá trị số thuần)
-            const soTienTraHangThangDisplay = document.getElementById('soTienTraHangThang');
+            // Không parse lại từ display field vì hidden field đã được set đúng trong calculateMonthlyPayment()
             const soTienTraHangThangHidden = document.getElementById('soTienTraHangThangHidden');
-            if (soTienTraHangThangDisplay && soTienTraHangThangHidden) {
-                const numericValue = soTienTraHangThangDisplay.value.replace(/[^\d]/g, '');
-                soTienTraHangThangHidden.value = numericValue || '0';
+            if (soTienTraHangThangHidden && !soTienTraHangThangHidden.value) {
+                // Chỉ set giá trị mặc định nếu hidden field trống
+                soTienTraHangThangHidden.value = '0';
             }
             
             // Xử lý checkbox CoTaiSanDamBao

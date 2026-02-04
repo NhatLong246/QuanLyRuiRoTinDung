@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="~/css/lanhdao-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/QuanLyRuiRoTinDung.styles.css" asp-append-version="true" />
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-gradient-primary border-bottom box-shadow mb-3">
             <div class="container-fluid">
@@ -26,7 +26,7 @@
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="LanhDao" asp-action="Index">
-                                <i class="fas fa-chart-pie me-1"></i>Dashboard
+                                <i class="fas fa-chart-pie me-1"></i>Trang chủ
                             </a>
                         </li>
                         <li class="nav-item">
@@ -41,7 +41,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="LanhDao" asp-action="TheoDoiNoXau">
-                                <i class="fas fa-list me-1"></i>Theo dõi Nợ xấu
+                                <i class="fas fa-list me-1"></i>Thống kê Nợ xấu
                             </a>
                         </li>
                         <li class="nav-item">
@@ -118,13 +118,13 @@
             </div>
         </nav>
     </header>
-    <div class="container-fluid px-4">
+    <div class="container-fluid px-4 flex-grow-1">
         <main role="main" class="pb-3 fade-in">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted mt-5">
+    <footer class="border-top footer text-muted mt-auto">
         <div class="container-fluid px-4 py-3">
             <div class="row align-items-center">
                 <div class="col-md-6">

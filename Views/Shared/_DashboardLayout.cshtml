@@ -245,7 +245,7 @@
             <header class="dashboard-header">
                 @{
                     var currentControllerHeader = ViewContext.RouteData.Values["controller"]?.ToString();
-                    var headerTitle = currentControllerHeader == "Admin" ? "Dashboard Admin" : "Dashboard";
+                    var headerTitle = currentControllerHeader == "Admin" ? "Dashboard Admin" : "Trang chủ";
                     var headerAction = currentControllerHeader == "Admin" ? "Index" : "Index";
                     var headerController = currentControllerHeader == "Admin" ? "Admin" : "Dashboard";
                 }
