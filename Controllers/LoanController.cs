@@ -89,6 +89,63 @@ namespace QuanLyRuiRoTinDung.Controllers
             return View();
         }
 
+        // GET: Loan/Manage - Quản lý khoản vay (các khoản vay đã duyệt, đang hoạt động)
+        public async Task<IActionResult> Manage(string? trangThai = null, string? searchTerm = null)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Lấy danh sách khoản vay đã duyệt (đang hoạt động, quá hạn, đã thanh toán...)
+            var activeLoans = await _loanService.GetActiveLoansAsync(maNhanVien, trangThai, searchTerm);
+
+            // Lấy thông tin khách hàng cho từng khoản vay
+            var customerInfoDict = new Dictionary<int, (string TenKhachHang, string LoaiKhachHang, string? MaKhachHangCode, string? AnhDaiDien)>();
+            
+            foreach (var loan in activeLoans)
+            {
+                if (!customerInfoDict.ContainsKey(loan.MaKhoanVay))
+                {
+                    string tenKH = "";
+                    string? maKHCode = null;
+                    string? anhDaiDien = null;
+                    
+                    if (loan.LoaiKhachHang == "CaNhan")
+                    {
+                        var kh = await _loanService.GetKhachHangCaNhanAsync(loan.MaKhachHang);
+                        if (kh != null)
+                        {
+                            tenKH = kh.HoTen;
+                            maKHCode = kh.MaKhachHangCode;
+                            anhDaiDien = kh.AnhDaiDien;
+                        }
+                    }
+                    else
+                    {
+                        var kh = await _loanService.GetKhachHangDoanhNghiepAsync(loan.MaKhachHang);
+                        if (kh != null)
+                        {
+                            tenKH = kh.TenCongTy;
+                            maKHCode = kh.MaKhachHangCode;
+                            anhDaiDien = kh.AnhNguoiDaiDien;
+                        }
+                    }
+                    
+                    customerInfoDict[loan.MaKhoanVay] = (tenKH, loan.LoaiKhachHang, maKHCode, anhDaiDien);
+                }
+            }
+
+            ViewBag.ActiveLoans = activeLoans;
+            ViewBag.CustomerInfoDict = customerInfoDict;
+            ViewBag.CurrentTrangThai = trangThai ?? "all";
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.MaNhanVien = maNhanVien;
+
+            return View();
+        }
+
         // GET: Loan/SelectCustomer - Hiển thị danh sách khách hàng để chọn
         public async Task<IActionResult> SelectCustomer()
         {

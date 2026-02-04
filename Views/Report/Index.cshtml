@@ -1,0 +1,1625 @@
+@model QuanLyRuiRoTinDung.Services.ReportViewModel
+@using QuanLyRuiRoTinDung.Services
+@{
+    ViewData["Title"] = "Báo cáo cá nhân";
+    Layout = "_DashboardLayout";
+    
+    var loansByType = ViewBag.LoansByType as List<LoanByTypeData> ?? new List<LoanByTypeData>();
+    var loansByStatus = ViewBag.LoansByStatus as List<LoanByStatusData> ?? new List<LoanByStatusData>();
+    var monthlyData = ViewBag.MonthlyData as List<MonthlyLoanData> ?? new List<MonthlyLoanData>();
+    var quarterlyData = ViewBag.QuarterlyData as List<QuarterlyLoanData> ?? new List<QuarterlyLoanData>();
+    var riskLevelData = ViewBag.RiskLevelData as List<RiskLevelData> ?? new List<RiskLevelData>();
+    var customerTypeData = ViewBag.CustomerTypeData as List<CustomerTypeData> ?? new List<CustomerTypeData>();
+    var trendData = ViewBag.TrendData as TrendData ?? new TrendData();
+    var selectedYear = ViewBag.SelectedYear as int? ?? DateTime.Now.Year;
+    var employeeName = ViewBag.EmployeeName as string ?? "Nhân viên";
+}
+
+<style>
+    /* ===== ROOT VARIABLES ===== */
+    :root {
+        --primary: #6366F1;
+        --primary-dark: #4F46E5;
+        --primary-light: #A5B4FC;
+        --success: #10B981;
+        --success-light: #D1FAE5;
+        --warning: #F59E0B;
+        --warning-light: #FEF3C7;
+        --danger: #EF4444;
+        --danger-light: #FEE2E2;
+        --info: #3B82F6;
+        --info-light: #DBEAFE;
+        --purple: #8B5CF6;
+        --purple-light: #EDE9FE;
+        --gray-50: #F9FAFB;
+        --gray-100: #F3F4F6;
+        --gray-200: #E5E7EB;
+        --gray-300: #D1D5DB;
+        --gray-500: #6B7280;
+        --gray-700: #374151;
+        --gray-900: #111827;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    @@keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    @@keyframes countUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== MAIN CONTAINER ===== */
+    .report-page {
+        padding: 24px;
+        background: linear-gradient(135deg, #F0F4FF 0%, #FAFAFF 50%, #F5F3FF 100%);
+        min-height: 100vh;
+    }
+
+    /* ===== HEADER SECTION ===== */
+    .page-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%);
+        border-radius: 20px;
+        padding: 32px;
+        margin-bottom: 24px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 400px;
+        height: 400px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+
+    .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: 10%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: relative;
+        z-index: 1;
+    }
+
+    .header-info h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .header-info h1 svg {
+        width: 32px;
+        height: 32px;
+    }
+
+    .header-info .employee-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-size: 14px;
+        backdrop-filter: blur(10px);
+    }
+
+    .header-info .employee-badge svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        backdrop-filter: blur(10px);
+    }
+
+    .btn-export:hover {
+        background: rgba(255,255,255,0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-export svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* ===== FILTER SECTION ===== */
+    .filter-section {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow-md);
+        animation: fadeInUp 0.6s ease-out 0.1s both;
+    }
+
+    .filter-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-title svg {
+        width: 20px;
+        height: 20px;
+        color: var(--primary);
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--gray-500);
+    }
+
+    .filter-group select,
+    .filter-group input {
+        padding: 10px 14px;
+        border: 2px solid var(--gray-200);
+        border-radius: 10px;
+        font-size: 14px;
+        color: var(--gray-700);
+        background: white;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .filter-group select:focus,
+    .filter-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .filter-group input[type="date"] {
+        cursor: text;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .btn-filter {
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 120px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-filter svg {
+        width: 18px;
+        height: 18px;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-filter.primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-filter.primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn-filter.primary:hover::before {
+        left: 100%;
+    }
+
+    .btn-filter.primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-filter.primary:active {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-filter.primary:hover svg {
+        transform: scale(1.1);
+    }
+
+    .btn-filter.secondary {
+        background: white;
+        color: var(--gray-600);
+        border: 2px solid var(--gray-200);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-filter.secondary:hover {
+        background: var(--gray-50);
+        border-color: var(--gray-300);
+        color: var(--gray-700);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-filter.secondary:hover svg {
+        transform: rotate(-45deg);
+    }
+
+    .btn-filter.secondary:active {
+        transform: translateY(0);
+    }
+    .btn-filter svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* ===== SUMMARY CARDS ===== */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow-md);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.6s ease-out both;
+        display: flex;
+        flex-direction: column;
+        min-height: 180px;
+    }
+
+    .summary-card:nth-child(1) { animation-delay: 0.1s; }
+    .summary-card:nth-child(2) { animation-delay: 0.15s; }
+    .summary-card:nth-child(3) { animation-delay: 0.2s; }
+    .summary-card:nth-child(4) { animation-delay: 0.25s; }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+
+    .summary-card.pending::before { background: var(--warning); }
+    .summary-card.approved::before { background: var(--success); }
+    .summary-card.debt::before { background: var(--primary); }
+    .summary-card.rate::before { background: var(--info); }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .card-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .card-icon.pending { background: var(--warning-light); color: var(--warning); }
+    .card-icon.approved { background: var(--success-light); color: var(--success); }
+    .card-icon.debt { background: var(--info-light); color: var(--info); }
+    .card-icon.rate { background: var(--purple-light); color: var(--purple); }
+
+    .card-trend {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+
+    .card-trend.up {
+        background: var(--success-light);
+        color: var(--success);
+    }
+
+    .card-trend.down {
+        background: var(--danger-light);
+        color: var(--danger);
+    }
+
+    .card-trend svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .card-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--gray-900);
+        line-height: 1.2;
+        margin-bottom: 4px;
+        animation: countUp 0.8s ease-out;
+        word-break: break-word;
+    }
+
+    .card-label {
+        font-size: 14px;
+        color: var(--gray-500);
+        font-weight: 500;
+    }
+
+    .card-sub {
+        font-size: 12px;
+        color: var(--gray-500);
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px dashed var(--gray-200);
+        line-height: 1.4;
+    }
+
+    .card-sub strong {
+        color: var(--gray-700);
+    }
+
+    /* ===== MINI STATS ROW ===== */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-mini {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+        animation: slideInRight 0.5s ease-out both;
+    }
+
+    .stat-mini:nth-child(1) { animation-delay: 0.1s; }
+    .stat-mini:nth-child(2) { animation-delay: 0.15s; }
+    .stat-mini:nth-child(3) { animation-delay: 0.2s; }
+    .stat-mini:nth-child(4) { animation-delay: 0.25s; }
+    .stat-mini:nth-child(5) { animation-delay: 0.3s; }
+    .stat-mini:nth-child(6) { animation-delay: 0.35s; }
+
+    .stat-mini:hover {
+        transform: translateX(4px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-mini-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .stat-mini-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .stat-mini-icon.total { background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; }
+    .stat-mini-icon.active { background: linear-gradient(135deg, #10B981, #34D399); color: white; }
+    .stat-mini-icon.completed { background: linear-gradient(135deg, #3B82F6, #60A5FA); color: white; }
+    .stat-mini-icon.rejected { background: linear-gradient(135deg, #EF4444, #F87171); color: white; }
+    .stat-mini-icon.overdue { background: linear-gradient(135deg, #F59E0B, #FBBF24); color: white; }
+    .stat-mini-icon.term { background: linear-gradient(135deg, #8B5CF6, #A78BFA); color: white; }
+
+    .stat-mini-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stat-mini-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--gray-900);
+    }
+
+    .stat-mini-label {
+        font-size: 12px;
+        color: var(--gray-500);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ===== CHARTS SECTION ===== */
+    .charts-grid {
+        display: grid;
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .charts-row-2 {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+    }
+
+    .charts-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        animation: fadeInUp 0.6s ease-out both;
+    }
+
+    .chart-card:nth-child(odd) { animation-delay: 0.2s; }
+    .chart-card:nth-child(even) { animation-delay: 0.3s; }
+
+    .chart-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--gray-100);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .chart-tabs {
+        display: flex;
+        gap: 8px;
+    }
+
+    .chart-tab {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--gray-100);
+        color: var(--gray-500);
+    }
+
+    .chart-tab.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .chart-tab:hover:not(.active) {
+        background: var(--gray-200);
+    }
+
+    .chart-body {
+        padding: 24px;
+        height: 300px;
+        position: relative;
+    }
+
+    .chart-body.donut {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .donut-center {
+        position: absolute;
+        text-align: center;
+    }
+
+    .donut-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--gray-900);
+        display: block;
+    }
+
+    .donut-label {
+        font-size: 13px;
+        color: var(--gray-500);
+    }
+
+    /* ===== TABLES SECTION ===== */
+    .table-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        margin-bottom: 24px;
+        animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+
+    .table-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .table-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .table-body {
+        padding: 0;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th {
+        padding: 14px 24px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray-500);
+        background: var(--gray-50);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+        padding: 14px 24px;
+        font-size: 14px;
+        color: var(--gray-700);
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .data-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .data-table tr:hover td {
+        background: var(--gray-50);
+    }
+
+    .data-table .text-center { text-align: center; }
+    .data-table .text-right { text-align: right; }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge.approved { background: var(--success-light); color: var(--success); }
+    .status-badge.pending { background: var(--warning-light); color: var(--warning); }
+    .status-badge.rejected { background: var(--danger-light); color: var(--danger); }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 1200px) {
+        .summary-grid { grid-template-columns: repeat(2, 1fr); }
+        .stats-row { grid-template-columns: repeat(3, 1fr); }
+        .charts-row-2 { grid-template-columns: 1fr; }
+    }
+
+    @@media (max-width: 768px) {
+        .report-page { padding: 16px; }
+        .header-content { flex-direction: column; gap: 16px; }
+        .header-actions { width: 100%; }
+        .filter-grid { grid-template-columns: repeat(2, 1fr); }
+        .summary-grid { grid-template-columns: 1fr; }
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
+        .charts-row-3 { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="report-page">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <div class="header-info">
+                <h1>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 21H4.6C4.03995 21 3.75992 21 3.54601 20.891C3.35785 20.7951 3.20487 20.6422 3.10899 20.454C3 20.2401 3 19.9601 3 19.4V3"/>
+                        <path d="M7 14.5L11.5 10L14.5 13L21 7"/>
+                    </svg>
+                    Báo cáo hoạt động cá nhân
+                </h1>
+                <div class="employee-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    @employeeName
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-export" onclick="exportReport('pdf')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M16 13H8"/>
+                        <path d="M16 17H8"/>
+                        <path d="M10 9H8"/>
+                    </svg>
+                    Xuất PDF
+                </button>
+                <button class="btn-export" onclick="exportReport('excel')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M8 13h2"/>
+                        <path d="M8 17h2"/>
+                        <path d="M14 13h2"/>
+                        <path d="M14 17h2"/>
+                    </svg>
+                    Xuất Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="filter-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            Bộ lọc báo cáo
+        </div>
+        <div class="filter-grid">
+            <div class="filter-group">
+                <label>Năm</label>
+                <select id="yearFilter">
+                    @foreach (var y in Model.AvailableYears)
+                    {
+                        if (Model.SelectedYear == y)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Quý</label>
+                <select id="quarterFilter">
+                    <option value="">Tất cả</option>
+                    @for (int q = 1; q <= 4; q++)
+                    {
+                        if (Model.SelectedQuarter == q)
+                        {
+                            <option value="@q" selected>Quý @q</option>
+                        }
+                        else
+                        {
+                            <option value="@q">Quý @q</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Tháng</label>
+                <select id="monthFilter">
+                    <option value="">Tất cả</option>
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        if (Model.SelectedMonth == m)
+                        {
+                            <option value="@m" selected>Tháng @m</option>
+                        }
+                        else
+                        {
+                            <option value="@m">Tháng @m</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Từ ngày</label>
+                <input type="date" id="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd") ?? "")">
+            </div>
+            <div class="filter-group">
+                <label>Đến ngày</label>
+                <input type="date" id="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd") ?? "")">
+            </div>
+            <div class="filter-actions">
+                <button class="btn-filter primary" onclick="applyFilters()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    </svg>
+                    Lọc dữ liệu
+                </button>
+                <button class="btn-filter secondary" onclick="resetFilters()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Đặt lại
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <div class="summary-card pending">
+            <div class="card-header">
+                <div class="card-icon pending">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-value">@Model.PendingLoans</div>
+                <div class="card-label">Hồ sơ chờ duyệt</div>
+            </div>
+            <div class="card-sub">
+                Tổng giá trị: <strong>@((Model.PendingAmount / 1000000).ToString("N0")) triệu</strong>
+            </div>
+        </div>
+
+        <div class="summary-card approved">
+            <div class="card-header">
+                <div class="card-icon approved">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <path d="M22 4 12 14.01l-3-3"/>
+                    </svg>
+                </div>
+                @if (trendData.LoanGrowthRate != 0)
+                {
+                    <div class="card-trend @(trendData.LoanGrowthRate >= 0 ? "up" : "down")">
+                        @if (trendData.LoanGrowthRate >= 0)
+                        {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 15l-6-6-6 6"/>
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        }
+                        @(trendData.LoanGrowthRate >= 0 ? "+" : "")@trendData.LoanGrowthRate%
+                    </div>
+                }
+            </div>
+            <div class="card-body">
+                <div class="card-value">@Model.ApprovedLoans</div>
+                <div class="card-label">Hồ sơ đã duyệt</div>
+            </div>
+            <div class="card-sub">
+                Tổng giá trị: <strong>@((Model.ApprovedAmount / 1000000).ToString("N0")) triệu</strong>
+            </div>
+        </div>
+
+        <div class="summary-card debt">
+            <div class="card-header">
+                <div class="card-icon debt">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1v22"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-value">@((Model.TotalOutstandingDebt / 1000000000).ToString("N2")) tỷ</div>
+                <div class="card-label">Tổng dư nợ</div>
+            </div>
+            <div class="card-sub">
+                Chỉ tính hồ sơ <strong>đã duyệt & đang vay</strong>
+            </div>
+        </div>
+
+        <div class="summary-card rate">
+            <div class="card-header">
+                <div class="card-icon rate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20V10"/>
+                        <path d="M18 20V4"/>
+                        <path d="M6 20v-4"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-value">@Model.AverageInterestRate.ToString("N2")%</div>
+                <div class="card-label">Lãi suất TB</div>
+            </div>
+            <div class="card-sub">
+                Tỷ lệ phê duyệt: <strong>@Model.ApprovalRate%</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini Stats Row -->
+    <div class="stats-row">
+        <div class="stat-mini">
+            <div class="stat-mini-icon total">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <path d="M14 2v6h6"/>
+                </svg>
+            </div>
+            <div class="stat-mini-info">
+                <div class="stat-mini-value">@Model.TotalLoans</div>
+                <div class="stat-mini-label">Tổng hồ sơ</div>
+            </div>
+        </div>
+
+        <div class="stat-mini">
+            <div class="stat-mini-icon active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+            </div>
+            <div class="stat-mini-info">
+                <div class="stat-mini-value">@Model.ActiveLoans</div>
+                <div class="stat-mini-label">Đang vay</div>
+            </div>
+        </div>
+
+        <div class="stat-mini">
+            <div class="stat-mini-icon completed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+            </div>
+            <div class="stat-mini-info">
+                <div class="stat-mini-value">@Model.CompletedLoans</div>
+                <div class="stat-mini-label">Đã thanh toán</div>
+            </div>
+        </div>
+
+        <div class="stat-mini">
+            <div class="stat-mini-icon rejected">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M15 9l-6 6"/>
+                    <path d="M9 9l6 6"/>
+                </svg>
+            </div>
+            <div class="stat-mini-info">
+                <div class="stat-mini-value">@Model.RejectedLoans</div>
+                <div class="stat-mini-label">Từ chối</div>
+            </div>
+        </div>
+
+        <div class="stat-mini">
+            <div class="stat-mini-icon overdue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <path d="M12 9v4"/>
+                    <path d="M12 17h.01"/>
+                </svg>
+            </div>
+            <div class="stat-mini-info">
+                <div class="stat-mini-value">@Model.OverdueLoans</div>
+                <div class="stat-mini-label">Quá hạn</div>
+            </div>
+        </div>
+
+        <div class="stat-mini">
+            <div class="stat-mini-icon term">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <path d="M16 2v4"/>
+                    <path d="M8 2v4"/>
+                    <path d="M3 10h18"/>
+                </svg>
+            </div>
+            <div class="stat-mini-info">
+                <div class="stat-mini-value">@Model.AverageTerm tháng</div>
+                <div class="stat-mini-label">Kỳ hạn TB</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+        <!-- Row 1: Monthly Trend & Status -->
+        <div class="charts-row-2">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Xu hướng khoản vay theo tháng</h3>
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" data-view="amount" onclick="switchMonthlyView('amount', this)">Số tiền</button>
+                        <button class="chart-tab" data-view="count" onclick="switchMonthlyView('count', this)">Số lượng</button>
+                    </div>
+                </div>
+                <div class="chart-body">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Trạng thái hồ sơ</h3>
+                </div>
+                <div class="chart-body donut">
+                    <canvas id="statusChart"></canvas>
+                    <div class="donut-center">
+                        <span class="donut-value">@Model.TotalLoans</span>
+                        <span class="donut-label">Tổng hồ sơ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Quarterly & Loan Types -->
+        <div class="charts-row-3">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Thống kê theo quý</h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="quarterlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Phân loại khoản vay</h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="loanTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Risk & Customer -->
+        <div class="charts-row-3">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Mức độ rủi ro</h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Loại khách hàng</h3>
+                </div>
+                <div class="chart-body donut">
+                    <canvas id="customerChart"></canvas>
+                    <div class="donut-center">
+                        <span class="donut-value">@(Model.IndividualCustomers + Model.EnterpriseCustomers)</span>
+                        <span class="donut-label">Khách hàng</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-card">
+        <div class="table-header">
+            <h3 class="table-title">Chi tiết theo loại khoản vay</h3>
+        </div>
+        <div class="table-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Loại khoản vay</th>
+                        <th class="text-center">Tổng hồ sơ</th>
+                        <th class="text-center">Đã duyệt</th>
+                        <th class="text-right">Tổng giá trị</th>
+                        <th class="text-right">Đã duyệt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (loansByType.Any())
+                    {
+                        @foreach (var item in loansByType)
+                        {
+                            <tr>
+                                <td>@item.LoanTypeName</td>
+                                <td class="text-center">@item.Count.ToString("N0")</td>
+                                <td class="text-center">
+                                    <span class="status-badge approved">@item.ApprovedCount.ToString("N0")</span>
+                                </td>
+                                <td class="text-right">@((item.TotalAmount / 1000000).ToString("N0")) triệu</td>
+                                <td class="text-right">@((item.ApprovedAmount / 1000000).ToString("N0")) triệu</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center" style="color: var(--gray-500); padding: 40px;">
+                                Chưa có dữ liệu
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        // Data from server
+        const monthlyData = @Html.Raw(Json.Serialize(monthlyData));
+        const quarterlyData = @Html.Raw(Json.Serialize(quarterlyData));
+        const loansByStatus = @Html.Raw(Json.Serialize(loansByStatus));
+        const loansByType = @Html.Raw(Json.Serialize(loansByType));
+        const riskLevelData = @Html.Raw(Json.Serialize(riskLevelData));
+        const customerTypeData = @Html.Raw(Json.Serialize(customerTypeData));
+
+        // Global animation options - Chậm hơn để mượt mà
+        const defaultAnimation = {
+            duration: 2000,
+            easing: 'easeOutQuart',
+            delay: (context) => {
+                let delay = 0;
+                if (context.type === 'data' && context.mode === 'default') {
+                    delay = context.dataIndex * 100 + context.datasetIndex * 50;
+                }
+                return delay;
+            }
+        };
+
+        const slowAnimation = {
+            duration: 2500,
+            easing: 'easeOutCubic'
+        };
+
+        // Color palette
+        const colors = {
+            primary: '#6366F1',
+            success: '#10B981',
+            warning: '#F59E0B',
+            danger: '#EF4444',
+            info: '#3B82F6',
+            purple: '#8B5CF6',
+            pink: '#EC4899',
+            teal: '#14B8A6'
+        };
+
+        const gradientColors = [
+            { start: '#6366F1', end: '#8B5CF6' },
+            { start: '#10B981', end: '#34D399' },
+            { start: '#F59E0B', end: '#FBBF24' },
+            { start: '#EF4444', end: '#F87171' },
+            { start: '#3B82F6', end: '#60A5FA' },
+            { start: '#EC4899', end: '#F472B6' }
+        ];
+
+        // Helper function to create gradient
+        function createGradient(ctx, color1, color2) {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            return gradient;
+        }
+
+        // 1. Monthly Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        let monthlyChart;
+
+        function initMonthlyChart(viewType = 'amount') {
+            if (monthlyChart) monthlyChart.destroy();
+
+            const labels = monthlyData.map(d => d.monthName);
+            let datasets;
+
+            if (viewType === 'amount') {
+                datasets = [
+                    {
+                        label: 'Tổng đề xuất',
+                        data: monthlyData.map(d => d.totalAmount / 1000000),
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderColor: colors.primary,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: colors.primary
+                    },
+                    {
+                        label: 'Đã giải ngân',
+                        data: monthlyData.map(d => d.disbursedAmount / 1000000),
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderColor: colors.success,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: colors.success
+                    }
+                ];
+            } else {
+                datasets = [
+                    {
+                        label: 'Tổng hồ sơ',
+                        data: monthlyData.map(d => d.count),
+                        backgroundColor: colors.primary,
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    },
+                    {
+                        label: 'Đã duyệt',
+                        data: monthlyData.map(d => d.approvedCount),
+                        backgroundColor: colors.success,
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    },
+                    {
+                        label: 'Chờ duyệt',
+                        data: monthlyData.map(d => d.pendingCount),
+                        backgroundColor: colors.warning,
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }
+                ];
+            }
+
+            monthlyChart = new Chart(monthlyCtx, {
+                type: viewType === 'amount' ? 'line' : 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: defaultAnimation,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    if (viewType === 'amount') {
+                                        return context.dataset.label + ': ' + context.raw.toLocaleString() + ' triệu';
+                                    }
+                                    return context.dataset.label + ': ' + context.raw + ' hồ sơ';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: {
+                                callback: function(value) {
+                                    if (viewType === 'amount') {
+                                        return value.toLocaleString() + ' tr';
+                                    }
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchMonthlyView(viewType, btn) {
+            document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            initMonthlyChart(viewType);
+        }
+
+        initMonthlyChart('amount');
+
+        // 2. Status Doughnut Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusColors = {
+            'Chờ duyệt': colors.warning,
+            'Đang xử lý': colors.info,
+            'Đã phê duyệt': colors.success,
+            'Đã giải ngân': colors.primary,
+            'Đang vay': colors.teal,
+            'Đã thanh toán': colors.purple,
+            'Từ chối': colors.danger
+        };
+
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: loansByStatus.map(d => d.status),
+                datasets: [{
+                    data: loansByStatus.map(d => d.count),
+                    backgroundColor: loansByStatus.map(d => statusColors[d.status] || colors.info),
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 2500,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        padding: 12,
+                        cornerRadius: 8
+                    }
+                }
+            }
+        });
+
+        // 3. Quarterly Chart
+        const quarterlyCtx = document.getElementById('quarterlyChart').getContext('2d');
+        new Chart(quarterlyCtx, {
+            type: 'bar',
+            data: {
+                labels: quarterlyData.map(d => d.quarterName),
+                datasets: [
+                    {
+                        label: 'Đã duyệt',
+                        data: quarterlyData.map(d => d.approvedCount),
+                        backgroundColor: colors.success,
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Chờ duyệt',
+                        data: quarterlyData.map(d => d.pendingCount),
+                        backgroundColor: colors.warning,
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Từ chối',
+                        data: quarterlyData.map(d => d.rejectedCount),
+                        backgroundColor: colors.danger,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: defaultAnimation,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { usePointStyle: true, padding: 15 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        stacked: false,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        stacked: false,
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // 4. Loan Type Chart
+        const loanTypeCtx = document.getElementById('loanTypeChart').getContext('2d');
+        new Chart(loanTypeCtx, {
+            type: 'bar',
+            data: {
+                labels: loansByType.map(d => d.loanTypeName),
+                datasets: [{
+                    label: 'Số hồ sơ',
+                    data: loansByType.map(d => d.count),
+                    backgroundColor: loansByType.map((_, i) => gradientColors[i % gradientColors.length].start),
+                    borderRadius: 8,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                animation: defaultAnimation,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // 5. Risk Chart
+        const riskCtx = document.getElementById('riskChart').getContext('2d');
+        const riskColors = {
+            'Thấp': colors.success,
+            'Trung bình': colors.warning,
+            'Cao': '#F97316',
+            'Rất cao': colors.danger
+        };
+
+        new Chart(riskCtx, {
+            type: 'polarArea',
+            data: {
+                labels: riskLevelData.map(d => d.riskLevel),
+                datasets: [{
+                    data: riskLevelData.map(d => d.count),
+                    backgroundColor: riskLevelData.map(d => riskColors[d.riskLevel] + '99'),
+                    borderColor: riskLevelData.map(d => riskColors[d.riskLevel]),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 2500
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 15 }
+                    }
+                }
+            }
+        });
+
+        // 6. Customer Type Chart
+        const customerCtx = document.getElementById('customerChart').getContext('2d');
+        new Chart(customerCtx, {
+            type: 'doughnut',
+            data: {
+                labels: customerTypeData.map(d => d.customerType),
+                datasets: [{
+                    data: customerTypeData.map(d => d.count),
+                    backgroundColor: [colors.primary, colors.success],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 2500
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 15 }
+                    }
+                }
+            }
+        });
+
+        // Filter functions
+        function applyFilters() {
+            const year = document.getElementById('yearFilter').value;
+            const quarter = document.getElementById('quarterFilter').value;
+            const month = document.getElementById('monthFilter').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            let url = '@Url.Action("Index", "Report")?';
+            if (year) url += `year=${year}&`;
+            if (quarter) url += `quarter=${quarter}&`;
+            if (month) url += `month=${month}&`;
+            if (fromDate) url += `fromDate=${fromDate}&`;
+            if (toDate) url += `toDate=${toDate}&`;
+
+            window.location.href = url.slice(0, -1);
+        }
+
+        function resetFilters() {
+            window.location.href = '@Url.Action("Index", "Report")';
+        }
+
+        function exportReport(format) {
+            const year = document.getElementById('yearFilter').value;
+            const quarter = document.getElementById('quarterFilter').value;
+            const month = document.getElementById('monthFilter').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            let url = `@Url.Action("Export", "Report")?format=${format}&`;
+            if (year) url += `year=${year}&`;
+            if (quarter) url += `quarter=${quarter}&`;
+            if (month) url += `month=${month}&`;
+            if (fromDate) url += `fromDate=${fromDate}&`;
+            if (toDate) url += `toDate=${toDate}&`;
+
+            window.open(url.slice(0, -1), '_blank');
+        }
+
+        // Add enter key support for date inputs
+        document.getElementById('fromDate').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') applyFilters();
+        });
+        document.getElementById('toDate').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') applyFilters();
+        });
+    </script>
+}

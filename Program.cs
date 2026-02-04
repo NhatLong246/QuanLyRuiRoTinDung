@@ -49,6 +49,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ILoanService, LoanService>();
 builder.Services.AddScoped<ICicService, CicService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
 
