@@ -342,4 +342,235 @@
         }
     `;
     document.head.appendChild(style);
+
+    // ============================================
+    // SEARCH FUNCTIONALITY
+    // ============================================
+    const searchInput = document.getElementById('globalSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchForm = document.getElementById('globalSearchForm');
+    let searchTimeout;
+
+    if (searchInput && searchResults) {
+        // Form submit - allow to go to search page
+        // No preventDefault here, let form submit normally to show search results page
+
+        // Search on input for dropdown preview
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const keyword = this.value.trim();
+
+            if (keyword.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                performSearch(keyword);
+            }, 300);
+        });
+
+        // Close search results on click outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+
+        // Show results on focus if has value
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2) {
+                performSearch(this.value.trim());
+            }
+        });
+    }
+
+    function performSearch(keyword) {
+        fetch(`/Dashboard/SearchApi?keyword=${encodeURIComponent(keyword)}`)
+            .then(response => response.json())
+            .then(data => {
+                renderSearchResults(data);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+            });
+    }
+
+    function renderSearchResults(data) {
+        const { customers, loans } = data;
+        let html = '';
+
+        if (customers.length === 0 && loans.length === 0) {
+            html = '<div class="search-no-results">Không tìm thấy kết quả</div>';
+        } else {
+            // Customers section
+            if (customers.length > 0) {
+                html += `
+                    <div class="search-results-section">
+                        <div class="search-results-title">Khách hàng</div>
+                        ${customers.map(c => `
+                            <a href="/Customer/Details${c.loai === 'Cá nhân' ? 'CaNhan' : 'DoanhNghiep'}/${c.maKhachHang}" class="search-result-item">
+                                <div class="search-result-icon customer">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div class="search-result-info">
+                                    <div class="search-result-name">${c.ten}</div>
+                                    <div class="search-result-meta">${c.loai} • ${c.soDinhDanh || ''} • ${c.soDienThoai || ''}</div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Loans section
+            if (loans.length > 0) {
+                html += `
+                    <div class="search-results-section">
+                        <div class="search-results-title">Hồ sơ vay</div>
+                        ${loans.map(l => `
+                            <a href="/Loan/Details/${l.maKhoanVay}" class="search-result-item">
+                                <div class="search-result-icon loan">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                                        <path d="M14 2V8H20"/>
+                                    </svg>
+                                </div>
+                                <div class="search-result-info">
+                                    <div class="search-result-name">#${l.maKhoanVayCode}</div>
+                                    <div class="search-result-meta">${formatMoney(l.soTienVay)} VND • ${l.trangThai}</div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        searchResults.innerHTML = html;
+        searchResults.style.display = 'block';
+    }
+
+    function formatMoney(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount);
+    }
+
+    // ============================================
+    // NOTIFICATION FUNCTIONALITY
+    // ============================================
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    const notificationList = document.getElementById('notificationList');
+    const notificationCount = document.getElementById('notificationCount');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+
+    if (notificationBtn && notificationDropdown) {
+        // Toggle notification dropdown
+        notificationBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isVisible = notificationDropdown.style.display === 'block';
+            notificationDropdown.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                loadNotifications();
+            }
+        });
+
+        // Close on click outside
+        document.addEventListener('click', function(e) {
+            if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                notificationDropdown.style.display = 'none';
+            }
+        });
+
+        // Mark all as read
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', function() {
+                notificationCount.style.display = 'none';
+                notificationCount.textContent = '0';
+            });
+        }
+
+        // Load notifications on page load
+        loadNotifications();
+    }
+
+    function loadNotifications() {
+        fetch('/Dashboard/GetNotifications')
+            .then(response => response.json())
+            .then(data => {
+                renderNotifications(data);
+            })
+            .catch(error => {
+                console.error('Notification error:', error);
+            });
+    }
+
+    function renderNotifications(data) {
+        const { notifications, count } = data;
+
+        // Update badge
+        if (count > 0) {
+            notificationCount.textContent = count > 9 ? '9+' : count;
+            notificationCount.style.display = 'flex';
+        } else {
+            notificationCount.style.display = 'none';
+        }
+
+        // Render list
+        if (notifications.length === 0) {
+            notificationList.innerHTML = '<div class="notification-empty">Không có thông báo mới</div>';
+            return;
+        }
+
+        notificationList.innerHTML = notifications.map(n => `
+            <a href="/Loan/Details/${n.id}" class="notification-item">
+                <div class="notification-icon-wrap ${n.type}">
+                    ${getNotificationIcon(n.icon)}
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${n.title}</div>
+                    <div class="notification-message">${n.message}</div>
+                    <div class="notification-time">${formatTimeAgo(n.date)}</div>
+                </div>
+            </a>
+        `).join('');
+    }
+
+    function getNotificationIcon(iconType) {
+        const icons = {
+            'check-circle': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85782 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"/>
+                <path d="M22 4L12 14.01L9 11.01"/>
+            </svg>`,
+            'file-text': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                <path d="M14 2V8H20"/>
+                <path d="M16 13H8"/>
+                <path d="M16 17H8"/>
+                <path d="M10 9H9H8"/>
+            </svg>`,
+            'alert-circle': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8V12"/>
+                <path d="M12 16H12.01"/>
+            </svg>`
+        };
+        return icons[iconType] || icons['alert-circle'];
+    }
+
+    function formatTimeAgo(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+
+        if (diff < 60) return 'Vừa xong';
+        if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+        if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`;
+        return date.toLocaleDateString('vi-VN');
+    }
 })();

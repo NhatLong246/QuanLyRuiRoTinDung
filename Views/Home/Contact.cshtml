@@ -1,0 +1,562 @@
+@{
+    ViewData["Title"] = "Liên hệ";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Ngân hàng TMCP</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .page-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .page-content {
+            flex: 1;
+            padding: 80px 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .page-title {
+            font-size: 42px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 16px;
+        }
+        
+        .page-subtitle {
+            font-size: 18px;
+            color: #64748b;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Contact Grid */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 48px;
+        }
+        
+        /* Contact Info Card */
+        .contact-info-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .contact-info-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 32px;
+        }
+        
+        .contact-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        
+        .contact-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .contact-icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .contact-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+        
+        .contact-details h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        
+        .contact-details p {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        .contact-details a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .contact-details a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Map Card */
+        .map-card {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .map-embed {
+            height: 280px;
+            overflow: hidden;
+            border-radius: 24px 24px 0 0;
+        }
+        
+        .map-embed iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .map-info {
+            padding: 24px;
+        }
+        
+        .map-info h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+        
+        .map-info p {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0;
+        }
+        
+        /* Departments Section */
+        .departments-section {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .departments-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        
+        .departments-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        
+        .department-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .department-card:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .department-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+        
+        .department-icon svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+        
+        .department-card h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+        
+        .department-card p {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+        
+        .department-contact {
+            font-size: 14px;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        
+        /* Working Hours */
+        .working-hours {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin-top: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .working-hours-info h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .working-hours-info p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.85);
+            margin: 0;
+        }
+        
+        .working-hours-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 12px 20px;
+        }
+        
+        .working-hours-badge span {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 48px;
+        }
+        
+        .quick-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-btn.primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .quick-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.5);
+        }
+        
+        .quick-btn.secondary {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        
+        .quick-btn.secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        .quick-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        @@media (max-width: 992px) {
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .departments-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .working-hours {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+        }
+        
+        @@media (max-width: 768px) {
+            .departments-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .departments-section {
+                padding: 32px 24px;
+            }
+            
+            .quick-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- Header -->
+        <header class="landing-header">
+            <div class="container">
+                <nav class="navbar">
+                    <a href="@Url.Action("Index", "Home")" class="navbar-brand">
+                        <img src="~/asset/image/icons8-bank-100.png" alt="Bank Logo" class="header-logo" />
+                        <div class="brand-text">
+                            <div class="brand-name">Ngân hàng TMCP</div>
+                            <div class="brand-subtitle">Hệ thống Quản lý Rủi ro Tín dụng</div>
+                        </div>
+                    </a>
+                    <div class="navbar-menu">
+                        <a asp-controller="Home" asp-action="Support" class="nav-link">Hỗ trợ</a>
+                        <a asp-controller="Home" asp-action="Contact" class="nav-link active">Liên hệ</a>
+                        <a asp-controller="Account" asp-action="Login" class="btn-login-nav">
+                            <span>Đăng nhập</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Liên hệ với chúng tôi</h1>
+                    <p class="page-subtitle">
+                        Đội ngũ IT Helpdesk luôn sẵn sàng hỗ trợ các vấn đề liên quan đến hệ thống.
+                    </p>
+                </div>
+
+                <!-- Contact Grid -->
+                <div class="contact-grid">
+                    <!-- Contact Info -->
+                    <div class="contact-info-card">
+                        <h3 class="contact-info-title">Thông tin liên hệ</h3>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 5.02944 7.02944 1 12 1C16.9706 1 21 5.02944 21 10Z"/>
+                                    <path d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"/>
+                                </svg>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Địa chỉ</h4>
+                                <p>450-451 Lê Văn Việt, Phường Tăng Nhơn Phú A,<br/>Thủ Đức, Thành phố Hồ Chí Minh</p>
+                            </div>
+                        </div>
+
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 16.92V19.92C22 20.47 21.79 21 21.41 21.37C21.04 21.75 20.53 21.96 20 21.96C10.61 21.96 3 14.35 3 4.96C3 4.43 3.21 3.9 3.59 3.53C3.96 3.15 4.47 2.94 5 2.94H8C8.92 2.94 9.76 3.5 10.07 4.37L10.64 6.08C10.92 6.87 10.72 7.74 10.13 8.33L8.65 9.81C9.57 11.72 11.23 13.38 13.14 14.3L14.62 12.82C15.21 12.23 16.08 12.03 16.87 12.31L18.58 12.88C19.45 13.19 20.01 14.03 20.01 14.95L20 16.92H22Z"/>
+                                </svg>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Hotline IT Helpdesk</h4>
+                                <p><a href="tel:19001234">1900 1234</a> (nhánh 2)</p>
+                            </div>
+                        </div>
+
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"/>
+                                    <path d="M22 6L12 13L2 6"/>
+                                </svg>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Email hỗ trợ</h4>
+                                <p><a href="mailto:helpdesk@nganhang.vn">helpdesk@nganhang.vn</a></p>
+                            </div>
+                        </div>
+
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6V12L16 14"/>
+                                </svg>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Giờ làm việc</h4>
+                                <p>Thứ 2 - Thứ 6: 8:00 - 17:30<br/>Thứ 7: 8:00 - 12:00 (nếu có)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Map -->
+                    <div class="map-card">
+                        <div class="map-embed">
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1959.2!2d106.77135!3d10.84881!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317527635f5d4aa3%3A0x658566df2f6b0530!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBHaWFvIHRow7RuZyBW4bqtbiB04bqjaSAtIFBo4bqhbiBoaeG7h3UgdOG6oWkgVFAuSENNIChVVEMy!5e0!3m2!1svi!2s!4v1706000000000!5m2!1svi!2s"
+                                width="100%" 
+                                height="280" 
+                                style="border:0; border-radius: 24px 24px 0 0;" 
+                                allowfullscreen="" 
+                                loading="lazy" 
+                                referrerpolicy="no-referrer-when-downgrade">
+                            </iframe>
+                        </div>
+                        <div class="map-info">
+                            <h4>Trụ sở chính - Phòng CNTT</h4>
+                            <p>450-451 Lê Văn Việt, Phường Tăng Nhơn Phú A, Thủ Đức, TP.HCM</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Departments -->
+                <div class="departments-section">
+                    <h3 class="departments-title">Liên hệ theo phòng ban</h3>
+                    <div class="departments-grid">
+                        <div class="department-card">
+                            <div class="department-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                    <path d="M8 21H16"/>
+                                    <path d="M12 17V21"/>
+                                </svg>
+                            </div>
+                            <h4>IT Helpdesk</h4>
+                            <p>Hỗ trợ kỹ thuật, sự cố hệ thống, reset mật khẩu</p>
+                            <div class="department-contact">Ext: 2001</div>
+                        </div>
+                        
+                        <div class="department-card">
+                            <div class="department-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13"/>
+                                    <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88"/>
+                                </svg>
+                            </div>
+                            <h4>Phòng Nhân sự</h4>
+                            <p>Đăng ký tài khoản mới, phân quyền truy cập</p>
+                            <div class="department-contact">Ext: 1001</div>
+                        </div>
+                        
+                        <div class="department-card">
+                            <div class="department-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                                    <path d="M14 2V8H20"/>
+                                    <path d="M16 13H8"/>
+                                    <path d="M16 17H8"/>
+                                    <path d="M10 9H9H8"/>
+                                </svg>
+                            </div>
+                            <h4>Phòng Tín dụng</h4>
+                            <p>Hỗ trợ nghiệp vụ, quy trình hồ sơ vay</p>
+                            <div class="department-contact">Ext: 3001</div>
+                        </div>
+                    </div>
+
+                    <div class="working-hours">
+                        <div class="working-hours-info">
+                            <h4>Lưu ý về thời gian hỗ trợ</h4>
+                            <p>Các yêu cầu ngoài giờ làm việc sẽ được xử lý vào ngày làm việc tiếp theo.</p>
+                        </div>
+                        <div class="working-hours-badge">
+                            <span>8:00 - 17:30 (T2 - T6)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <a href="@Url.Action("Support", "Home")" class="quick-btn primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13"/>
+                            <path d="M12 17H12.01"/>
+                        </svg>
+                        Xem Hướng dẫn
+                    </a>
+                    <a href="@Url.Action("Index", "Home")" class="quick-btn secondary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M5 12L12 19M5 12L12 5"/>
+                        </svg>
+                        Quay lại trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <img src="~/asset/image/icons8-bank-100.png" alt="Bank Logo" class="footer-logo" />
+                        <div class="footer-brand-text">
+                            <div class="footer-brand-name">Ngân hàng TMCP</div>
+                            <div class="footer-brand-subtitle">
+                                Hệ thống quản lý nội bộ, vui lòng không chia sẻ tài khoản đăng nhập.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer-links">
+                        <a href="#" class="footer-link">Chính sách bảo mật</a>
+                        <a href="#" class="footer-link">Điều khoản sử dụng</a>
+                        <a href="@Url.Action("Support", "Home")" class="footer-link">Hướng dẫn nội bộ</a>
+                        <a href="@Url.Action("Contact", "Home")" class="footer-link">IT Helpdesk</a>
+                    </div>
+                </div>
+                <div class="footer-copyright">
+                    © 2024 Ngân hàng TMCP. Bản quyền đã được bảo hộ. Hotline hỗ trợ: 1900 xxxx
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

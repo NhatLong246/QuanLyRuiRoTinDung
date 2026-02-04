@@ -36,6 +36,9 @@ namespace QuanLyRuiRoTinDung.Services
         Task<List<KhoanVay>> GetMyLoansAsync(int maNhanVien, string? trangThai = null, string? searchTerm = null);
         Task<List<KhoanVay>> GetAllLoansAsync(string? trangThai = null, string? searchTerm = null);
         Task<(int Total, int Nhap, int ChoDuyet, int DangXuLy, int DaPheDuyet, int DangVay, int TuChoi, int DaThanhToan)> GetLoanStatsAsync(int? maNhanVien = null);
+        
+        // Active loans management (approved loans)
+        Task<List<KhoanVay>> GetActiveLoansAsync(int maNhanVien, string? trangThai = null, string? searchTerm = null);
     }
 
     public class LoanService : ILoanService
@@ -769,6 +772,37 @@ namespace QuanLyRuiRoTinDung.Services
                 TuChoi: stats.FirstOrDefault(s => s.TrangThai == "Từ chối")?.Count ?? 0,
                 DaThanhToan: stats.FirstOrDefault(s => s.TrangThai == "Đã thanh toán")?.Count ?? 0
             );
+        }
+
+        // Get active loans (approved and being repaid)
+        public async Task<List<KhoanVay>> GetActiveLoansAsync(int maNhanVien, string? trangThai = null, string? searchTerm = null)
+        {
+            // Các trạng thái của khoản vay đang hoạt động
+            var activeStatuses = new[] { "Đã duyệt", "Đang vay", "Quá hạn", "Đã thanh toán" };
+
+            var query = _context.KhoanVays
+                .Include(k => k.MaLoaiVayNavigation)
+                .Include(k => k.MaNhanVienTinDungNavigation)
+                .Where(k => k.MaNhanVienTinDung == maNhanVien && activeStatuses.Contains(k.TrangThaiKhoanVay));
+
+            // Filter by specific status
+            if (!string.IsNullOrEmpty(trangThai) && trangThai != "all")
+            {
+                query = query.Where(k => k.TrangThaiKhoanVay == trangThai);
+            }
+
+            // Search by loan code or purpose
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var term = searchTerm.ToLower();
+                query = query.Where(k => 
+                    k.MaKhoanVayCode.ToLower().Contains(term) ||
+                    (k.MucDichVay != null && k.MucDichVay.ToLower().Contains(term)));
+            }
+
+            return await query
+                .OrderByDescending(k => k.NgayCapNhat)
+                .ToListAsync();
         }
     }
 }

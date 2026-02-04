@@ -1,0 +1,382 @@
+@{
+    ViewData["Title"] = "Hỗ trợ";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Ngân hàng TMCP</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .page-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .page-content {
+            flex: 1;
+            padding: 80px 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .page-title {
+            font-size: 42px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 16px;
+        }
+        
+        .page-subtitle {
+            font-size: 18px;
+            color: #64748b;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Support Categories */
+        .support-categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+        
+        .support-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .support-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .support-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .support-icon svg {
+            width: 36px;
+            height: 36px;
+            color: white;
+        }
+        
+        .support-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+        
+        .support-card p {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        
+        /* FAQ Section */
+        .faq-section {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .faq-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        
+        .faq-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 24px 0;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .faq-question {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .faq-question::before {
+            content: 'Q';
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .faq-answer {
+            font-size: 15px;
+            color: #64748b;
+            line-height: 1.7;
+            padding-left: 40px;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 48px;
+        }
+        
+        .quick-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-btn.primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .quick-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.5);
+        }
+        
+        .quick-btn.secondary {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        
+        .quick-btn.secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        .quick-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        @@media (max-width: 992px) {
+            .support-categories {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @@media (max-width: 768px) {
+            .support-categories {
+                grid-template-columns: 1fr;
+            }
+            
+            .faq-section {
+                padding: 32px 24px;
+            }
+            
+            .quick-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- Header -->
+        <header class="landing-header">
+            <div class="container">
+                <nav class="navbar">
+                    <a href="@Url.Action("Index", "Home")" class="navbar-brand">
+                        <img src="~/asset/image/icons8-bank-100.png" alt="Bank Logo" class="header-logo" />
+                        <div class="brand-text">
+                            <div class="brand-name">Ngân hàng TMCP</div>
+                            <div class="brand-subtitle">Hệ thống Quản lý Rủi ro Tín dụng</div>
+                        </div>
+                    </a>
+                    <div class="navbar-menu">
+                        <a asp-controller="Home" asp-action="Support" class="nav-link active">Hỗ trợ</a>
+                        <a asp-controller="Home" asp-action="Contact" class="nav-link">Liên hệ</a>
+                        <a asp-controller="Account" asp-action="Login" class="btn-login-nav">
+                            <span>Đăng nhập</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Trung tâm Hỗ trợ</h1>
+                    <p class="page-subtitle">
+                        Chúng tôi luôn sẵn sàng hỗ trợ bạn. Tìm kiếm câu trả lời hoặc liên hệ đội ngũ IT Helpdesk.
+                    </p>
+                </div>
+
+                <!-- Support Categories -->
+                <div class="support-categories">
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"/>
+                                <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13"/>
+                                <path d="M12 17H12.01"/>
+                            </svg>
+                        </div>
+                        <h3>Hướng dẫn sử dụng</h3>
+                        <p>Tài liệu hướng dẫn chi tiết về cách sử dụng các tính năng của hệ thống.</p>
+                    </div>
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.7 6.3C14.5168 6.11667 14.2667 6 14 6C13.7333 6 13.4832 6.11667 13.3 6.3L6.3 13.3C6.11667 13.4832 6 13.7333 6 14C6 14.2667 6.11667 14.5168 6.3 14.7L9.3 17.7C9.4832 17.8833 9.73333 18 10 18C10.2667 18 10.5168 17.8833 10.7 17.7L17.7 10.7C17.8833 10.5168 18 10.2667 18 10C18 9.73333 17.8833 9.4832 17.7 9.3L14.7 6.3Z"/>
+                                <path d="M3 21L6 18"/>
+                                <path d="M11 11L5.5 16.5"/>
+                            </svg>
+                        </div>
+                        <h3>Khắc phục sự cố</h3>
+                        <p>Giải pháp cho các vấn đề thường gặp khi sử dụng hệ thống.</p>
+                    </div>
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92V19.92C22 20.4704 21.7893 20.9991 21.4142 21.3742C21.0391 21.7493 20.5304 21.96 20 21.96C10.61 21.96 3 14.35 3 4.96C3 4.42957 3.21071 3.90086 3.58579 3.52579C3.96086 3.15071 4.46957 2.94 5 2.94H8C8.46329 2.93597 8.91117 3.09494 9.26573 3.38893C9.62029 3.68292 9.85922 4.09294 9.94 4.55C10.0905 5.41507 10.3382 6.26048 10.68 7.07C10.8481 7.48232 10.8891 7.9356 10.7984 8.37117C10.7077 8.80673 10.4893 9.20481 10.17 9.52L8.65 11.04C9.92 13.5 12.03 15.58 14.5 16.85L16.02 15.33C16.3352 15.0107 16.7333 14.7923 17.1688 14.7016C17.6044 14.6109 18.0577 14.6519 18.47 14.82C19.2795 15.1618 20.1249 15.4095 20.99 15.56C21.4571 15.6408 21.8671 15.8797 22.1611 16.2343C22.4551 16.5889 22.614 17.0368 22.61 17.5L22 16.92Z"/>
+                            </svg>
+                        </div>
+                        <h3>Liên hệ Helpdesk</h3>
+                        <p>Kết nối trực tiếp với đội ngũ IT Helpdesk qua hotline hoặc email.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="faq-section">
+                    <h2 class="faq-title">Câu hỏi thường gặp</h2>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">Làm thế nào để đăng nhập vào hệ thống?</div>
+                            <div class="faq-answer">
+                                Bạn sử dụng tài khoản đã được cấp bởi phòng Nhân sự hoặc IT. Truy cập trang đăng nhập và nhập tên đăng nhập cùng mật khẩu. Nếu quên mật khẩu, vui lòng liên hệ IT Helpdesk để được hỗ trợ reset.
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">Tôi không thể tra cứu thông tin CIC, phải làm sao?</div>
+                            <div class="faq-answer">
+                                Vui lòng kiểm tra kết nối mạng và đảm bảo bạn có quyền truy cập chức năng tra cứu CIC. Nếu vẫn gặp lỗi, hãy liên hệ IT Helpdesk kèm theo mã lỗi hiển thị (nếu có).
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">Làm sao để tạo hồ sơ vay mới?</div>
+                            <div class="faq-answer">
+                                Từ Dashboard, chọn "Quản lý hồ sơ vay" → "Tạo hồ sơ mới". Chọn khách hàng (hoặc tạo mới) và điền đầy đủ thông tin khoản vay theo form hướng dẫn.
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">Tại sao hồ sơ của tôi bị từ chối?</div>
+                            <div class="faq-answer">
+                                Hồ sơ có thể bị từ chối do thiếu thông tin, điểm tín dụng không đạt yêu cầu, hoặc tài sản đảm bảo chưa đủ. Vui lòng xem chi tiết lý do từ chối trong phần ghi chú của hồ sơ.
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">Giờ làm việc của IT Helpdesk?</div>
+                            <div class="faq-answer">
+                                IT Helpdesk hoạt động từ 8:00 - 17:30 các ngày trong tuần (trừ ngày lễ). Ngoài giờ hành chính, bạn có thể gửi email và sẽ được phản hồi trong ngày làm việc tiếp theo.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <a href="@Url.Action("Contact", "Home")" class="quick-btn primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"/>
+                                <path d="M22 6L12 13L2 6"/>
+                            </svg>
+                            Liên hệ Helpdesk
+                        </a>
+                        <a href="@Url.Action("Index", "Home")" class="quick-btn secondary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M5 12L12 19M5 12L12 5"/>
+                            </svg>
+                            Quay lại trang chủ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <img src="~/asset/image/icons8-bank-100.png" alt="Bank Logo" class="footer-logo" />
+                        <div class="footer-brand-text">
+                            <div class="footer-brand-name">Ngân hàng TMCP</div>
+                            <div class="footer-brand-subtitle">
+                                Hệ thống quản lý nội bộ, vui lòng không chia sẻ tài khoản đăng nhập.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer-links">
+                        <a href="#" class="footer-link">Chính sách bảo mật</a>
+                        <a href="#" class="footer-link">Điều khoản sử dụng</a>
+                        <a href="@Url.Action("Support", "Home")" class="footer-link">Hướng dẫn nội bộ</a>
+                        <a href="@Url.Action("Contact", "Home")" class="footer-link">IT Helpdesk</a>
+                    </div>
+                </div>
+                <div class="footer-copyright">
+                    © 2024 Ngân hàng TMCP. Bản quyền đã được bảo hộ. Hotline hỗ trợ: 1900 xxxx
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

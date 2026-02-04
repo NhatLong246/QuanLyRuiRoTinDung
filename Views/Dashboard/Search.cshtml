@@ -1,0 +1,526 @@
+@{
+    ViewData["Title"] = "Kết quả tìm kiếm";
+    Layout = "_DashboardLayout";
+    var keyword = ViewBag.Keyword as string ?? "";
+    var khachHangCaNhans = ViewBag.KhachHangCaNhans as List<QuanLyRuiRoTinDung.Models.Entities.KhachHangCaNhan> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhachHangCaNhan>();
+    var khachHangDoanhNghieps = ViewBag.KhachHangDoanhNghieps as List<QuanLyRuiRoTinDung.Models.Entities.KhachHangDoanhNghiep> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhachHangDoanhNghiep>();
+    var khoanVays = ViewBag.KhoanVays as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>();
+    var totalResults = khachHangCaNhans.Count + khachHangDoanhNghieps.Count + khoanVays.Count;
+}
+
+<div class="search-results-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Kết quả tìm kiếm</h1>
+        @if (!string.IsNullOrEmpty(keyword))
+        {
+            <p class="page-subtitle">
+                Tìm thấy <strong>@totalResults</strong> kết quả cho "<strong>@keyword</strong>"
+            </p>
+        }
+    </div>
+
+    <!-- Search Form -->
+    <div class="search-form-container">
+        <form method="get" class="search-form-inline">
+            <div class="search-input-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21L16.65 16.65"/>
+                </svg>
+                <input type="text" name="keyword" value="@keyword" placeholder="Nhập từ khóa tìm kiếm..." class="search-input-large" autofocus />
+                <button type="submit" class="search-submit-btn">Tìm kiếm</button>
+            </div>
+        </form>
+    </div>
+
+    @if (string.IsNullOrEmpty(keyword))
+    {
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21L16.65 16.65"/>
+            </svg>
+            <h3>Nhập từ khóa để tìm kiếm</h3>
+            <p>Bạn có thể tìm kiếm theo tên khách hàng, CMND/CCCD, mã số thuế, số điện thoại, email hoặc mã hồ sơ vay.</p>
+        </div>
+    }
+    else if (totalResults == 0)
+    {
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M16 16L8 8M8 16L16 8"/>
+            </svg>
+            <h3>Không tìm thấy kết quả</h3>
+            <p>Không có kết quả nào phù hợp với từ khóa "<strong>@keyword</strong>". Vui lòng thử lại với từ khóa khác.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Khách hàng cá nhân -->
+        @if (khachHangCaNhans.Any())
+        {
+            <div class="results-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Khách hàng cá nhân
+                    </h2>
+                    <span class="result-count">@khachHangCaNhans.Count kết quả</span>
+                </div>
+                <div class="results-grid">
+                    @foreach (var kh in khachHangCaNhans)
+                    {
+                        <a href="@Url.Action("DetailsCaNhan", "Customer", new { id = kh.MaKhachHang })" class="result-card">
+                            <div class="result-avatar">
+                                @if (!string.IsNullOrEmpty(kh.AnhDaiDien))
+                                {
+                                    <img src="@kh.AnhDaiDien" alt="@kh.HoTen" />
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                }
+                            </div>
+                            <div class="result-info">
+                                <div class="result-name">@kh.HoTen</div>
+                                <div class="result-meta">
+                                    <span>@kh.SoCmnd</span>
+                                    <span>•</span>
+                                    <span>@kh.SoDienThoai</span>
+                                </div>
+                                <div class="result-badge customer-badge">Cá nhân</div>
+                            </div>
+                            <svg class="result-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18L15 12L9 6"/>
+                            </svg>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Khách hàng doanh nghiệp -->
+        @if (khachHangDoanhNghieps.Any())
+        {
+            <div class="results-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 21H21"/>
+                            <path d="M5 21V7L13 3V21"/>
+                            <path d="M19 21V11L13 7"/>
+                            <path d="M9 9V9.01"/>
+                            <path d="M9 12V12.01"/>
+                            <path d="M9 15V15.01"/>
+                            <path d="M9 18V18.01"/>
+                        </svg>
+                        Khách hàng doanh nghiệp
+                    </h2>
+                    <span class="result-count">@khachHangDoanhNghieps.Count kết quả</span>
+                </div>
+                <div class="results-grid">
+                    @foreach (var kh in khachHangDoanhNghieps)
+                    {
+                        <a href="@Url.Action("DetailsDoanhNghiep", "Customer", new { id = kh.MaKhachHang })" class="result-card">
+                            <div class="result-avatar business">
+                                @if (!string.IsNullOrEmpty(kh.AnhNguoiDaiDien))
+                                {
+                                    <img src="@kh.AnhNguoiDaiDien" alt="@kh.TenCongTy" />
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 21H21"/>
+                                        <path d="M5 21V7L13 3V21"/>
+                                        <path d="M19 21V11L13 7"/>
+                                    </svg>
+                                }
+                            </div>
+                            <div class="result-info">
+                                <div class="result-name">@kh.TenCongTy</div>
+                                <div class="result-meta">
+                                    <span>MST: @kh.MaSoThue</span>
+                                    <span>•</span>
+                                    <span>@kh.SoDienThoai</span>
+                                </div>
+                                <div class="result-badge business-badge">Doanh nghiệp</div>
+                            </div>
+                            <svg class="result-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18L15 12L9 6"/>
+                            </svg>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Hồ sơ vay -->
+        @if (khoanVays.Any())
+        {
+            <div class="results-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                            <path d="M14 2V8H20"/>
+                        </svg>
+                        Hồ sơ vay
+                    </h2>
+                    <span class="result-count">@khoanVays.Count kết quả</span>
+                </div>
+                <div class="results-grid">
+                    @foreach (var kv in khoanVays)
+                    {
+                        var statusClass = kv.TrangThaiKhoanVay switch
+                        {
+                            "Nháp" => "status-draft",
+                            "Chờ duyệt" => "status-pending",
+                            "Đã duyệt" => "status-approved",
+                            "Đang vay" => "status-active",
+                            "Quá hạn" => "status-overdue",
+                            "Đã thanh toán" => "status-completed",
+                            "Từ chối" => "status-rejected",
+                            _ => ""
+                        };
+                        
+                        <a href="@Url.Action("Details", "Loan", new { id = kv.MaKhoanVay })" class="result-card loan-card">
+                            <div class="result-avatar loan">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                                    <path d="M14 2V8H20"/>
+                                </svg>
+                            </div>
+                            <div class="result-info">
+                                <div class="result-name">#@kv.MaKhoanVayCode</div>
+                                <div class="result-meta">
+                                    <span>@kv.SoTienVay.ToString("N0") ₫</span>
+                                    <span>•</span>
+                                    <span>@(kv.MaLoaiVayNavigation?.TenLoaiVay ?? "N/A")</span>
+                                </div>
+                                <div class="result-badge @statusClass">@kv.TrangThaiKhoanVay</div>
+                            </div>
+                            <svg class="result-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18L15 12L9 6"/>
+                            </svg>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .search-results-page {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0 0 8px 0;
+    }
+
+    .page-subtitle {
+        color: var(--text-gray);
+        margin: 0;
+        font-size: 14px;
+    }
+
+    /* Search Form */
+    .search-form-container {
+        margin-bottom: 32px;
+    }
+
+    .search-form-inline {
+        display: flex;
+    }
+
+    .search-input-wrapper {
+        display: flex;
+        width: 100%;
+        background: var(--bg-white);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        position: relative;
+    }
+
+    .search-input-wrapper .search-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        color: var(--text-gray);
+    }
+
+    .search-input-large {
+        flex: 1;
+        padding: 16px 16px 16px 48px;
+        border: none;
+        font-size: 16px;
+        outline: none;
+    }
+
+    .search-submit-btn {
+        padding: 16px 32px;
+        background: var(--primary-blue);
+        color: white;
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .search-submit-btn:hover {
+        background: var(--primary-blue-dark);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: var(--bg-white);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .empty-state svg {
+        width: 80px;
+        height: 80px;
+        color: var(--text-light);
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin: 0 0 8px 0;
+    }
+
+    .empty-state p {
+        color: var(--text-gray);
+        margin: 0;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    /* Results Section */
+    .results-section {
+        margin-bottom: 32px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .section-title svg {
+        width: 22px;
+        height: 22px;
+        color: var(--primary-blue);
+    }
+
+    .result-count {
+        font-size: 13px;
+        color: var(--text-gray);
+        background: var(--bg-gray-light);
+        padding: 4px 12px;
+        border-radius: 20px;
+    }
+
+    /* Results Grid */
+    .results-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .result-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        background: var(--bg-white);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .result-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .result-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .result-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .result-avatar svg {
+        width: 24px;
+        height: 24px;
+        color: var(--primary-blue);
+    }
+
+    .result-avatar.business {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.2) 100%);
+    }
+
+    .result-avatar.business svg {
+        color: var(--purple);
+    }
+
+    .result-avatar.loan {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.2) 100%);
+    }
+
+    .result-avatar.loan svg {
+        color: var(--success-green);
+    }
+
+    .result-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .result-name {
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+    }
+
+    .result-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-gray);
+        margin-bottom: 6px;
+    }
+
+    .result-badge {
+        display: inline-flex;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .customer-badge {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary-blue);
+    }
+
+    .business-badge {
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--purple);
+    }
+
+    .status-draft {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--text-gray);
+    }
+
+    .status-pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning-yellow);
+    }
+
+    .status-approved {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-green);
+    }
+
+    .status-active {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary-blue);
+    }
+
+    .status-overdue {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger-red);
+    }
+
+    .status-completed {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--text-gray);
+    }
+
+    .status-rejected {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger-red);
+    }
+
+    .result-arrow {
+        width: 20px;
+        height: 20px;
+        color: var(--text-light);
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+    }
+
+    .result-card:hover .result-arrow {
+        transform: translateX(4px);
+        color: var(--primary-blue);
+    }
+
+    @@media (max-width: 768px) {
+        .search-input-wrapper {
+            flex-direction: column;
+        }
+
+        .search-submit-btn {
+            border-radius: 0;
+        }
+
+        .result-meta {
+            flex-wrap: wrap;
+        }
+    }
+</style>

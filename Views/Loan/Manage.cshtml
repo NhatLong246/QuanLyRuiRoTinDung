@@ -1,0 +1,413 @@
+@{
+    ViewData["Title"] = "Quản lý khoản vay";
+    Layout = "_DashboardLayout";
+    var activeLoans = ViewBag.ActiveLoans as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>();
+    var customerInfoDict = ViewBag.CustomerInfoDict as Dictionary<int, (string TenKhachHang, string LoaiKhachHang, string? MaKhachHangCode, string? AnhDaiDien)> ?? new Dictionary<int, (string, string, string?, string?)>();
+    var currentTrangThai = ViewBag.CurrentTrangThai as string ?? "all";
+    var searchTerm = ViewBag.SearchTerm as string ?? "";
+}
+
+<div class="loan-manage-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-left">
+            <h1 class="page-title">Quản lý khoản vay</h1>
+            <p class="page-subtitle">Theo dõi và quản lý các khoản vay đã được phê duyệt</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label class="filter-label">Trạng thái</label>
+                <select name="trangThai" class="filter-select" onchange="this.form.submit()">
+                    <option value="all" selected="@(currentTrangThai == "all")">Tất cả</option>
+                    <option value="Đã duyệt" selected="@(currentTrangThai == "Đã duyệt")">Đã duyệt</option>
+                    <option value="Đang vay" selected="@(currentTrangThai == "Đang vay")">Đang vay</option>
+                    <option value="Quá hạn" selected="@(currentTrangThai == "Quá hạn")">Quá hạn</option>
+                    <option value="Đã thanh toán" selected="@(currentTrangThai == "Đã thanh toán")">Đã thanh toán</option>
+                </select>
+            </div>
+            <div class="filter-group search-group">
+                <input type="text" name="searchTerm" value="@searchTerm" placeholder="Tìm theo mã khoản vay..." class="filter-input" />
+                <button type="submit" class="search-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21L16.65 16.65"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loans Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>MÃ KHOẢN VAY</th>
+                    <th>KHÁCH HÀNG</th>
+                    <th>SỐ TIỀN VAY</th>
+                    <th>LÃI SUẤT</th>
+                    <th>KỲ HẠN</th>
+                    <th>NGÀY GIẢI NGÂN</th>
+                    <th>NGÀY ĐÁO HẠN</th>
+                    <th>TRẠNG THÁI</th>
+                    <th>THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (activeLoans.Any())
+                {
+                    foreach (var loan in activeLoans)
+                    {
+                        var customerInfo = customerInfoDict.ContainsKey(loan.MaKhoanVay) ? customerInfoDict[loan.MaKhoanVay] : ("N/A", "CaNhan", null, null);
+                        var trangThaiClass = loan.TrangThaiKhoanVay switch
+                        {
+                            "Đã duyệt" => "status-badge status-approved",
+                            "Đang vay" => "status-badge status-active",
+                            "Quá hạn" => "status-badge status-overdue",
+                            "Đã thanh toán" => "status-badge status-completed",
+                            _ => "status-badge"
+                        };
+                        
+                        <tr>
+                            <td>
+                                <a href="@Url.Action("Details", "Loan", new { id = loan.MaKhoanVay })" class="loan-code">#@loan.MaKhoanVayCode</a>
+                            </td>
+                            <td>
+                                <div class="customer-info">
+                                    <div class="customer-avatar">
+                                        @if (!string.IsNullOrEmpty(customerInfo.Item4))
+                                        {
+                                            <img src="@customerInfo.Item4" alt="Avatar" />
+                                        }
+                                        else
+                                        {
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                        }
+                                    </div>
+                                    <div class="customer-details">
+                                        <span class="customer-name">@customerInfo.TenKhachHang</span>
+                                        <span class="customer-type">@(customerInfo.LoaiKhachHang == "CaNhan" ? "Cá nhân" : "Doanh nghiệp")</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="money">@loan.SoTienVay.ToString("N0") ₫</td>
+                            <td>@($"{loan.LaiSuat:N2}%")</td>
+                            <td>@($"{loan.KyHanVay} tháng")</td>
+                            <td>@(loan.NgayGiaiNgan?.ToString("dd/MM/yyyy") ?? "Chưa giải ngân")</td>
+                            <td>@(loan.NgayDaoHan?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                            <td>
+                                <span class="@trangThaiClass">@loan.TrangThaiKhoanVay</span>
+                            </td>
+                            <td>
+                                <div class="action-buttons-group">
+                                    <a href="@Url.Action("Details", "Loan", new { id = loan.MaKhoanVay })" class="action-btn-small" title="Xem chi tiết">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12S5 4 12 4 23 12 23 12 19 20 12 20 1 12 1 12Z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="no-data">
+                            <div class="no-data-content">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                                    <path d="M14 2V8H20"/>
+                                </svg>
+                                <p>Chưa có khoản vay nào</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .loan-manage-page {
+        padding: 0;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .page-subtitle {
+        color: var(--text-gray);
+        margin: 4px 0 0 0;
+        font-size: 14px;
+    }
+
+    .filter-bar {
+        background: var(--bg-white);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .filter-form {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .filter-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-light);
+        letter-spacing: 0.5px;
+    }
+
+    .filter-select,
+    .filter-input {
+        padding: 10px 14px;
+        border: 1px solid var(--border-gray);
+        border-radius: 8px;
+        font-size: 14px;
+        min-width: 160px;
+        transition: all 0.2s ease;
+    }
+
+    .filter-select:focus,
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .search-group {
+        flex-direction: row;
+        align-items: center;
+        margin-left: auto;
+    }
+
+    .search-group .filter-input {
+        min-width: 250px;
+        border-radius: 8px 0 0 8px;
+    }
+
+    .search-btn {
+        padding: 10px 14px;
+        background: var(--primary-blue);
+        border: none;
+        border-radius: 0 8px 8px 0;
+        cursor: pointer;
+        color: white;
+        transition: background 0.2s ease;
+    }
+
+    .search-btn:hover {
+        background: var(--primary-blue-dark);
+    }
+
+    .search-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .table-container {
+        background: var(--bg-white);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: var(--bg-gray-light);
+    }
+
+    .data-table th {
+        padding: 14px 16px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-gray);
+        letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-gray);
+        font-size: 14px;
+    }
+
+    .data-table tbody tr:hover {
+        background: rgba(59, 130, 246, 0.03);
+    }
+
+    .loan-code {
+        font-weight: 600;
+        color: var(--primary-blue);
+        text-decoration: none;
+    }
+
+    .loan-code:hover {
+        text-decoration: underline;
+    }
+
+    .customer-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .customer-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--bg-gray-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .customer-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .customer-avatar svg {
+        width: 18px;
+        height: 18px;
+        color: var(--text-gray);
+    }
+
+    .customer-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .customer-name {
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    .customer-type {
+        font-size: 12px;
+        color: var(--text-gray);
+    }
+
+    .money {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .status-approved {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-green);
+    }
+
+    .status-active {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary-blue);
+    }
+
+    .status-overdue {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger-red);
+    }
+
+    .status-completed {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--text-gray);
+    }
+
+    .action-buttons-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-btn-small {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        background: var(--bg-gray-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-gray);
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .action-btn-small:hover {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    .action-btn-small svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 60px 20px !important;
+    }
+
+    .no-data-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        color: var(--text-gray);
+    }
+
+    .no-data-content svg {
+        width: 48px;
+        height: 48px;
+        opacity: 0.4;
+    }
+</style>
