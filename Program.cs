@@ -61,6 +61,7 @@ builder.Services.AddScoped<ILoanService, LoanService>();
 builder.Services.AddScoped<ICicService, CicService>();
 builder.Services.AddScoped<IRuiRoService, RuiRoService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<INhatKyHoatDongService, NhatKyHoatDongService>();
 
 var app = builder.Build();
 

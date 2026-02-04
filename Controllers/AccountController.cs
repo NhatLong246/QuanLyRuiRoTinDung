@@ -13,12 +13,14 @@ namespace QuanLyRuiRoTinDung.Controllers
         private readonly ILogger<AccountController> _logger;
         private readonly IAuthenticationService _authenticationService;
         private readonly ApplicationDbContext _context;
+        private readonly INhatKyHoatDongService _nhatKyService;
 
-        public AccountController(ILogger<AccountController> logger, IAuthenticationService authenticationService, ApplicationDbContext context)
+        public AccountController(ILogger<AccountController> logger, IAuthenticationService authenticationService, ApplicationDbContext context, INhatKyHoatDongService nhatKyService)
         {
             _logger = logger;
             _authenticationService = authenticationService;
             _context = context;
+            _nhatKyService = nhatKyService;
         }
 
         [HttpGet]
@@ -100,6 +102,10 @@ namespace QuanLyRuiRoTinDung.Controllers
                 // Cập nhật lần đăng nhập cuối
                 await _authenticationService.UpdateLastLoginAsync(nguoiDung.MaNguoiDung);
 
+                // Ghi nhật ký đăng nhập
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                await _nhatKyService.GhiNhatKyDangNhapAsync(nguoiDung.MaNguoiDung, nguoiDung.TenDangNhap, ipAddress);
+
                 _logger.LogInformation("User {TenDangNhap} logged in successfully with role: {TenVaiTro}", model.TenDangNhap, tenVaiTro);
 
                 // Redirect to returnUrl or based on role
@@ -143,9 +149,17 @@ namespace QuanLyRuiRoTinDung.Controllers
         }
 
         [HttpPost]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
             var tenDangNhap = HttpContext.Session.GetString("TenDangNhap");
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            
+            // Ghi nhật ký đăng xuất trước khi xóa session
+            if (!string.IsNullOrEmpty(maNguoiDungStr) && int.TryParse(maNguoiDungStr, out int maNguoiDung))
+            {
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                await _nhatKyService.GhiNhatKyDangXuatAsync(maNguoiDung, tenDangNhap ?? "", ipAddress);
+            }
             
             // Xóa session
             HttpContext.Session.Clear();
