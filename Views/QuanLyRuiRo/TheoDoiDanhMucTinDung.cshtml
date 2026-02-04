@@ -30,8 +30,8 @@
         </div>
         <div class="summary-content">
             <div class="summary-label">Tổng số khoản vay</div>
-            <div class="summary-value">275</div>
-            <div class="summary-change positive">+12 tháng này</div>
+            <div class="summary-value" id="tongSoKhoanVay">--</div>
+            <div class="summary-change positive" id="soKhoanVayMoiThang">+0 tháng này</div>
         </div>
     </div>
     <div class="summary-card">
@@ -42,8 +42,8 @@
         </div>
         <div class="summary-content">
             <div class="summary-label">Tổng dư nợ</div>
-            <div class="summary-value">125,500 tỷ</div>
-            <div class="summary-change positive">+5.2%</div>
+            <div class="summary-value" id="tongDuNo">--</div>
+            <div class="summary-change" id="tyLeTangDuNo">+0%</div>
         </div>
     </div>
     <div class="summary-card">
@@ -56,8 +56,8 @@
         </div>
         <div class="summary-content">
             <div class="summary-label">Tỷ lệ nợ xấu</div>
-            <div class="summary-value">2.8%</div>
-            <div class="summary-change negative">-0.3%</div>
+            <div class="summary-value" id="tyLeNoXau">--%</div>
+            <div class="summary-change" id="thayDoiTyLeNoXau">0%</div>
         </div>
     </div>
     <div class="summary-card">
@@ -70,8 +70,8 @@
         </div>
         <div class="summary-content">
             <div class="summary-label">Điểm rủi ro TB</div>
-            <div class="summary-value">52.3</div>
-            <div class="summary-change positive">-2.1</div>
+            <div class="summary-value" id="diemRuiRoTB">--</div>
+            <div class="summary-change" id="thayDoiDiemRuiRo">0</div>
         </div>
     </div>
 </div>
@@ -81,7 +81,7 @@
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Phân bố Rủi ro</h3>
-            <select class="form-control form-control-sm">
+            <select class="form-control form-control-sm" id="filterKyThoiGian" onchange="loadDanhMucList()">
                 <option value="thang">Tháng này</option>
                 <option value="quy">Quý này</option>
                 <option value="nam">Năm nay</option>
@@ -92,35 +92,35 @@
                 <div class="risk-distribution">
                     <div class="risk-item">
                         <div class="risk-bar-container">
-                            <div class="risk-bar risk-low" style="width: 45.5%;">
-                                <span class="risk-bar-label">45.5%</span>
+                            <div class="risk-bar risk-low" id="barRuiRoThap" style="width: 0%;">
+                                <span class="risk-bar-label" id="labelRuiRoThap">0%</span>
                             </div>
                         </div>
                         <div class="risk-info">
                             <span class="risk-name">Rủi ro Thấp</span>
-                            <span class="risk-count">125 khoản</span>
+                            <span class="risk-count" id="countRuiRoThap">0 khoản</span>
                         </div>
                     </div>
                     <div class="risk-item">
                         <div class="risk-bar-container">
-                            <div class="risk-bar risk-medium" style="width: 35.6%;">
-                                <span class="risk-bar-label">35.6%</span>
+                            <div class="risk-bar risk-medium" id="barRuiRoTB" style="width: 0%;">
+                                <span class="risk-bar-label" id="labelRuiRoTB">0%</span>
                             </div>
                         </div>
                         <div class="risk-info">
                             <span class="risk-name">Rủi ro Trung bình</span>
-                            <span class="risk-count">98 khoản</span>
+                            <span class="risk-count" id="countRuiRoTB">0 khoản</span>
                         </div>
                     </div>
                     <div class="risk-item">
                         <div class="risk-bar-container">
-                            <div class="risk-bar risk-high" style="width: 18.9%;">
-                                <span class="risk-bar-label">18.9%</span>
+                            <div class="risk-bar risk-high" id="barRuiRoCao" style="width: 0%;">
+                                <span class="risk-bar-label" id="labelRuiRoCao">0%</span>
                             </div>
                         </div>
                         <div class="risk-info">
                             <span class="risk-name">Rủi ro Cao</span>
-                            <span class="risk-count">52 khoản</span>
+                            <span class="risk-count" id="countRuiRoCao">0 khoản</span>
                         </div>
                     </div>
                 </div>
@@ -133,7 +133,14 @@
         <div class="card-header">
             <h3 class="card-title">Chi tiết Danh mục</h3>
             <div class="header-actions">
-                <button class="btn btn-primary btn-sm">
+                <button class="btn btn-outline-primary btn-sm me-2" onclick="capNhatDanhMuc()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M23 4v6h-6"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    Cập nhật
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="xuatBaoCao()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 3V21H21"/>
                         <path d="M7 16L12 11L16 15L21 10"/>
@@ -157,66 +164,11 @@
                             <th>Rủi ro Thấp</th>
                             <th>Rủi ro TB</th>
                             <th>Rủi ro Cao</th>
-                            <th>Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tableDanhMuc">
                         <tr>
-                            <td>31/01/2024</td>
-                            <td>275</td>
-                            <td>150,000 tỷ</td>
-                            <td>125,500 tỷ</td>
-                            <td><span class="badge badge-success">2.8%</span></td>
-                            <td>52.3</td>
-                            <td>125</td>
-                            <td>98</td>
-                            <td>52</td>
-                            <td>
-                                <button class="btn-icon" title="Xem chi tiết">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
-                                        <circle cx="12" cy="12" r="3"/>
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>31/12/2023</td>
-                            <td>263</td>
-                            <td>142,500 tỷ</td>
-                            <td>119,300 tỷ</td>
-                            <td><span class="badge badge-warning">3.1%</span></td>
-                            <td>54.4</td>
-                            <td>118</td>
-                            <td>95</td>
-                            <td>50</td>
-                            <td>
-                                <button class="btn-icon" title="Xem chi tiết">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
-                                        <circle cx="12" cy="12" r="3"/>
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>30/11/2023</td>
-                            <td>258</td>
-                            <td>138,000 tỷ</td>
-                            <td>115,800 tỷ</td>
-                            <td><span class="badge badge-warning">3.2%</span></td>
-                            <td>55.1</td>
-                            <td>115</td>
-                            <td>93</td>
-                            <td>50</td>
-                            <td>
-                                <button class="btn-icon" title="Xem chi tiết">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
-                                        <circle cx="12" cy="12" r="3"/>
-                                    </svg>
-                                </button>
-                            </td>
+                            <td colspan="9" class="text-center">Đang tải dữ liệu...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -227,8 +179,173 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/quanlyruiro.css" asp-append-version="true" />
+    <style>
+        .btn-outline-primary {
+            border: 1px solid #667eea;
+            color: #667eea;
+            background: transparent;
+        }
+        .btn-outline-primary:hover {
+            background: #667eea;
+            color: white;
+        }
+        .me-2 {
+            margin-right: 0.5rem;
+        }
+    </style>
 }
 
 @section Scripts {
     <script src="~/js/quanlyruiro.js" asp-append-version="true"></script>
+    <script>
+        // Hàm format số tiền
+        function formatCurrency(value) {
+            if (!value && value !== 0) return '--';
+            const ty = value / 1000000000000; // Chuyển sang tỷ
+            if (ty >= 1) {
+                return ty.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + ' tỷ';
+            }
+            const trieu = value / 1000000;
+            if (trieu >= 1) {
+                return trieu.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + ' triệu';
+            }
+            return value.toLocaleString('vi-VN') + ' đ';
+        }
+
+        // Hàm format ngày
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN');
+        }
+
+        // Load tổng quan danh mục tín dụng
+        async function loadTongQuan() {
+            try {
+                const response = await fetch('/QuanLyRuiRo/GetDanhMucTinDungTongQuat');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    
+                    // Cập nhật summary cards
+                    document.getElementById('tongSoKhoanVay').textContent = data.tongSoKhoanVay.toLocaleString('vi-VN');
+                    document.getElementById('soKhoanVayMoiThang').textContent = `+${data.soKhoanVayMoiThang} tháng này`;
+                    document.getElementById('soKhoanVayMoiThang').className = 'summary-change positive';
+                    
+                    document.getElementById('tongDuNo').textContent = formatCurrency(data.tongDuNo);
+                    const tyLeTangEl = document.getElementById('tyLeTangDuNo');
+                    tyLeTangEl.textContent = (data.tyLeTangDuNo >= 0 ? '+' : '') + data.tyLeTangDuNo + '%';
+                    tyLeTangEl.className = 'summary-change ' + (data.tyLeTangDuNo >= 0 ? 'positive' : 'negative');
+                    
+                    document.getElementById('tyLeNoXau').textContent = data.tyLeNoXau + '%';
+                    const thayDoiNoXauEl = document.getElementById('thayDoiTyLeNoXau');
+                    thayDoiNoXauEl.textContent = (data.thayDoiTyLeNoXau >= 0 ? '+' : '') + data.thayDoiTyLeNoXau + '%';
+                    thayDoiNoXauEl.className = 'summary-change ' + (data.thayDoiTyLeNoXau <= 0 ? 'positive' : 'negative');
+                    
+                    document.getElementById('diemRuiRoTB').textContent = data.diemRuiRoTrungBinh.toFixed(1);
+                    const thayDoiDiemEl = document.getElementById('thayDoiDiemRuiRo');
+                    thayDoiDiemEl.textContent = (data.thayDoiDiemRuiRo >= 0 ? '+' : '') + data.thayDoiDiemRuiRo;
+                    thayDoiDiemEl.className = 'summary-change ' + (data.thayDoiDiemRuiRo <= 0 ? 'positive' : 'negative');
+                    
+                    // Cập nhật phân bố rủi ro
+                    const tongSo = data.soKhoanVayRuiRoThap + data.soKhoanVayRuiRoTrungBinh + data.soKhoanVayRuiRoCao;
+                    if (tongSo > 0) {
+                        const tyLeThap = (data.soKhoanVayRuiRoThap / tongSo * 100).toFixed(1);
+                        const tyLeTB = (data.soKhoanVayRuiRoTrungBinh / tongSo * 100).toFixed(1);
+                        const tyLeCao = (data.soKhoanVayRuiRoCao / tongSo * 100).toFixed(1);
+                        
+                        document.getElementById('barRuiRoThap').style.width = tyLeThap + '%';
+                        document.getElementById('labelRuiRoThap').textContent = tyLeThap + '%';
+                        document.getElementById('countRuiRoThap').textContent = data.soKhoanVayRuiRoThap + ' khoản';
+                        
+                        document.getElementById('barRuiRoTB').style.width = tyLeTB + '%';
+                        document.getElementById('labelRuiRoTB').textContent = tyLeTB + '%';
+                        document.getElementById('countRuiRoTB').textContent = data.soKhoanVayRuiRoTrungBinh + ' khoản';
+                        
+                        document.getElementById('barRuiRoCao').style.width = tyLeCao + '%';
+                        document.getElementById('labelRuiRoCao').textContent = tyLeCao + '%';
+                        document.getElementById('countRuiRoCao').textContent = data.soKhoanVayRuiRoCao + ' khoản';
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải tổng quan:', error);
+            }
+        }
+
+        // Load danh sách danh mục tín dụng
+        async function loadDanhMucList() {
+            const kyThoiGian = document.getElementById('filterKyThoiGian').value;
+            
+            try {
+                const response = await fetch(`/QuanLyRuiRo/GetDanhMucTinDungList?kyThoiGian=${kyThoiGian}`);
+                const result = await response.json();
+                
+                const tbody = document.getElementById('tableDanhMuc');
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(item => `
+                        <tr>
+                            <td>${formatDate(item.ngayDanhMuc)}</td>
+                            <td>${(item.tongSoKhoanVay || 0).toLocaleString('vi-VN')}</td>
+                            <td>${formatCurrency(item.tongSoTienVay || 0)}</td>
+                            <td>${formatCurrency(item.tongDuNo || 0)}</td>
+                            <td><span class="badge ${getBadgeClass(item.tyLeNoXau)}">${(item.tyLeNoXau || 0).toFixed(2)}%</span></td>
+                            <td>${(item.diemRuiRoTrungBinh || 0).toFixed(1)}</td>
+                            <td>${item.soKhoanVayRuiRoThap || 0}</td>
+                            <td>${item.soKhoanVayRuiRoTrungBinh || 0}</td>
+                            <td>${item.soKhoanVayRuiRoCao || 0}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Không có dữ liệu. Nhấn nút "Cập nhật" để tạo báo cáo mới.</td></tr>';
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải danh sách:', error);
+                document.getElementById('tableDanhMuc').innerHTML = '<tr><td colspan="9" class="text-center text-danger">Lỗi khi tải dữ liệu</td></tr>';
+            }
+        }
+
+        // Hàm lấy class badge theo tỷ lệ nợ xấu
+        function getBadgeClass(tyLe) {
+            if (!tyLe) return 'badge-success';
+            if (tyLe <= 2) return 'badge-success';
+            if (tyLe <= 3) return 'badge-warning';
+            return 'badge-danger';
+        }
+
+        // Cập nhật danh mục tín dụng
+        async function capNhatDanhMuc() {
+            try {
+                const response = await fetch('/QuanLyRuiRo/CapNhatDanhMucTinDung', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Cập nhật danh mục tín dụng thành công!');
+                    loadTongQuan();
+                    loadDanhMucList();
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Lỗi khi cập nhật:', error);
+                alert('Có lỗi xảy ra khi cập nhật danh mục');
+            }
+        }
+
+        // Xuất báo cáo Excel
+        function xuatBaoCao() {
+            const kyThoiGian = document.getElementById('filterKyThoiGian').value;
+            window.location.href = `/QuanLyRuiRo/XuatBaoCaoDanhMucTinDung?kyThoiGian=${kyThoiGian}`;
+        }
+
+        // Khởi tạo khi trang load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTongQuan();
+            loadDanhMucList();
+        });
+    </script>
 }

@@ -31,9 +31,9 @@
             </svg>
         </div>
         <div class="stat-content">
-            <div class="stat-value">125</div>
+            <div class="stat-value" id="soRuiRoThap">0</div>
             <div class="stat-label">Rủi ro Thấp</div>
-            <div class="stat-percentage">45.5%</div>
+            <div class="stat-percentage" id="tyLeRuiRoThap">0%</div>
         </div>
     </div>
     <div class="stat-card stat-medium">
@@ -43,9 +43,9 @@
             </svg>
         </div>
         <div class="stat-content">
-            <div class="stat-value">98</div>
+            <div class="stat-value" id="soRuiRoTrungBinh">0</div>
             <div class="stat-label">Rủi ro Trung bình</div>
-            <div class="stat-percentage">35.6%</div>
+            <div class="stat-percentage" id="tyLeRuiRoTrungBinh">0%</div>
         </div>
     </div>
     <div class="stat-card stat-high">
@@ -57,9 +57,9 @@
             </svg>
         </div>
         <div class="stat-content">
-            <div class="stat-value">52</div>
+            <div class="stat-value" id="soRuiRoCao">0</div>
             <div class="stat-label">Rủi ro Cao</div>
-            <div class="stat-percentage">18.9%</div>
+            <div class="stat-percentage" id="tyLeRuiRoCao">0%</div>
         </div>
     </div>
 </div>
@@ -71,42 +71,42 @@
             <h2 class="card-title">Danh sách Phân loại</h2>
             <div class="tabs">
                 <button class="tab-btn active" data-tab="all">Tất cả</button>
-                <button class="tab-btn" data-tab="low">Thấp</button>
-                <button class="tab-btn" data-tab="medium">Trung bình</button>
-                <button class="tab-btn" data-tab="high">Cao</button>
+                <button class="tab-btn" data-tab="Thấp">Thấp</button>
+                <button class="tab-btn" data-tab="Trung bình">Trung bình</button>
+                <button class="tab-btn" data-tab="Cao">Cao</button>
             </div>
         </div>
         <div class="card-body">
-            <form class="filter-form">
+            <form class="filter-form" id="filterForm">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Mã khoản vay</label>
-                        <input type="text" class="form-control form-control-sm" placeholder="Nhập mã khoản vay..." />
+                        <input type="text" class="form-control form-control-sm" id="filterMaKhoanVay" placeholder="Nhập mã khoản vay..." />
                     </div>
                     <div class="form-group">
                         <label>Tên khách hàng</label>
-                        <input type="text" class="form-control form-control-sm" placeholder="Nhập tên khách hàng..." />
+                        <input type="text" class="form-control form-control-sm" id="filterTenKhachHang" placeholder="Nhập tên khách hàng..." />
                     </div>
                     <div class="form-group">
                         <label>Điểm số</label>
                         <div class="range-inputs">
-                            <input type="number" class="form-control form-control-sm" placeholder="Từ" />
+                            <input type="number" class="form-control form-control-sm" id="filterDiemTu" placeholder="Từ" min="0" max="100" />
                             <span>-</span>
-                            <input type="number" class="form-control form-control-sm" placeholder="Đến" />
+                            <input type="number" class="form-control form-control-sm" id="filterDiemDen" placeholder="Đến" min="0" max="100" />
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Mức độ rủi ro</label>
-                        <select class="form-control form-control-sm">
+                        <select class="form-control form-control-sm" id="filterMucDoRuiRo">
                             <option value="">Tất cả</option>
-                            <option value="low">Thấp</option>
-                            <option value="medium">Trung bình</option>
-                            <option value="high">Cao</option>
+                            <option value="Thấp">Thấp</option>
+                            <option value="Trung bình">Trung bình</option>
+                            <option value="Cao">Cao</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>&nbsp;</label>
-                        <button type="button" class="btn btn-primary btn-sm">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnTimKiem">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"/>
                                 <path d="M21 21L16.65 16.65"/>
@@ -122,10 +122,10 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="data-table">
+                <table class="data-table" id="dataTable">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" /></th>
+                            <th><input type="checkbox" id="selectAll" /></th>
                             <th>Mã khoản vay</th>
                             <th>Tên khách hàng</th>
                             <th>Số tiền vay</th>
@@ -135,61 +135,12 @@
                             <th>Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tableBody">
                         <tr>
-                            <td><input type="checkbox" /></td>
-                            <td><span class="code-badge">KV-2024-001</span></td>
-                            <td>Nguyễn Văn A</td>
-                            <td>500,000,000 VNĐ</td>
-                            <td><span class="score-badge score-high">75.5</span></td>
-                            <td><span class="risk-badge risk-high">Cao</span></td>
-                            <td><span class="risk-badge risk-high">Cao</span></td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn-icon" title="Xem chi tiết">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
-                                            <circle cx="12" cy="12" r="3"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><input type="checkbox" /></td>
-                            <td><span class="code-badge">KV-2024-002</span></td>
-                            <td>Công ty ABC</td>
-                            <td>2,000,000,000 VNĐ</td>
-                            <td><span class="score-badge score-medium">58.2</span></td>
-                            <td><span class="risk-badge risk-medium">Trung bình</span></td>
-                            <td><span class="risk-badge risk-medium">Trung bình</span></td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn-icon" title="Xem chi tiết">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
-                                            <circle cx="12" cy="12" r="3"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><input type="checkbox" /></td>
-                            <td><span class="code-badge">KV-2024-003</span></td>
-                            <td>Trần Thị B</td>
-                            <td>300,000,000 VNĐ</td>
-                            <td><span class="score-badge score-low">32.8</span></td>
-                            <td><span class="risk-badge risk-low">Thấp</span></td>
-                            <td><span class="risk-badge risk-low">Thấp</span></td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn-icon" title="Xem chi tiết">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
-                                            <circle cx="12" cy="12" r="3"/>
-                                        </svg>
-                                    </button>
+                            <td colspan="8" class="text-center">
+                                <div class="loading-spinner">
+                                    <div class="spinner"></div>
+                                    <span>Đang tải dữ liệu...</span>
                                 </div>
                             </td>
                         </tr>
@@ -202,5 +153,228 @@
 
 @section Scripts {
     <script src="~/js/quanlyruiro.js" asp-append-version="true"></script>
+    <script>
+        // Biến lưu trữ dữ liệu
+        let allData = [];
+        let currentFilter = 'all';
+
+        // Load dữ liệu khi trang được load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadThongKe();
+            loadData();
+            initializeEvents();
+        });
+
+        // Load thống kê
+        async function loadThongKe() {
+            try {
+                const response = await fetch('/QuanLyRuiRo/GetThongKePhanLoaiRuiRo');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('soRuiRoThap').textContent = data.soRuiRoThap;
+                    document.getElementById('soRuiRoTrungBinh').textContent = data.soRuiRoTrungBinh;
+                    document.getElementById('soRuiRoCao').textContent = data.soRuiRoCao;
+                    document.getElementById('tyLeRuiRoThap').textContent = data.tyLeRuiRoThap + '%';
+                    document.getElementById('tyLeRuiRoTrungBinh').textContent = data.tyLeRuiRoTrungBinh + '%';
+                    document.getElementById('tyLeRuiRoCao').textContent = data.tyLeRuiRoCao + '%';
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải thống kê:', error);
+            }
+        }
+
+        // Load dữ liệu danh sách
+        async function loadData(params = {}) {
+            try {
+                const queryString = new URLSearchParams(params).toString();
+                const url = '/QuanLyRuiRo/GetPhanLoaiMucDoRuiRo' + (queryString ? '?' + queryString : '');
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    allData = result.data;
+                    renderTable(allData);
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải dữ liệu:', error);
+                showError('Lỗi khi tải dữ liệu');
+            }
+        }
+
+        // Render bảng dữ liệu
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center">
+                            <div class="empty-state">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 48px; height: 48px; margin-bottom: 10px; opacity: 0.5;">
+                                    <path d="M9 17H15M9 13H15M9 9H10M13 3H5C4.46957 3 3.96086 3.21071 3.58579 3.58579C3.21071 3.96086 3 4.46957 3 5V19C3 19.5304 3.21071 20.0391 3.58579 20.4142C3.96086 20.7893 4.46957 21 5 21H19C19.5304 21 20.0391 20.7893 20.4142 20.4142C20.7893 20.0391 21 19.5304 21 19V11L13 3Z"/>
+                                </svg>
+                                <p>Không có dữ liệu</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Lọc theo tab hiện tại
+            let filteredData = data;
+            if (currentFilter !== 'all') {
+                filteredData = data.filter(item => item.mucDoRuiRo === currentFilter);
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center">
+                            <div class="empty-state">
+                                <p>Không có khoản vay nào trong phân loại này</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map(item => {
+                const scoreClass = getScoreClass(item.diemRuiRo);
+                const riskClass = getRiskClass(item.mucDoRuiRo);
+                
+                return `
+                    <tr data-risk="${item.mucDoRuiRo}">
+                        <td><input type="checkbox" class="row-checkbox" data-id="${item.maKhoanVay}" /></td>
+                        <td><span class="code-badge">${item.maKhoanVayCode}</span></td>
+                        <td>${item.tenKhachHang}</td>
+                        <td>${formatCurrency(item.soTienVay)}</td>
+                        <td><span class="score-badge ${scoreClass}">${item.diemRuiRo ? item.diemRuiRo.toFixed(1) : 'N/A'}</span></td>
+                        <td><span class="risk-badge ${riskClass}">${item.mucDoRuiRo}</span></td>
+                        <td><span class="status-badge ${getStatusClass(item.trangThaiKhoanVay)}">${item.trangThaiKhoanVay}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-icon" title="Xem chi tiết" onclick="viewDetail(${item.maKhoanVay})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Lấy class cho điểm số
+        function getScoreClass(score) {
+            if (score === null || score === undefined) return '';
+            if (score >= 70) return 'score-high';
+            if (score >= 40) return 'score-medium';
+            return 'score-low';
+        }
+
+        // Lấy class cho mức độ rủi ro
+        function getRiskClass(level) {
+            switch (level) {
+                case 'Cao': return 'risk-high';
+                case 'Trung bình': return 'risk-medium';
+                case 'Thấp': return 'risk-low';
+                default: return '';
+            }
+        }
+
+        // Lấy class cho trạng thái
+        function getStatusClass(status) {
+            switch (status) {
+                case 'Đã phê duyệt': return 'status-approved';
+                case 'Đang xử lý': return 'status-processing';
+                case 'Từ chối': return 'status-rejected';
+                case 'Đang giải ngân': return 'status-disbursing';
+                default: return '';
+            }
+        }
+
+        // Format tiền tệ
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('vi-VN', { 
+                style: 'currency', 
+                currency: 'VND',
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        // Khởi tạo sự kiện
+        function initializeEvents() {
+            // Sự kiện tab
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.getAttribute('data-tab');
+                    renderTable(allData);
+                });
+            });
+
+            // Sự kiện tìm kiếm
+            document.getElementById('btnTimKiem').addEventListener('click', function() {
+                const params = {};
+                
+                const maKhoanVay = document.getElementById('filterMaKhoanVay').value.trim();
+                if (maKhoanVay) params.maKhoanVay = maKhoanVay;
+                
+                const tenKhachHang = document.getElementById('filterTenKhachHang').value.trim();
+                if (tenKhachHang) params.tenKhachHang = tenKhachHang;
+                
+                const diemTu = document.getElementById('filterDiemTu').value;
+                if (diemTu) params.diemTu = diemTu;
+                
+                const diemDen = document.getElementById('filterDiemDen').value;
+                if (diemDen) params.diemDen = diemDen;
+                
+                const mucDoRuiRo = document.getElementById('filterMucDoRuiRo').value;
+                if (mucDoRuiRo) params.mucDoRuiRo = mucDoRuiRo;
+                
+                loadData(params);
+            });
+
+            // Sự kiện select all
+            document.getElementById('selectAll').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.row-checkbox');
+                checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        }
+
+        // Xem chi tiết
+        function viewDetail(maKhoanVay) {
+            window.location.href = '/QuanLyRuiRo/ThamDinhRuiRoTinDung?maKhoanVay=' + maKhoanVay;
+        }
+
+        // Hiển thị lỗi
+        function showError(message) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center">
+                        <div class="error-state" style="color: #dc3545;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 48px; height: 48px; margin-bottom: 10px;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            <p>${message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    </script>
 }
 

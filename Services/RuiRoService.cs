@@ -22,6 +22,32 @@ namespace QuanLyRuiRoTinDung.Services
             string? soGiayTo, DateOnly? ngayCap, string? noiCap, string? chuSoHuu, string? diaChi, string? thanhPho, string? quan, string? tinhTrang, decimal? dienTich);
         Task<bool> UpdateTaiSanThamDinhAsync(int maLienKet, decimal? giaTriDinhGia, decimal? tyLeTheChap, DateOnly? ngayTheChap, string? ghiChu);
         Task<ThongTinCicViewModel?> GetThongTinCicByKhoanVayAsync(int maKhoanVay);
+        Task<List<PhanLoaiRuiRoViewModel>> GetPhanLoaiMucDoRuiRoAsync(string? maKhoanVay = null, string? tenKhachHang = null, decimal? diemTu = null, decimal? diemDen = null, string? mucDoRuiRo = null);
+        Task<ThongKePhanLoaiRuiRoViewModel> GetThongKePhanLoaiRuiRoAsync();
+        
+        // Danh mục tín dụng
+        Task<DanhMucTinDungTongQuatViewModel> GetDanhMucTinDungTongQuatAsync();
+        Task<List<DanhMucTinDung>> GetDanhMucTinDungListAsync(string? kyThoiGian = null);
+        Task<DanhMucTinDung?> CapNhatDanhMucTinDungAsync(int nguoiTao);
+    }
+
+    // ViewModel cho tổng quan danh mục tín dụng
+    public class DanhMucTinDungTongQuatViewModel
+    {
+        public int TongSoKhoanVay { get; set; }
+        public decimal TongDuNo { get; set; }
+        public decimal TyLeNoXau { get; set; }
+        public decimal DiemRuiRoTrungBinh { get; set; }
+        public int SoKhoanVayRuiRoThap { get; set; }
+        public int SoKhoanVayRuiRoTrungBinh { get; set; }
+        public int SoKhoanVayRuiRoCao { get; set; }
+        public decimal TongSoTienVay { get; set; }
+        
+        // So sánh với kỳ trước
+        public int SoKhoanVayMoiThang { get; set; }
+        public decimal TyLeTangDuNo { get; set; }
+        public decimal ThayDoiTyLeNoXau { get; set; }
+        public decimal ThayDoiDiemRuiRo { get; set; }
     }
 
     public class ThongTinCicViewModel
@@ -924,5 +950,337 @@ namespace QuanLyRuiRoTinDung.Services
                 return null;
             }
         }
+
+        public async Task<List<PhanLoaiRuiRoViewModel>> GetPhanLoaiMucDoRuiRoAsync(string? maKhoanVay = null, string? tenKhachHang = null, 
+            decimal? diemTu = null, decimal? diemDen = null, string? mucDoRuiRo = null)
+        {
+            try
+            {
+                // Query các khoản vay đã có đánh giá rủi ro
+                var query = _context.KhoanVays
+                    .Where(k => k.TrangThaiKhoanVay != "Nháp" && k.NgayNopHoSo != null);
+
+                // Lọc theo mã khoản vay
+                if (!string.IsNullOrEmpty(maKhoanVay))
+                {
+                    query = query.Where(k => k.MaKhoanVayCode.Contains(maKhoanVay));
+                }
+
+                // Lọc theo mức độ rủi ro
+                if (!string.IsNullOrEmpty(mucDoRuiRo) && mucDoRuiRo != "all")
+                {
+                    query = query.Where(k => k.MucDoRuiRo == mucDoRuiRo);
+                }
+
+                // Lọc theo điểm số
+                if (diemTu.HasValue)
+                {
+                    query = query.Where(k => k.DiemRuiRo >= diemTu.Value);
+                }
+                if (diemDen.HasValue)
+                {
+                    query = query.Where(k => k.DiemRuiRo <= diemDen.Value);
+                }
+
+                var khoanVays = await query
+                    .OrderByDescending(k => k.DiemRuiRo)
+                    .ThenByDescending(k => k.NgayNopHoSo)
+                    .ToListAsync();
+
+                var result = new List<PhanLoaiRuiRoViewModel>();
+
+                foreach (var khoanVay in khoanVays)
+                {
+                    string tenKH = "";
+
+                    // Lấy tên khách hàng dựa trên loại khách hàng
+                    if (khoanVay.LoaiKhachHang == "CaNhan")
+                    {
+                        var khachHang = await _context.KhachHangCaNhans
+                            .FirstOrDefaultAsync(k => k.MaKhachHang == khoanVay.MaKhachHang);
+                        tenKH = khachHang?.HoTen ?? "Không xác định";
+                    }
+                    else if (khoanVay.LoaiKhachHang == "DoanhNghiep")
+                    {
+                        var khachHang = await _context.KhachHangDoanhNghieps
+                            .FirstOrDefaultAsync(k => k.MaKhachHang == khoanVay.MaKhachHang);
+                        tenKH = khachHang?.TenCongTy ?? "Không xác định";
+                    }
+
+                    // Lọc theo tên khách hàng nếu có
+                    if (!string.IsNullOrEmpty(tenKhachHang))
+                    {
+                        if (!tenKH.ToLower().Contains(tenKhachHang.ToLower()))
+                        {
+                            continue;
+                        }
+                    }
+
+                    result.Add(new PhanLoaiRuiRoViewModel
+                    {
+                        MaKhoanVay = khoanVay.MaKhoanVay,
+                        MaKhoanVayCode = khoanVay.MaKhoanVayCode,
+                        TenKhachHang = tenKH,
+                        LoaiKhachHang = khoanVay.LoaiKhachHang,
+                        SoTienVay = khoanVay.SoTienVay,
+                        DiemRuiRo = khoanVay.DiemRuiRo,
+                        MucDoRuiRo = khoanVay.MucDoRuiRo ?? "Chưa đánh giá",
+                        XepHangRuiRo = khoanVay.XepHangRuiRo,
+                        TrangThaiKhoanVay = khoanVay.TrangThaiKhoanVay
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách phân loại mức độ rủi ro");
+                throw;
+            }
+        }
+
+        public async Task<ThongKePhanLoaiRuiRoViewModel> GetThongKePhanLoaiRuiRoAsync()
+        {
+            try
+            {
+                var khoanVays = await _context.KhoanVays
+                    .Where(k => k.TrangThaiKhoanVay != "Nháp" && k.NgayNopHoSo != null && k.MucDoRuiRo != null)
+                    .ToListAsync();
+
+                var tongSo = khoanVays.Count;
+                var soRuiRoThap = khoanVays.Count(k => k.MucDoRuiRo == "Thấp");
+                var soRuiRoTrungBinh = khoanVays.Count(k => k.MucDoRuiRo == "Trung bình");
+                var soRuiRoCao = khoanVays.Count(k => k.MucDoRuiRo == "Cao");
+
+                return new ThongKePhanLoaiRuiRoViewModel
+                {
+                    TongSoKhoanVay = tongSo,
+                    SoRuiRoThap = soRuiRoThap,
+                    SoRuiRoTrungBinh = soRuiRoTrungBinh,
+                    SoRuiRoCao = soRuiRoCao,
+                    TyLeRuiRoThap = tongSo > 0 ? Math.Round((decimal)soRuiRoThap / tongSo * 100, 1) : 0,
+                    TyLeRuiRoTrungBinh = tongSo > 0 ? Math.Round((decimal)soRuiRoTrungBinh / tongSo * 100, 1) : 0,
+                    TyLeRuiRoCao = tongSo > 0 ? Math.Round((decimal)soRuiRoCao / tongSo * 100, 1) : 0
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy thống kê phân loại rủi ro");
+                throw;
+            }
+        }
+
+        // Lấy tổng quan danh mục tín dụng (tính toán realtime từ bảng KhoanVay)
+        public async Task<DanhMucTinDungTongQuatViewModel> GetDanhMucTinDungTongQuatAsync()
+        {
+            try
+            {
+                var now = DateTime.Now;
+                var dauThangNay = new DateTime(now.Year, now.Month, 1);
+                var dauThangTruoc = dauThangNay.AddMonths(-1);
+
+                // Lấy tất cả khoản vay đang hoạt động (không phải nháp)
+                var khoanVays = await _context.KhoanVays
+                    .Where(k => k.TrangThaiKhoanVay != "Nháp" && k.NgayNopHoSo != null)
+                    .ToListAsync();
+
+                var tongSoKhoanVay = khoanVays.Count;
+                var tongDuNo = khoanVays.Sum(k => k.TongDuNo ?? 0);
+                var tongSoTienVay = khoanVays.Sum(k => k.SoTienVay);
+
+                // Tính tỷ lệ nợ xấu (khoản vay có trạng thái "Quá hạn" hoặc phân loại nợ >= 3)
+                var khoanVayNoXau = khoanVays.Count(k => 
+                    k.TrangThaiKhoanVay == "Quá hạn" || 
+                    k.MaPhanLoaiNo >= 3);
+                var tyLeNoXau = tongSoKhoanVay > 0 ? Math.Round((decimal)khoanVayNoXau / tongSoKhoanVay * 100, 2) : 0;
+
+                // Tính điểm rủi ro trung bình
+                var khoanVayCoDiem = khoanVays.Where(k => k.DiemRuiRo.HasValue).ToList();
+                var diemRuiRoTrungBinh = khoanVayCoDiem.Any() 
+                    ? Math.Round(khoanVayCoDiem.Average(k => k.DiemRuiRo!.Value), 1) 
+                    : 0;
+
+                // Phân loại theo mức độ rủi ro
+                var soRuiRoThap = khoanVays.Count(k => k.MucDoRuiRo == "Thấp");
+                var soRuiRoTrungBinh = khoanVays.Count(k => k.MucDoRuiRo == "Trung bình");
+                var soRuiRoCao = khoanVays.Count(k => k.MucDoRuiRo == "Cao");
+
+                // Tính số khoản vay mới trong tháng
+                var soKhoanVayMoiThang = khoanVays.Count(k => 
+                    k.NgayNopHoSo.HasValue && k.NgayNopHoSo.Value >= dauThangNay);
+
+                // Lấy dữ liệu tháng trước để so sánh
+                var danhMucThangTruoc = await _context.DanhMucTinDungs
+                    .Where(d => d.NgayDanhMuc >= DateOnly.FromDateTime(dauThangTruoc) && 
+                               d.NgayDanhMuc < DateOnly.FromDateTime(dauThangNay))
+                    .OrderByDescending(d => d.NgayDanhMuc)
+                    .FirstOrDefaultAsync();
+
+                decimal tyLeTangDuNo = 0;
+                decimal thayDoiTyLeNoXau = 0;
+                decimal thayDoiDiemRuiRo = 0;
+
+                if (danhMucThangTruoc != null)
+                {
+                    if (danhMucThangTruoc.TongDuNo.HasValue && danhMucThangTruoc.TongDuNo > 0)
+                    {
+                        tyLeTangDuNo = Math.Round(((tongDuNo - danhMucThangTruoc.TongDuNo.Value) / danhMucThangTruoc.TongDuNo.Value) * 100, 1);
+                    }
+                    if (danhMucThangTruoc.TyLeNoXau.HasValue)
+                    {
+                        thayDoiTyLeNoXau = Math.Round(tyLeNoXau - danhMucThangTruoc.TyLeNoXau.Value, 1);
+                    }
+                    if (danhMucThangTruoc.DiemRuiRoTrungBinh.HasValue)
+                    {
+                        thayDoiDiemRuiRo = Math.Round(diemRuiRoTrungBinh - danhMucThangTruoc.DiemRuiRoTrungBinh.Value, 1);
+                    }
+                }
+
+                return new DanhMucTinDungTongQuatViewModel
+                {
+                    TongSoKhoanVay = tongSoKhoanVay,
+                    TongDuNo = tongDuNo,
+                    TyLeNoXau = tyLeNoXau,
+                    DiemRuiRoTrungBinh = diemRuiRoTrungBinh,
+                    SoKhoanVayRuiRoThap = soRuiRoThap,
+                    SoKhoanVayRuiRoTrungBinh = soRuiRoTrungBinh,
+                    SoKhoanVayRuiRoCao = soRuiRoCao,
+                    TongSoTienVay = tongSoTienVay,
+                    SoKhoanVayMoiThang = soKhoanVayMoiThang,
+                    TyLeTangDuNo = tyLeTangDuNo,
+                    ThayDoiTyLeNoXau = thayDoiTyLeNoXau,
+                    ThayDoiDiemRuiRo = thayDoiDiemRuiRo
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy tổng quan danh mục tín dụng");
+                throw;
+            }
+        }
+
+        // Lấy danh sách lịch sử danh mục tín dụng
+        public async Task<List<DanhMucTinDung>> GetDanhMucTinDungListAsync(string? kyThoiGian = null)
+        {
+            try
+            {
+                var query = _context.DanhMucTinDungs.AsQueryable();
+
+                // Lọc theo kỳ thời gian
+                if (!string.IsNullOrEmpty(kyThoiGian))
+                {
+                    var now = DateTime.Now;
+                    switch (kyThoiGian)
+                    {
+                        case "thang":
+                            var dauThang = new DateTime(now.Year, now.Month, 1);
+                            query = query.Where(d => d.NgayDanhMuc >= DateOnly.FromDateTime(dauThang));
+                            break;
+                        case "quy":
+                            var quy = (now.Month - 1) / 3;
+                            var dauQuy = new DateTime(now.Year, quy * 3 + 1, 1);
+                            query = query.Where(d => d.NgayDanhMuc >= DateOnly.FromDateTime(dauQuy));
+                            break;
+                        case "nam":
+                            var dauNam = new DateTime(now.Year, 1, 1);
+                            query = query.Where(d => d.NgayDanhMuc >= DateOnly.FromDateTime(dauNam));
+                            break;
+                    }
+                }
+
+                return await query
+                    .OrderByDescending(d => d.NgayDanhMuc)
+                    .Take(12) // Lấy tối đa 12 bản ghi
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách danh mục tín dụng");
+                throw;
+            }
+        }
+
+        // Cập nhật/tạo mới bản ghi danh mục tín dụng cho ngày hiện tại
+        public async Task<DanhMucTinDung?> CapNhatDanhMucTinDungAsync(int nguoiTao)
+        {
+            try
+            {
+                var today = DateOnly.FromDateTime(DateTime.Now);
+                
+                // Kiểm tra xem đã có bản ghi cho ngày hôm nay chưa
+                var existingRecord = await _context.DanhMucTinDungs
+                    .FirstOrDefaultAsync(d => d.NgayDanhMuc == today);
+
+                // Lấy dữ liệu tổng quan
+                var tongQuat = await GetDanhMucTinDungTongQuatAsync();
+
+                if (existingRecord != null)
+                {
+                    // Cập nhật bản ghi hiện tại
+                    existingRecord.TongSoKhoanVay = tongQuat.TongSoKhoanVay;
+                    existingRecord.TongSoTienVay = tongQuat.TongSoTienVay;
+                    existingRecord.TongDuNo = tongQuat.TongDuNo;
+                    existingRecord.TyLeNoXau = tongQuat.TyLeNoXau;
+                    existingRecord.DiemRuiRoTrungBinh = tongQuat.DiemRuiRoTrungBinh;
+                    existingRecord.SoKhoanVayRuiRoThap = tongQuat.SoKhoanVayRuiRoThap;
+                    existingRecord.SoKhoanVayRuiRoTrungBinh = tongQuat.SoKhoanVayRuiRoTrungBinh;
+                    existingRecord.SoKhoanVayRuiRoCao = tongQuat.SoKhoanVayRuiRoCao;
+                    
+                    await _context.SaveChangesAsync();
+                    return existingRecord;
+                }
+                else
+                {
+                    // Tạo bản ghi mới
+                    var newRecord = new DanhMucTinDung
+                    {
+                        NgayDanhMuc = today,
+                        TongSoKhoanVay = tongQuat.TongSoKhoanVay,
+                        TongSoTienVay = tongQuat.TongSoTienVay,
+                        TongDuNo = tongQuat.TongDuNo,
+                        TyLeNoXau = tongQuat.TyLeNoXau,
+                        DiemRuiRoTrungBinh = tongQuat.DiemRuiRoTrungBinh,
+                        SoKhoanVayRuiRoThap = tongQuat.SoKhoanVayRuiRoThap,
+                        SoKhoanVayRuiRoTrungBinh = tongQuat.SoKhoanVayRuiRoTrungBinh,
+                        SoKhoanVayRuiRoCao = tongQuat.SoKhoanVayRuiRoCao,
+                        NgayTao = DateTime.Now,
+                        NguoiTao = nguoiTao
+                    };
+
+                    _context.DanhMucTinDungs.Add(newRecord);
+                    await _context.SaveChangesAsync();
+                    return newRecord;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật danh mục tín dụng");
+                throw;
+            }
+        }
+    }
+
+    public class PhanLoaiRuiRoViewModel
+    {
+        public int MaKhoanVay { get; set; }
+        public string MaKhoanVayCode { get; set; } = null!;
+        public string TenKhachHang { get; set; } = null!;
+        public string LoaiKhachHang { get; set; } = null!;
+        public decimal SoTienVay { get; set; }
+        public decimal? DiemRuiRo { get; set; }
+        public string MucDoRuiRo { get; set; } = null!;
+        public string? XepHangRuiRo { get; set; }
+        public string TrangThaiKhoanVay { get; set; } = null!;
+    }
+
+    public class ThongKePhanLoaiRuiRoViewModel
+    {
+        public int TongSoKhoanVay { get; set; }
+        public int SoRuiRoThap { get; set; }
+        public int SoRuiRoTrungBinh { get; set; }
+        public int SoRuiRoCao { get; set; }
+        public decimal TyLeRuiRoThap { get; set; }
+        public decimal TyLeRuiRoTrungBinh { get; set; }
+        public decimal TyLeRuiRoCao { get; set; }
     }
 }
