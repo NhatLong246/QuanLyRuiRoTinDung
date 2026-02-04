@@ -5,11 +5,36 @@
 USE QuanLyRuiRoTinDung
 GO
 
+-- Kiểm tra các vai trò hiện có trong hệ thống
+PRINT N'=== DANH SÁCH VAI TRÒ HIỆN CÓ ===';
+SELECT MaVaiTro, TenVaiTro FROM VaiTro;
+PRINT N'';
+
 -- INSERT NHÂN VIÊN QUẢN LÝ RỦI RO MỚI
 -- =============================================
 -- Tài khoản đăng nhập: qlrr2 / qlrr2
 
-IF NOT EXISTS (SELECT 1 FROM NguoiDung WHERE TenDangNhap = 'qlrr2')
+DECLARE @MaVaiTroQLRR INT;
+DECLARE @MaPhongBanQLRR INT;
+
+-- Tìm vai trò Quản lý Rủi ro (có thể là 'QuanLyRuiRo' hoặc 'Quản lý rủi ro' hoặc tương tự)
+SELECT @MaVaiTroQLRR = MaVaiTro FROM VaiTro 
+WHERE TenVaiTro = N'QuanLyRuiRo' 
+   OR TenVaiTro = N'Quản lý rủi ro'
+   OR TenVaiTro LIKE N'%Rủi ro%'
+   OR TenVaiTro LIKE N'%RuiRo%';
+
+-- Tìm phòng ban Quản lý Rủi ro
+SELECT @MaPhongBanQLRR = MaPhongBan FROM PhongBan 
+WHERE TenPhongBan = N'Phòng Quản lý Rủi ro'
+   OR TenPhongBan LIKE N'%Rủi ro%';
+
+IF @MaVaiTroQLRR IS NULL
+BEGIN
+    PRINT N'LỖI: Không tìm thấy vai trò Quản lý Rủi ro trong bảng VaiTro!';
+    PRINT N'Vui lòng kiểm tra lại tên vai trò trong bảng VaiTro.';
+END
+ELSE IF NOT EXISTS (SELECT 1 FROM NguoiDung WHERE TenDangNhap = 'qlrr2')
 BEGIN
     INSERT INTO NguoiDung (
         TenDangNhap, 
@@ -28,12 +53,13 @@ BEGIN
         N'Lê Văn Phân Tích Rủi Ro 2',
         'qlrr2@bank.com',
         '0903456789',
-        (SELECT MaVaiTro FROM VaiTro WHERE TenVaiTro = N'QuanLyRuiRo'),
-        (SELECT MaPhongBan FROM PhongBan WHERE TenPhongBan = N'Phòng Quản lý Rủi ro'),
+        @MaVaiTroQLRR,
+        @MaPhongBanQLRR,
         1,
         1
     );
     PRINT N'Đã thêm nhân viên Quản lý Rủi ro mới thành công!';
+    PRINT N'MaVaiTro sử dụng: ' + CAST(@MaVaiTroQLRR AS NVARCHAR(10));
 END
 ELSE
 BEGIN
