@@ -518,9 +518,19 @@ textarea.form-control {
     font-size: 0.875rem;
 }
 
+.status-new {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
 .status-pending {
     background: #fef3c7;
     color: #92400e;
+}
+
+.status-reviewed {
+    background: #dbeafe;
+    color: #1e40af;
 }
 
 .status-approved {

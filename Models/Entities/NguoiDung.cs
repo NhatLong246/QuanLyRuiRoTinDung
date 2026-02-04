@@ -137,4 +137,7 @@ public partial class NguoiDung
 
     [InverseProperty("NguoiTaoNavigation")]
     public virtual ICollection<HoSoVayFileDinhKem> HoSoVayFileDinhKems { get; set; } = new List<HoSoVayFileDinhKem>();
+
+    [InverseProperty("NguoiCapNhatNavigation")]
+    public virtual ICollection<GiaTriTaiSanThamChieu> GiaTriTaiSanThamChieus { get; set; } = new List<GiaTriTaiSanThamChieu>();
 }

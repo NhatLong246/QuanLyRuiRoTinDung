@@ -49,6 +49,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ILoanService, LoanService>();
 builder.Services.AddScoped<ICicService, CicService>();
+builder.Services.AddScoped<IRuiRoService, RuiRoService>();
 
 var app = builder.Build();
 
@@ -68,7 +69,7 @@ app.UseSession();
 app.UseAuthorization();
 
 app.MapStaticAssets();
-
+    
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=index}/{id?}")

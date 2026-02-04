@@ -28,6 +28,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<DanhMucTinDung> DanhMucTinDungs { get; set; }
 
+    public virtual DbSet<GiaTriTaiSanThamChieu> GiaTriTaiSanThamChieus { get; set; }
+
     public virtual DbSet<KhachHangCaNhan> KhachHangCaNhans { get; set; }
 
     public virtual DbSet<KhachHangDoanhNghiep> KhachHangDoanhNghieps { get; set; }

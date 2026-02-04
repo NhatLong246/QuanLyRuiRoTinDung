@@ -26,6 +26,7 @@ namespace QuanLyRuiRoTinDung.Services
         {
             if (string.IsNullOrWhiteSpace(tenDangNhap) || string.IsNullOrWhiteSpace(matKhau))
             {
+                _logger.LogWarning("LOGIN FAILED: Empty username or password");
                 return null;
             }
 
@@ -33,13 +34,10 @@ namespace QuanLyRuiRoTinDung.Services
             tenDangNhap = tenDangNhap.Trim();
             matKhau = matKhau.Trim();
 
+            _logger.LogInformation("LOGIN ATTEMPT: Username='{User}', Password Length={PassLen}", tenDangNhap, matKhau.Length);
+
             try
             {
-                // Tối ưu: 
-                // 1. Sử dụng AsNoTracking() để tắt change tracking (không cần vì chỉ đọc)
-                // 2. So sánh trực tiếp với TenDangNhap (đã có index unique) thay vì ToLower()
-                // 3. Filter TrangThaiHoatDong trong query thay vì sau khi load
-                // 4. Chỉ Include VaiTro khi cần
                 var nguoiDung = await _context.NguoiDungs
                     .Include(u => u.MaVaiTroNavigation)
                     .Where(u => u.TenDangNhap == tenDangNhap && (u.TrangThaiHoatDong == true || u.TrangThaiHoatDong == null))
@@ -47,34 +45,37 @@ namespace QuanLyRuiRoTinDung.Services
 
                 if (nguoiDung == null)
                 {
-                    _logger.LogWarning("User not found: {TenDangNhap}", tenDangNhap);
+                    _logger.LogWarning("LOGIN FAILED: User not found '{TenDangNhap}'", tenDangNhap);
                     return null;
                 }
 
-                // Kiểm tra mật khẩu (plain text - chưa hash)
-                // Trim cả hai để đảm bảo so sánh chính xác
+                _logger.LogInformation("USER FOUND: Username='{User}', PasswordInDB='{DBPass}', DBPassLen={DBLen}", 
+                    nguoiDung.TenDangNhap, nguoiDung.MatKhauHash, nguoiDung.MatKhauHash?.Length ?? 0);
+
                 var matKhauFromDb = nguoiDung.MatKhauHash?.Trim() ?? string.Empty;
                 var matKhauInput = matKhau.Trim();
 
                 if (string.IsNullOrEmpty(matKhauFromDb))
                 {
-                    _logger.LogWarning("Password is null or empty for user: {TenDangNhap}", tenDangNhap);
+                    _logger.LogWarning("LOGIN FAILED: Password is null or empty for user '{TenDangNhap}'", tenDangNhap);
                     return null;
                 }
 
-                // So sánh mật khẩu (case-sensitive)
+                _logger.LogInformation("PASSWORD COMPARE: Input='{Input}' vs DB='{DB}' | Match={Match}", 
+                    matKhauInput, matKhauFromDb, matKhauFromDb.Equals(matKhauInput, StringComparison.Ordinal));
+
                 if (!matKhauFromDb.Equals(matKhauInput, StringComparison.Ordinal))
                 {
-                    _logger.LogWarning("Password mismatch for user: {TenDangNhap}", tenDangNhap);
+                    _logger.LogWarning("LOGIN FAILED: Password mismatch for '{TenDangNhap}'", tenDangNhap);
                     return null;
                 }
 
-                _logger.LogInformation("Authentication successful for user: {TenDangNhap}", tenDangNhap);
+                _logger.LogInformation("LOGIN SUCCESS: User '{TenDangNhap}' authenticated", tenDangNhap);
                 return nguoiDung;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during authentication for user: {TenDangNhap}", tenDangNhap);
+                _logger.LogError(ex, "LOGIN ERROR: Exception during authentication for '{TenDangNhap}'", tenDangNhap);
                 return null;
             }
         }
