@@ -1,0 +1,894 @@
+@{
+    ViewData["Title"] = "Thanh toán qua ZaloPay";
+    Layout = "_DashboardLayout";
+    var lichSu = ViewBag.LichSu as QuanLyRuiRoTinDung.Models.Entities.LichSuTraNo;
+    var khoanVay = ViewBag.KhoanVay as QuanLyRuiRoTinDung.Models.Entities.KhoanVay;
+    var customerName = ViewBag.CustomerName as string ?? "N/A";
+    var phiPhat = (decimal)(ViewBag.PhiPhat ?? 0);
+    var soNgayTre = (int)(ViewBag.SoNgayTre ?? 0);
+    var tongThanhToan = (decimal)(ViewBag.TongThanhToan ?? 0);
+}
+
+@Html.AntiForgeryToken()
+
+<div class="payment-container">
+    <!-- Header -->
+    <div class="payment-header">
+        <a href="@Url.Action("LichSuTraNo", "Loan", new { id = khoanVay?.MaKhoanVay })" class="back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+        </a>
+        <div class="header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+        </div>
+        <div class="header-text">
+            <h1>Thanh toán qua ZaloPay</h1>
+            <p>Khoản vay <strong>#@khoanVay?.MaKhoanVayCode</strong> - Kỳ @lichSu?.KyTraNo</p>
+        </div>
+    </div>
+
+    <div class="payment-content">
+        <!-- Payment Info Card -->
+        <div class="payment-info-card">
+            <div class="customer-info">
+                <div class="customer-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="customer-detail">
+                    <span class="customer-name">@customerName</span>
+                    <span class="loan-code">#@khoanVay?.MaKhoanVayCode</span>
+                </div>
+            </div>
+
+            <div class="payment-details">
+                <div class="detail-row">
+                    <span class="detail-label">Kỳ thanh toán</span>
+                    <span class="detail-value">Kỳ @lichSu?.KyTraNo</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Ngày đến hạn</span>
+                    <span class="detail-value">@lichSu?.NgayTraDuKien.ToString("dd/MM/yyyy")</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Gốc phải trả</span>
+                    <span class="detail-value">@lichSu?.SoTienGocPhaiTra.ToString("N0") VNĐ</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Lãi phải trả</span>
+                    <span class="detail-value">@lichSu?.SoTienLaiPhaiTra.ToString("N0") VNĐ</span>
+                </div>
+                @if (phiPhat > 0)
+                {
+                    <div class="detail-row warning">
+                        <span class="detail-label">⚠️ Phí phạt trễ (@soNgayTre ngày)</span>
+                        <span class="detail-value text-danger">+@phiPhat.ToString("N0") VNĐ</span>
+                    </div>
+                }
+                <div class="detail-row total">
+                    <span class="detail-label">TỔNG THANH TOÁN</span>
+                    <span class="detail-value amount">@tongThanhToan.ToString("N0") VNĐ</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Payment Section -->
+        <div class="qr-section">
+            <div class="qr-card" id="qrCard">
+                <div class="qr-header">
+                    <img src="/asset/zalopay-logo.png" alt="ZaloPay" class="zalopay-logo" onerror="this.style.display='none'">
+                    <span class="qr-title">Quét mã QR để thanh toán</span>
+                </div>
+                
+                <div class="qr-loading" id="qrLoading">
+                    <div class="spinner"></div>
+                    <p>Đang tạo mã QR...</p>
+                </div>
+
+                <div class="qr-content" id="qrContent" style="display: none;">
+                    <div class="qr-code-wrapper">
+                        <div id="qrCodeContainer"></div>
+                        <div id="qrPlaceholder" class="qr-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="7" height="7"/>
+                                <rect x="14" y="3" width="7" height="7"/>
+                                <rect x="3" y="14" width="7" height="7"/>
+                                <rect x="14" y="14" width="7" height="7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="qr-instruction">Mở app <strong>ZaloPay</strong> và quét mã QR</p>
+                    <div class="qr-amount">@tongThanhToan.ToString("N0") VNĐ</div>
+                </div>
+
+                <div class="qr-error" id="qrError" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <p id="errorMessage">Có lỗi xảy ra</p>
+                    <button class="retry-btn" onclick="createPaymentOrder()">Thử lại</button>
+                </div>
+            </div>
+
+            <div class="payment-actions">
+                <a href="#" id="paymentLink" class="btn-zalopay" style="display: none;" target="_blank">
+                    <img src="/asset/zalopay-icon.png" alt="" onerror="this.style.display='none'">
+                    Mở ZaloPay để thanh toán
+                </a>
+                
+                <button class="btn-send-email" onclick="sendPaymentNotification()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    Gửi link thanh toán qua Email
+                </button>
+
+                <button class="btn-check-status" onclick="checkPaymentStatus()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Kiểm tra trạng thái thanh toán
+                </button>
+            </div>
+
+            <!-- Payment Steps -->
+            <div class="payment-steps">
+                <h4>📋 Hướng dẫn thanh toán</h4>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <span>Mở ứng dụng <strong>ZaloPay</strong> trên điện thoại</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span>Chọn <strong>Quét mã QR</strong> hoặc nhấn nút thanh toán ở trên</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span>Xác nhận thông tin và hoàn tất thanh toán</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <span>Nhận xác nhận thanh toán thành công</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Success Modal -->
+<div id="successModal" class="modal-overlay">
+    <div class="modal-content success-modal">
+        <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+        </div>
+        <h2>Thanh toán thành công!</h2>
+        <p>Giao dịch của bạn đã được xử lý thành công.</p>
+        <div class="success-details" id="successDetails"></div>
+        <a href="@Url.Action("LichSuTraNo", "Loan", new { id = khoanVay?.MaKhoanVay })" class="btn-primary">
+            Quay lại lịch sử trả nợ
+        </a>
+    </div>
+</div>
+
+<style>
+    .payment-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .payment-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .back-btn {
+        width: 40px;
+        height: 40px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .back-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .header-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #0068ff 0%, #004fc4 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 14px rgba(0, 104, 255, 0.35);
+    }
+
+    .header-icon svg {
+        width: 28px;
+        height: 28px;
+        color: white;
+    }
+
+    .header-text h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .header-text p {
+        font-size: 14px;
+        color: #64748b;
+        margin: 4px 0 0 0;
+    }
+
+    .payment-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    /* Payment Info Card */
+    .payment-info-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        height: fit-content;
+    }
+
+    .customer-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 20px;
+    }
+
+    .customer-avatar {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .customer-avatar svg {
+        width: 28px;
+        height: 28px;
+        color: #64748b;
+    }
+
+    .customer-detail {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .customer-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .loan-code {
+        font-size: 14px;
+        color: #64748b;
+    }
+
+    .payment-details {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-row.warning {
+        background: #fef3c7;
+        margin: 0 -16px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border-bottom: none;
+    }
+
+    .detail-row.total {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        margin: 10px -16px 0;
+        padding: 16px;
+        border-radius: 12px;
+        border-bottom: none;
+    }
+
+    .detail-label {
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .detail-value {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .detail-value.text-danger {
+        color: #ef4444;
+    }
+
+    .detail-value.amount {
+        font-size: 20px;
+        color: #0068ff;
+    }
+
+    /* QR Section */
+    .qr-section {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .qr-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    .qr-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .zalopay-logo {
+        height: 32px;
+    }
+
+    .qr-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .qr-loading {
+        padding: 40px;
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #0068ff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .qr-content {
+        padding: 20px 0;
+    }
+
+    .qr-code-wrapper {
+        width: 220px;
+        height: 220px;
+        margin: 0 auto 20px;
+        background: #ffffff;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 2px solid #e2e8f0;
+        padding: 10px;
+    }
+    
+    #qrCodeContainer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    #qrCodeContainer canvas {
+        border-radius: 8px;
+    }
+
+    .qr-frame {
+        width: 200px;
+        height: 200px;
+        border: none;
+    }
+
+    .qr-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .qr-placeholder svg {
+        width: 80px;
+        height: 80px;
+        color: #cbd5e1;
+    }
+
+    .qr-instruction {
+        color: #64748b;
+        margin: 0 0 10px 0;
+    }
+
+    .qr-amount {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0068ff;
+    }
+
+    .qr-error {
+        padding: 40px;
+        color: #ef4444;
+    }
+
+    .qr-error svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+    }
+
+    .retry-btn {
+        margin-top: 16px;
+        padding: 10px 24px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .retry-btn:hover {
+        background: #dc2626;
+    }
+
+    /* Payment Actions */
+    .payment-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .btn-zalopay {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, #0068ff 0%, #004fc4 100%);
+        color: white;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 15px rgba(0, 104, 255, 0.3);
+    }
+
+    .btn-zalopay:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 104, 255, 0.4);
+        color: white;
+    }
+
+    .btn-zalopay img {
+        height: 24px;
+    }
+
+    .btn-send-email {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px 24px;
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        border-radius: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-send-email:hover {
+        background: #e2e8f0;
+    }
+
+    .btn-send-email svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .btn-check-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px 24px;
+        background: #ecfdf5;
+        color: #059669;
+        border: none;
+        border-radius: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-check-status:hover {
+        background: #d1fae5;
+    }
+
+    .btn-check-status svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Payment Steps */
+    .payment-steps {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .payment-steps h4 {
+        margin: 0 0 16px 0;
+        color: #1e293b;
+    }
+
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+    }
+
+    .step-number {
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, #0068ff 0%, #004fc4 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .success-modal {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    .success-icon svg {
+        width: 40px;
+        height: 40px;
+        color: white;
+    }
+
+    .success-modal h2 {
+        font-size: 24px;
+        color: #1e293b;
+        margin: 0 0 10px 0;
+    }
+
+    .success-modal p {
+        color: #64748b;
+        margin: 0 0 20px 0;
+    }
+
+    .success-details {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    .btn-primary {
+        display: inline-block;
+        padding: 14px 28px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    /* Toast */
+    .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 2000;
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast-success { background: #10b981; color: white; }
+    .toast-error { background: #ef4444; color: white; }
+    .toast-info { background: #3b82f6; color: white; }
+
+    @@media (max-width: 768px) {
+        .payment-content {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    let currentAppTransId = null;
+    let currentOrderUrl = null;
+    const maGiaoDich = @(lichSu?.MaGiaoDich ?? 0);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        createPaymentOrder();
+    });
+
+    async function createPaymentOrder() {
+        const qrLoading = document.getElementById('qrLoading');
+        const qrContent = document.getElementById('qrContent');
+        const qrError = document.getElementById('qrError');
+        const paymentLink = document.getElementById('paymentLink');
+        const qrPlaceholder = document.getElementById('qrPlaceholder');
+        const qrCodeContainer = document.getElementById('qrCodeContainer');
+
+        qrLoading.style.display = 'block';
+        qrContent.style.display = 'none';
+        qrError.style.display = 'none';
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const response = await fetch('@Url.Action("CreateZaloPayOrder", "Payment")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ MaGiaoDich: maGiaoDich })
+            });
+
+            const result = await response.json();
+            console.log('ZaloPay response:', result);
+
+            if (result.success) {
+                currentAppTransId = result.appTransId;
+                currentOrderUrl = result.orderUrl;
+                
+                qrLoading.style.display = 'none';
+                qrContent.style.display = 'block';
+                
+                // Tạo QR Code từ orderUrl
+                if (result.orderUrl) {
+                    qrPlaceholder.style.display = 'none';
+                    qrCodeContainer.innerHTML = ''; // Clear previous QR
+                    
+                    // Sử dụng QRCode.js library
+                    new QRCode(qrCodeContainer, {
+                        text: result.orderUrl,
+                        width: 180,
+                        height: 180,
+                        colorDark: "#1e293b",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    
+                    // Set payment link
+                    paymentLink.href = result.orderUrl;
+                    paymentLink.style.display = 'flex';
+                }
+
+                showToast('Đã tạo mã QR thanh toán', 'success');
+                
+                // Start polling for payment status
+                startPaymentPolling();
+            } else {
+                throw new Error(result.message || 'Không thể tạo đơn thanh toán');
+            }
+        } catch (error) {
+            console.error('Create order error:', error);
+            qrLoading.style.display = 'none';
+            qrError.style.display = 'block';
+            document.getElementById('errorMessage').textContent = error.message || 'Có lỗi xảy ra';
+        }
+    }
+
+    async function sendPaymentNotification() {
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const response = await fetch('@Url.Action("SendPaymentNotification", "Payment")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ MaGiaoDich: maGiaoDich })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast(result.message, 'success');
+            } else {
+                showToast(result.message, 'error');
+            }
+        } catch (error) {
+            showToast('Có lỗi xảy ra khi gửi email', 'error');
+        }
+    }
+
+    async function checkPaymentStatus() {
+        if (!currentAppTransId) {
+            showToast('Chưa có mã giao dịch', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`@Url.Action("CheckPaymentStatus", "Payment")?appTransId=${currentAppTransId}`);
+            const result = await response.json();
+
+            if (result.isPaid) {
+                showSuccessModal();
+            } else if (result.isProcessing) {
+                showToast('Giao dịch đang được xử lý...', 'info');
+            } else {
+                showToast(`Trạng thái: ${result.returnMessage}`, 'info');
+            }
+        } catch (error) {
+            showToast('Không thể kiểm tra trạng thái', 'error');
+        }
+    }
+
+    let pollingInterval = null;
+    function startPaymentPolling() {
+        // Poll every 5 seconds
+        pollingInterval = setInterval(async () => {
+            if (!currentAppTransId) return;
+
+            try {
+                const response = await fetch(`@Url.Action("CheckPaymentStatus", "Payment")?appTransId=${currentAppTransId}`);
+                const result = await response.json();
+
+                if (result.isPaid) {
+                    clearInterval(pollingInterval);
+                    showSuccessModal();
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, 5000);
+    }
+
+    function showSuccessModal() {
+        const modal = document.getElementById('successModal');
+        const details = document.getElementById('successDetails');
+        
+        details.innerHTML = `
+            <p style="margin: 8px 0;"><strong>Mã giao dịch:</strong> ${currentAppTransId}</p>
+            <p style="margin: 8px 0;"><strong>Số tiền:</strong> @tongThanhToan.ToString("N0") VNĐ</p>
+            <p style="margin: 8px 0;"><strong>Thời gian:</strong> ${new Date().toLocaleString('vi-VN')}</p>
+        `;
+        
+        modal.classList.add('active');
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<span>${message}</span>`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+    });
+</script>

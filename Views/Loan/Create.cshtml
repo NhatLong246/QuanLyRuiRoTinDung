@@ -115,9 +115,11 @@
                             <input asp-for="KyHanVay" 
                                    type="number" 
                                    min="1"
+                                   max="120"
                                    class="form-control" 
-                                   placeholder="Nhập số tháng" 
+                                   placeholder="Nhập số tháng (tối đa 120)" 
                                    required />
+                            <small class="form-text text-muted">Tối đa 120 tháng</small>
                             <span asp-validation-for="KyHanVay" class="text-danger"></span>
                         </div>
 
@@ -822,8 +824,17 @@
                         // CIC không tốt: hiển thị thông báo và disable form
                         showCicError();
                     }
+                } else if (loaiVay.maLoaiVayCode === 'CONSUME_CN') {
+                    // Vay tiêu dùng: 5%
+                    laiSuatInput.value = '5';
+                    // Hiển thị phần tài sản đảm bảo
+                    if (taiSanDamBaoSection) {
+                        taiSanDamBaoSection.style.display = 'block';
+                    }
+                    // Đảm bảo ẩn thông báo lỗi CIC
+                    hideCicError();
                 } else {
-                    // Các loại vay khác (Vay tiêu dùng): hiển thị phần tài sản đảm bảo
+                    // Các loại vay khác: hiển thị phần tài sản đảm bảo
                     if (taiSanDamBaoSection) {
                         taiSanDamBaoSection.style.display = 'block';
                     }
@@ -1307,17 +1318,15 @@
             let displayText = '';
             
             if (hinhThucTraNo === 'Trả góp đều') {
-                // Công thức tính trả góp đều: PMT = PV * (r(1+r)^n) / ((1+r)^n - 1)
-                // PV = Số tiền vay, r = Lãi suất tháng, n = Số kỳ
+                // Phương pháp "Gốc đều" - phổ biến tại Việt Nam
+                // Gốc mỗi kỳ cố định, lãi tính trên dư nợ giảm dần
+                // Số tiền trả kỳ đầu = Gốc + Lãi (trên toàn bộ dư nợ)
                 const laiSuatThang = laiSuat / 100 / 12;
+                const gocMoiKy = soTienVay / kyHanVay;
+                const laiKyDau = soTienVay * laiSuatThang;
                 
-                if (laiSuatThang > 0) {
-                    const tuSo = laiSuatThang * Math.pow(1 + laiSuatThang, kyHanVay);
-                    const mauSo = Math.pow(1 + laiSuatThang, kyHanVay) - 1;
-                    soTienTraHangThang = soTienVay * (tuSo / mauSo);
-                } else {
-                    soTienTraHangThang = soTienVay / kyHanVay;
-                }
+                // Hiển thị số tiền trả kỳ đầu (kỳ cao nhất)
+                soTienTraHangThang = gocMoiKy + laiKyDau;
                 displayText = formatCurrency(Math.round(soTienTraHangThang));
             } else if (hinhThucTraNo === 'Trả gốc cuối kỳ') {
                 // Chỉ trả lãi hàng tháng, gốc trả cuối kỳ
@@ -1410,9 +1419,21 @@
                     e.target.value = '1';
                     value = 1;
                 }
+                // Kiểm tra nếu vượt quá 120 tháng
+                if (value > 120) {
+                    e.target.value = '120';
+                    value = 120;
+                    const errorSpan = this.parentElement?.querySelector('.text-danger');
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Thời hạn vay tối đa là 120 tháng!';
+                        errorSpan.style.display = 'block';
+                        errorSpan.style.color = '#EF4444';
+                    }
+                    return;
+                }
                 // Xóa thông báo lỗi nếu có
                 const errorSpan = this.parentElement?.querySelector('.text-danger');
-                if (errorSpan && value >= 1) {
+                if (errorSpan && value >= 1 && value <= 120) {
                     errorSpan.textContent = '';
                     errorSpan.style.display = 'none';
                 }
@@ -1429,9 +1450,18 @@
                 if (isNaN(value) || value < 1) {
                     const errorSpan = this.parentElement?.querySelector('.text-danger');
                     if (errorSpan) {
-                        errorSpan.textContent = 'Vui lòng nhập số tháng hợp lệ (lớn hơn 0).';
+                        errorSpan.textContent = 'Vui lòng nhập số tháng hợp lệ (từ 1 đến 120).';
                         errorSpan.style.display = 'block';
                     }
+                } else if (value > 120) {
+                    e.target.value = '120';
+                    const errorSpan = this.parentElement?.querySelector('.text-danger');
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Thời hạn vay tối đa là 120 tháng! Đã tự động điều chỉnh.';
+                        errorSpan.style.display = 'block';
+                        errorSpan.style.color = '#EF4444';
+                    }
+                    calculateMonthlyPayment();
                 } else {
                     const errorSpan = this.parentElement?.querySelector('.text-danger');
                     if (errorSpan) {

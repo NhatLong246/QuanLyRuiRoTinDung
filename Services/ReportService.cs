@@ -17,6 +17,11 @@ namespace QuanLyRuiRoTinDung.Services
         Task<TrendData> GetTrendDataAsync(int maNhanVien, int year);
         Task<List<int>> GetAvailableYearsAsync(int maNhanVien);
         Task<string?> GetEmployeeNameAsync(int maNhanVien);
+        // New methods for additional charts
+        Task<List<PaymentStatusData>> GetPaymentStatusDataAsync(int maNhanVien, ReportFilterModel filter);
+        Task<List<DisbursementTrendData>> GetDisbursementTrendDataAsync(int maNhanVien, ReportFilterModel filter);
+        Task<CollectionRateData> GetCollectionRateDataAsync(int maNhanVien, ReportFilterModel filter);
+        Task<List<LoanAmountRangeData>> GetLoanAmountRangeDataAsync(int maNhanVien, ReportFilterModel filter);
     }
 
     public class ReportService : IReportService
@@ -445,6 +450,159 @@ namespace QuanLyRuiRoTinDung.Services
 
             return result;
         }
+        
+        // ===== NEW METHODS FOR ADDITIONAL CHARTS =====
+        
+        public async Task<List<PaymentStatusData>> GetPaymentStatusDataAsync(int maNhanVien, ReportFilterModel filter)
+        {
+            var query = ApplyFilters(_context.KhoanVays.AsQueryable(), maNhanVien, filter);
+            
+            // Chỉ lấy các khoản vay đã giải ngân
+            var disbursedLoans = await query
+                .Where(k => k.TrangThaiKhoanVay == "Đã giải ngân" || 
+                           k.TrangThaiKhoanVay == "Đang vay" || 
+                           k.TrangThaiKhoanVay == "Đã thanh toán")
+                .ToListAsync();
+            
+            var result = new List<PaymentStatusData>
+            {
+                new PaymentStatusData
+                {
+                    Status = "Đã thanh toán đầy đủ",
+                    Count = disbursedLoans.Count(k => k.TrangThaiKhoanVay == "Đã thanh toán"),
+                    TotalAmount = disbursedLoans.Where(k => k.TrangThaiKhoanVay == "Đã thanh toán").Sum(k => k.SoTienVay)
+                },
+                new PaymentStatusData
+                {
+                    Status = "Đang trả nợ đúng hạn",
+                    Count = disbursedLoans.Count(k => (k.TrangThaiKhoanVay == "Đã giải ngân" || k.TrangThaiKhoanVay == "Đang vay") && (k.SoNgayQuaHan == null || k.SoNgayQuaHan <= 0)),
+                    TotalAmount = disbursedLoans.Where(k => (k.TrangThaiKhoanVay == "Đã giải ngân" || k.TrangThaiKhoanVay == "Đang vay") && (k.SoNgayQuaHan == null || k.SoNgayQuaHan <= 0)).Sum(k => k.SoTienVay)
+                },
+                new PaymentStatusData
+                {
+                    Status = "Quá hạn 1-30 ngày",
+                    Count = disbursedLoans.Count(k => k.SoNgayQuaHan > 0 && k.SoNgayQuaHan <= 30),
+                    TotalAmount = disbursedLoans.Where(k => k.SoNgayQuaHan > 0 && k.SoNgayQuaHan <= 30).Sum(k => k.SoTienVay)
+                },
+                new PaymentStatusData
+                {
+                    Status = "Quá hạn 31-90 ngày",
+                    Count = disbursedLoans.Count(k => k.SoNgayQuaHan > 30 && k.SoNgayQuaHan <= 90),
+                    TotalAmount = disbursedLoans.Where(k => k.SoNgayQuaHan > 30 && k.SoNgayQuaHan <= 90).Sum(k => k.SoTienVay)
+                },
+                new PaymentStatusData
+                {
+                    Status = "Quá hạn trên 90 ngày",
+                    Count = disbursedLoans.Count(k => k.SoNgayQuaHan > 90),
+                    TotalAmount = disbursedLoans.Where(k => k.SoNgayQuaHan > 90).Sum(k => k.SoTienVay)
+                }
+            };
+            
+            return result.Where(r => r.Count > 0).ToList();
+        }
+        
+        public async Task<List<DisbursementTrendData>> GetDisbursementTrendDataAsync(int maNhanVien, ReportFilterModel filter)
+        {
+            var result = new List<DisbursementTrendData>();
+            int year = filter.Year ?? DateTime.Now.Year;
+            
+            for (int q = 1; q <= 4; q++)
+            {
+                var startMonth = (q - 1) * 3 + 1;
+                var endMonth = startMonth + 2;
+                
+                var data = await _context.KhoanVays
+                    .Where(k => k.NgayTao.HasValue && 
+                                k.NgayTao.Value.Year == year &&
+                                k.NgayTao.Value.Month >= startMonth &&
+                                k.NgayTao.Value.Month <= endMonth &&
+                                k.MaNhanVienTinDung == maNhanVien)
+                    .ToListAsync();
+                
+                var proposedAmount = data.Sum(k => k.SoTienVay);
+                var disbursedAmount = data.Where(k => k.TrangThaiKhoanVay == "Đã giải ngân" || 
+                                                      k.TrangThaiKhoanVay == "Đang vay" || 
+                                                      k.TrangThaiKhoanVay == "Đã thanh toán")
+                                         .Sum(k => k.SoTienVay);
+                var rejectedAmount = data.Where(k => k.TrangThaiKhoanVay == "Từ chối")
+                                        .Sum(k => k.SoTienVay);
+                
+                result.Add(new DisbursementTrendData
+                {
+                    Quarter = q,
+                    QuarterName = $"Quý {q}",
+                    ProposedAmount = proposedAmount,
+                    DisbursedAmount = disbursedAmount,
+                    RejectedAmount = rejectedAmount,
+                    DisbursementRate = proposedAmount > 0 ? Math.Round((disbursedAmount / proposedAmount) * 100, 1) : 0
+                });
+            }
+            
+            return result;
+        }
+        
+        public async Task<CollectionRateData> GetCollectionRateDataAsync(int maNhanVien, ReportFilterModel filter)
+        {
+            var query = ApplyFilters(_context.KhoanVays.AsQueryable(), maNhanVien, filter);
+            
+            // Tổng các khoản vay đã giải ngân
+            var disbursedLoans = await query
+                .Where(k => k.TrangThaiKhoanVay == "Đã giải ngân" || 
+                           k.TrangThaiKhoanVay == "Đang vay" || 
+                           k.TrangThaiKhoanVay == "Đã thanh toán")
+                .ToListAsync();
+            
+            var totalDisbursed = disbursedLoans.Sum(k => k.SoTienVay);
+            var fullyPaid = disbursedLoans.Where(k => k.TrangThaiKhoanVay == "Đã thanh toán").Sum(k => k.SoTienVay);
+            var onTimePayment = disbursedLoans.Where(k => k.SoNgayQuaHan == null || k.SoNgayQuaHan <= 0).Sum(k => k.SoTienVay);
+            var overduePayment = disbursedLoans.Where(k => k.SoNgayQuaHan > 0).Sum(k => k.SoTienVay);
+            
+            // Lấy tổng tiền đã trả từ lịch sử trả nợ
+            var loanIds = disbursedLoans.Select(k => k.MaKhoanVay).ToList();
+            var totalPaid = await _context.LichSuTraNos
+                .Where(l => loanIds.Contains(l.MaKhoanVay) && l.TrangThai == "Đã thanh toán")
+                .SumAsync(l => l.TongDaTra ?? 0);
+            
+            return new CollectionRateData
+            {
+                TotalDisbursedAmount = totalDisbursed,
+                TotalCollectedAmount = totalPaid,
+                FullyPaidAmount = fullyPaid,
+                OnTimeAmount = onTimePayment,
+                OverdueAmount = overduePayment,
+                CollectionRate = totalDisbursed > 0 ? Math.Round((totalPaid / totalDisbursed) * 100, 1) : 0,
+                OnTimeRate = totalDisbursed > 0 ? Math.Round((onTimePayment / totalDisbursed) * 100, 1) : 0
+            };
+        }
+        
+        public async Task<List<LoanAmountRangeData>> GetLoanAmountRangeDataAsync(int maNhanVien, ReportFilterModel filter)
+        {
+            var query = ApplyFilters(_context.KhoanVays.AsQueryable(), maNhanVien, filter);
+            var loans = await query.ToListAsync();
+            
+            var ranges = new[]
+            {
+                ("Dưới 50 triệu", 0m, 50000000m),
+                ("50-100 triệu", 50000000m, 100000000m),
+                ("100-500 triệu", 100000000m, 500000000m),
+                ("500 triệu - 1 tỷ", 500000000m, 1000000000m),
+                ("1-5 tỷ", 1000000000m, 5000000000m),
+                ("Trên 5 tỷ", 5000000000m, decimal.MaxValue)
+            };
+            
+            var result = ranges.Select(r => new LoanAmountRangeData
+            {
+                RangeName = r.Item1,
+                MinAmount = r.Item2,
+                MaxAmount = r.Item3,
+                Count = loans.Count(k => k.SoTienVay >= r.Item2 && k.SoTienVay < r.Item3),
+                TotalAmount = loans.Where(k => k.SoTienVay >= r.Item2 && k.SoTienVay < r.Item3).Sum(k => k.SoTienVay),
+                ApprovedCount = loans.Count(k => k.SoTienVay >= r.Item2 && k.SoTienVay < r.Item3 && 
+                                              _approvedStatuses.Contains(k.TrangThaiKhoanVay))
+            }).Where(r => r.Count > 0).ToList();
+            
+            return result;
+        }
     }
 
     #region View Models / DTOs
@@ -555,6 +713,46 @@ namespace QuanLyRuiRoTinDung.Services
         public decimal PreviousYearAmount { get; set; }
         public decimal LoanGrowthRate { get; set; }
         public decimal AmountGrowthRate { get; set; }
+    }
+    
+    // ===== NEW DTOs FOR ADDITIONAL CHARTS =====
+    
+    public class PaymentStatusData
+    {
+        public string Status { get; set; } = "";
+        public int Count { get; set; }
+        public decimal TotalAmount { get; set; }
+    }
+    
+    public class DisbursementTrendData
+    {
+        public int Quarter { get; set; }
+        public string QuarterName { get; set; } = "";
+        public decimal ProposedAmount { get; set; }
+        public decimal DisbursedAmount { get; set; }
+        public decimal RejectedAmount { get; set; }
+        public decimal DisbursementRate { get; set; }
+    }
+    
+    public class CollectionRateData
+    {
+        public decimal TotalDisbursedAmount { get; set; }
+        public decimal TotalCollectedAmount { get; set; }
+        public decimal FullyPaidAmount { get; set; }
+        public decimal OnTimeAmount { get; set; }
+        public decimal OverdueAmount { get; set; }
+        public decimal CollectionRate { get; set; }
+        public decimal OnTimeRate { get; set; }
+    }
+    
+    public class LoanAmountRangeData
+    {
+        public string RangeName { get; set; } = "";
+        public decimal MinAmount { get; set; }
+        public decimal MaxAmount { get; set; }
+        public int Count { get; set; }
+        public decimal TotalAmount { get; set; }
+        public int ApprovedCount { get; set; }
     }
 
     #endregion

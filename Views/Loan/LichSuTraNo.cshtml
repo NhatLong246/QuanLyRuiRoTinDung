@@ -1,0 +1,1351 @@
+@{
+    ViewData["Title"] = "Lịch sử trả nợ";
+    Layout = "_DashboardLayout";
+    var loan = ViewBag.Loan as QuanLyRuiRoTinDung.Models.Entities.KhoanVay;
+    var lichSuTraNo = ViewBag.LichSuTraNo as List<QuanLyRuiRoTinDung.Models.Entities.LichSuTraNo> ?? new List<QuanLyRuiRoTinDung.Models.Entities.LichSuTraNo>();
+    var customerName = ViewBag.CustomerName as string ?? "N/A";
+    
+    // Calculate statistics
+    var totalPayments = lichSuTraNo.Count;
+    var paidPayments = lichSuTraNo.Count(l => l.TrangThai == "Đã thanh toán" || l.TrangThai == "Trả chậm");
+    var latePayments = lichSuTraNo.Count(l => l.TrangThai == "Trả chậm");
+    var pendingPayments = lichSuTraNo.Count(l => l.TrangThai == "Chưa thanh toán");
+    var totalPaid = lichSuTraNo.Sum(l => l.TongDaTra ?? 0);
+    var totalDue = lichSuTraNo.Sum(l => l.TongPhaiTra);
+    var progressPercent = totalDue > 0 ? Math.Round((totalPaid / totalDue) * 100, 1) : 0;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="payment-history-container">
+    <!-- Page Header -->
+    <div class="page-header-section">
+        <div class="header-content">
+            <a href="@Url.Action("Manage", "Loan")" class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+            </a>
+            <div class="header-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <div class="header-text">
+                <h1>Lịch sử trả nợ</h1>
+                <p>Khoản vay <strong>#@loan?.MaKhoanVayCode</strong> - @customerName</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="@Url.Action("Details", "Loan", new { id = loan?.MaKhoanVay })" class="btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                    <path d="M14 2V8H20"/>
+                </svg>
+                Xem hồ sơ vay
+            </a>
+        </div>
+    </div>
+
+    <!-- Loan Summary -->
+    <div class="loan-summary-card">
+        <div class="summary-left">
+            <div class="summary-item">
+                <span class="summary-label">Số tiền vay</span>
+                <span class="summary-value">@(loan?.SoTienVay.ToString("N0") ?? "0") VNĐ</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Lãi suất</span>
+                <span class="summary-value">@(loan?.LaiSuat.ToString("N1") ?? "0")%/năm</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Kỳ hạn</span>
+                <span class="summary-value">@(loan?.KyHanVay ?? 0) tháng</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Ngày giải ngân</span>
+                <span class="summary-value">@(loan?.NgayGiaiNgan?.ToString("dd/MM/yyyy") ?? "--")</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Ngày đáo hạn</span>
+                <span class="summary-value">@(loan?.NgayDaoHan?.ToString("dd/MM/yyyy") ?? "--")</span>
+            </div>
+        </div>
+        <div class="summary-right">
+            <div class="progress-circle">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" class="progress-bg"/>
+                    <circle cx="50" cy="50" r="45" class="progress-fill" 
+                            style="stroke-dasharray: @(progressPercent * 2.83m) 283;"/>
+                </svg>
+                <div class="progress-text">
+                    <span class="progress-value">@progressPercent%</span>
+                    <span class="progress-label">Đã trả</span>
+                </div>
+            </div>
+            <div class="progress-info">
+                <div class="progress-row">
+                    <span>Đã thanh toán:</span>
+                    <span class="text-success">@totalPaid.ToString("N0") VNĐ</span>
+                </div>
+                <div class="progress-row">
+                    <span>Còn lại:</span>
+                    <span class="text-warning">@((totalDue - totalPaid).ToString("N0")) VNĐ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card stat-total">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+                <span class="stat-number">@totalPayments</span>
+                <span class="stat-label">Tổng kỳ trả</span>
+            </div>
+        </div>
+        <div class="stat-card stat-paid">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+                <span class="stat-number">@paidPayments</span>
+                <span class="stat-label">Đã thanh toán</span>
+            </div>
+        </div>
+        <div class="stat-card stat-pending">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-content">
+                <span class="stat-number">@pendingPayments</span>
+                <span class="stat-label">Chưa thanh toán</span>
+            </div>
+        </div>
+        <div class="stat-card stat-late">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-content">
+                <span class="stat-number">@latePayments</span>
+                <span class="stat-label">Trả chậm</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Schedule Table -->
+    <div class="table-wrapper">
+        <div class="table-header">
+            <h3>📋 Lịch trả nợ chi tiết</h3>
+        </div>
+        <table class="payment-table">
+            <thead>
+                <tr>
+                    <th>Kỳ</th>
+                    <th>Ngày trả dự kiến</th>
+                    <th>Ngày trả thực tế</th>
+                    <th>Gốc phải trả</th>
+                    <th>Lãi phải trả</th>
+                    <th>Tổng phải trả</th>
+                    <th>Đã trả</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (lichSuTraNo.Any())
+                {
+                    foreach (var payment in lichSuTraNo.OrderBy(l => l.KyTraNo))
+                    {
+                        var today = DateOnly.FromDateTime(DateTime.Now);
+                        var soNgayQuaHan = payment.TrangThai == "Chưa thanh toán" && payment.NgayTraDuKien < today 
+                            ? today.DayNumber - payment.NgayTraDuKien.DayNumber : 0;
+                        var isOverdue = soNgayQuaHan > 0;
+                        var isOverdue3Days = soNgayQuaHan > 3;
+                        
+                        var statusClass = payment.TrangThai switch
+                        {
+                            "Đã thanh toán" => "status-paid",
+                            "Trả chậm" => "status-late",
+                            "Quá hạn" => "status-overdue",
+                            "Nợ xấu" => "status-bad-debt",
+                            "Chưa thanh toán" when isOverdue3Days => "status-overdue",
+                            "Chưa thanh toán" => "status-pending",
+                            _ => "status-default"
+                        };
+                        var statusIcon = payment.TrangThai switch
+                        {
+                            "Đã thanh toán" => "✓",
+                            "Trả chậm" => "⚠",
+                            "Quá hạn" => "⚠",
+                            "Nợ xấu" => "✗",
+                            "Chưa thanh toán" when isOverdue3Days => "⚠",
+                            "Chưa thanh toán" => "◯",
+                            _ => "•"
+                        };
+                        var displayStatus = payment.TrangThai;
+                        if (payment.TrangThai == "Chưa thanh toán" && isOverdue3Days)
+                        {
+                            displayStatus = soNgayQuaHan > 90 ? "Nợ xấu" : $"Quá hạn {soNgayQuaHan} ngày";
+                        }
+                        
+                        <tr class="@(isOverdue3Days ? "overdue-row severe" : (isOverdue ? "overdue-row" : ""))">
+                            <td>
+                                <span class="period-badge">Kỳ @payment.KyTraNo</span>
+                            </td>
+                            <td>
+                                <span class="date-value">@payment.NgayTraDuKien.ToString("dd/MM/yyyy")</span>
+                                @if (isOverdue3Days)
+                                {
+                                    <span class="overdue-warning" title="Quá hạn trên 3 ngày - CIC sẽ bị trừ điểm!">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @if (payment.NgayTraThucTe.HasValue)
+                                {
+                                    <span class="date-value">@payment.NgayTraThucTe.Value.ToString("dd/MM/yyyy")</span>
+                                    @if (payment.SoNgayTraCham > 0)
+                                    {
+                                        <span class="late-days">Chậm @payment.SoNgayTraCham ngày</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="date-pending">--</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="amount">@payment.SoTienGocPhaiTra.ToString("N0")</span>
+                            </td>
+                            <td>
+                                <span class="amount">@payment.SoTienLaiPhaiTra.ToString("N0")</span>
+                            </td>
+                            <td>
+                                <span class="amount total">@payment.TongPhaiTra.ToString("N0")</span>
+                            </td>
+                            <td>
+                                @if (payment.TongDaTra.HasValue && payment.TongDaTra > 0)
+                                {
+                                    <span class="amount paid">@payment.TongDaTra.Value.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    <span class="amount-zero">0</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="status-badge @statusClass">
+                                    <span class="status-icon">@statusIcon</span>
+                                    @displayStatus
+                                </span>
+                                @if (isOverdue3Days && payment.SoTienPhiTraCham > 0)
+                                {
+                                    <div class="penalty-info">
+                                        <small class="text-danger">Phí phạt: @payment.SoTienPhiTraCham?.ToString("N0")đ</small>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    @if (payment.TrangThai == "Chưa thanh toán")
+                                    {
+                                        @* Kỳ 1 luôn hiển thị nút, các kỳ khác chỉ hiển thị khi đến ngày trả dự kiến *@
+                                        @if (payment.KyTraNo == 1 || payment.NgayTraDuKien <= today)
+                                        {
+                                            <button class="action-btn notify-btn" title="Gửi thông báo thanh toán" 
+                                                    onclick="sendPaymentNotification(@payment.MaGiaoDich, @payment.KyTraNo)">
+                                                <i class="fas fa-envelope"></i>
+                                            </button>
+                                            <a class="action-btn zalopay-btn" title="Thanh toán qua ZaloPay" 
+                                               href="@Url.Action("PaymentQR", "Payment", new { maGiaoDich = payment.MaGiaoDich })">
+                                                <i class="fas fa-qrcode"></i>
+                                            </a>
+                                            <button class="action-btn payment-btn" title="Ghi nhận thanh toán thủ công" 
+                                                    onclick="showPaymentModal(@payment.MaGiaoDich, @payment.KyTraNo, @payment.TongPhaiTra, '@payment.NgayTraDuKien.ToString("dd/MM/yyyy")')">
+                                                <i class="fas fa-credit-card"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="action-waiting" title="Chưa đến kỳ thanh toán (đến @payment.NgayTraDuKien.ToString("dd/MM/yyyy"))">
+                                                <i class="fas fa-clock"></i>
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="action-done"><i class="fas fa-check-circle"></i></span>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <div class="empty-icon">📋</div>
+                                <h3>Chưa có lịch trả nợ</h3>
+                                <p>Lịch trả nợ sẽ được tạo tự động khi khoản vay được giải ngân</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .payment-history-container {
+        padding: 0;
+        min-height: 100vh;
+    }
+
+    /* Page Header */
+    .page-header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .header-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .back-btn {
+        width: 40px;
+        height: 40px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .back-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .header-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+    }
+
+    .header-icon svg {
+        width: 28px;
+        height: 28px;
+        color: white;
+    }
+
+    .header-text h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .header-text p {
+        font-size: 14px;
+        color: #64748b;
+        margin: 4px 0 0 0;
+    }
+
+    .btn-secondary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: #f1f5f9;
+        color: #475569;
+        border-radius: 10px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+        background: #e2e8f0;
+    }
+
+    .btn-secondary svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Loan Summary Card */
+    .loan-summary-card {
+        display: flex;
+        justify-content: space-between;
+        gap: 32px;
+        background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .summary-left {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+    }
+
+    .summary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .summary-label {
+        font-size: 12px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .summary-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .summary-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .progress-circle {
+        width: 100px;
+        height: 100px;
+        position: relative;
+    }
+
+    .progress-circle svg {
+        transform: rotate(-90deg);
+    }
+
+    .progress-bg {
+        fill: none;
+        stroke: #e2e8f0;
+        stroke-width: 8;
+    }
+
+    .progress-fill {
+        fill: none;
+        stroke: #10b981;
+        stroke-width: 8;
+        stroke-linecap: round;
+        transition: stroke-dasharray 0.5s ease;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    .progress-value {
+        display: block;
+        font-size: 18px;
+        font-weight: 700;
+        color: #10b981;
+    }
+
+    .progress-label {
+        display: block;
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .progress-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .progress-row {
+        display: flex;
+        gap: 12px;
+        font-size: 14px;
+    }
+
+    .progress-row span:first-child {
+        color: #64748b;
+    }
+
+    .text-success {
+        color: #10b981;
+        font-weight: 600;
+    }
+
+    .text-warning {
+        color: #f59e0b;
+        font-weight: 600;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        font-size: 28px;
+    }
+
+    .stat-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-number {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .stat-paid { border-left: 4px solid #10b981; }
+    .stat-pending { border-left: 4px solid #f59e0b; }
+    .stat-late { border-left: 4px solid #ef4444; }
+    .stat-total { border-left: 4px solid #3b82f6; }
+
+    /* Table */
+    .table-wrapper {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .payment-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .payment-table th {
+        padding: 14px 16px;
+        text-align: left;
+        background: #f8fafc;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .payment-table td {
+        padding: 16px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .payment-table tr:hover {
+        background: #f8fafc;
+    }
+
+    .payment-table tr.overdue-row {
+        background: #fef2f2;
+    }
+
+    .payment-table tr.overdue-row:hover {
+        background: #fee2e2;
+    }
+
+    .period-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #e0e7ff;
+        color: #4f46e5;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .date-value {
+        font-weight: 500;
+    }
+
+    .date-pending {
+        color: #94a3b8;
+    }
+
+    .late-days {
+        display: block;
+        font-size: 11px;
+        color: #ef4444;
+        margin-top: 2px;
+    }
+
+    .amount {
+        font-family: 'Roboto Mono', monospace;
+    }
+
+    .amount.total {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .amount.paid {
+        color: #10b981;
+        font-weight: 600;
+    }
+
+    .amount-zero {
+        color: #cbd5e1;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .status-icon {
+        font-size: 10px;
+    }
+
+    .status-paid {
+        background: #d1fae5;
+        color: #059669;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .status-late {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .status-default {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .status-overdue {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #b45309;
+        font-weight: 600;
+    }
+
+    .status-bad-debt {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        color: #dc2626;
+        font-weight: 700;
+    }
+
+    .overdue-row {
+        background: #fffbeb !important;
+    }
+
+    .overdue-row.severe {
+        background: linear-gradient(90deg, #fef2f2 0%, #fff 50%) !important;
+        animation: pulse-warning 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse-warning {
+        0%, 100% { background-color: #fef2f2; }
+        50% { background-color: #fee2e2; }
+    }
+
+    .overdue-warning {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 6px;
+        color: #dc2626;
+        animation: shake 0.5s ease-in-out infinite;
+    }
+
+    .overdue-warning i {
+        font-size: 12px;
+    }
+
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-2px); }
+        75% { transform: translateX(2px); }
+    }
+
+    .penalty-info {
+        margin-top: 4px;
+    }
+
+    .penalty-info small {
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 40px;
+        text-align: center;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #475569;
+        margin: 0 0 8px 0;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        color: #94a3b8;
+        margin: 0;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .page-header-section {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .loan-summary-card {
+            flex-direction: column;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .payment-table {
+            min-width: 900px;
+        }
+    }
+
+    /* Action buttons */
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .action-btn i {
+        font-size: 14px;
+    }
+
+    .payment-btn {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+
+    .payment-btn:hover {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+    }
+
+    .payment-btn i {
+        font-size: 14px;
+    }
+
+    .notify-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+    }
+
+    .notify-btn:hover {
+        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        color: white;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .notify-btn i {
+        font-size: 14px;
+    }
+
+    .zalopay-btn {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        text-decoration: none;
+    }
+
+    .zalopay-btn:hover {
+        background: linear-gradient(135deg, #0f8a7f 0%, #2ed573 100%);
+        color: white;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+    }
+
+    .zalopay-btn i {
+        font-size: 14px;
+    }
+
+    .action-done {
+        color: #10b981;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .action-waiting {
+        color: #f59e0b;
+        font-size: 18px;
+        cursor: help;
+    }
+
+    .action-waiting:hover {
+        color: #d97706;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 480px;
+        transform: translateY(-20px);
+        transition: all 0.3s;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    }
+
+    .modal-overlay.active .modal-content {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        padding: 24px 24px 16px;
+        text-align: center;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modal-header h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 8px 0;
+    }
+
+    .modal-header p {
+        font-size: 14px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .payment-info {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .payment-info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .payment-info-row:last-child {
+        border-bottom: none;
+    }
+
+    .payment-info-label {
+        font-size: 14px;
+        color: #64748b;
+    }
+
+    .payment-info-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .payment-info-value.highlight {
+        color: #059669;
+        font-size: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 8px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .late-warning {
+        display: flex;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #fef3c7;
+        border-radius: 10px;
+        color: #92400e;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .late-warning svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        color: #d97706;
+    }
+
+    .modal-footer {
+        padding: 16px 24px 24px;
+        display: flex;
+        gap: 12px;
+    }
+
+    .modal-btn {
+        flex: 1;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .modal-btn-cancel {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .modal-btn-cancel:hover {
+        background: #e2e8f0;
+    }
+
+    .modal-btn-confirm {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .modal-btn-confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .modal-btn-confirm:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Toast */
+    .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 2000;
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast svg {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    .toast-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .toast-error {
+        background: #ef4444;
+        color: white;
+    }
+
+    .toast-info {
+        background: #3b82f6;
+        color: white;
+    }
+</style>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>💳 Ghi nhận thanh toán</h3>
+            <p>Kỳ <span id="paymentPeriod">1</span> - Hạn thanh toán: <span id="paymentDueDate">--</span></p>
+        </div>
+        <div class="modal-body">
+            <div class="payment-info">
+                <div class="payment-info-row">
+                    <span class="payment-info-label">Khoản vay</span>
+                    <span class="payment-info-value">#@loan?.MaKhoanVayCode</span>
+                </div>
+                <div class="payment-info-row">
+                    <span class="payment-info-label">Khách hàng</span>
+                    <span class="payment-info-value">@customerName</span>
+                </div>
+                <div class="payment-info-row">
+                    <span class="payment-info-label">Số tiền phải trả</span>
+                    <span class="payment-info-value highlight" id="amountDue">0 VNĐ</span>
+                </div>
+            </div>
+            
+            <div id="lateWarning" class="late-warning" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18C1.64 18.3 1.55 18.64 1.55 19C1.55 19.36 1.64 19.7 1.82 20C2 20.3 2.25 20.55 2.55 20.73C2.85 20.91 3.19 21 3.55 21H20.47C20.83 21 21.17 20.91 21.47 20.73C21.77 20.55 22.02 20.3 22.2 20C22.38 19.7 22.47 19.36 22.47 19C22.47 18.64 22.38 18.3 22.2 18L13.73 3.86C13.55 3.56 13.3 3.32 13 3.15C12.7 2.98 12.36 2.89 12.01 2.89C11.66 2.89 11.32 2.98 11.02 3.15C10.72 3.32 10.47 3.56 10.29 3.86Z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span id="lateWarningText">Kỳ này đã quá hạn, sẽ có phí phạt trả chậm</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="paymentAmount">Số tiền thanh toán (VNĐ)</label>
+                <input type="text" id="paymentAmount" placeholder="Nhập số tiền thanh toán" />
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn modal-btn-cancel" onclick="closePaymentModal()">Hủy bỏ</button>
+            <button class="modal-btn modal-btn-confirm" id="confirmPaymentBtn" onclick="confirmPayment()">Xác nhận thanh toán</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPaymentId = null;
+    let currentAmountDue = 0;
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount);
+    }
+
+    function parseCurrency(str) {
+        return parseFloat(str.replace(/[^\d]/g, '')) || 0;
+    }
+
+    function showPaymentModal(maGiaoDich, kyTraNo, tongPhaiTra, ngayTraDuKien) {
+        currentPaymentId = maGiaoDich;
+        currentAmountDue = tongPhaiTra;
+        
+        document.getElementById('paymentPeriod').textContent = kyTraNo;
+        document.getElementById('paymentDueDate').textContent = ngayTraDuKien;
+        document.getElementById('amountDue').textContent = formatCurrency(tongPhaiTra) + ' VNĐ';
+        document.getElementById('paymentAmount').value = formatCurrency(tongPhaiTra);
+        
+        // Check if overdue
+        const today = new Date();
+        const dueDate = new Date(ngayTraDuKien.split('/').reverse().join('-'));
+        if (today > dueDate) {
+            document.getElementById('lateWarning').style.display = 'flex';
+            const daysLate = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+            document.getElementById('lateWarningText').textContent = 
+                `Kỳ này đã quá hạn ${daysLate} ngày, sẽ có phí phạt trả chậm (0.05%/ngày)`;
+        } else {
+            document.getElementById('lateWarning').style.display = 'none';
+        }
+        
+        document.getElementById('paymentModal').classList.add('active');
+    }
+
+    function closePaymentModal() {
+        document.getElementById('paymentModal').classList.remove('active');
+        currentPaymentId = null;
+    }
+
+    // Format input as currency
+    document.getElementById('paymentAmount')?.addEventListener('input', function(e) {
+        let value = this.value.replace(/[^\d]/g, '');
+        if (value) {
+            this.value = formatCurrency(parseInt(value));
+        }
+    });
+
+    async function confirmPayment() {
+        if (!currentPaymentId) return;
+        
+        const amountStr = document.getElementById('paymentAmount').value;
+        const amount = parseCurrency(amountStr);
+        
+        if (amount < currentAmountDue) {
+            showErrorToast(`Số tiền thanh toán phải lớn hơn hoặc bằng ${formatCurrency(currentAmountDue)} VNĐ`);
+            return;
+        }
+        
+        const confirmBtn = document.getElementById('confirmPaymentBtn');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Đang xử lý...';
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const response = await fetch('@Url.Action("GhiNhanThanhToan", "Loan")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    MaGiaoDich: currentPaymentId,
+                    SoTienTra: amount
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                closePaymentModal();
+                showSuccessToast(result.message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showErrorToast(result.message || 'Có lỗi xảy ra');
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Xác nhận thanh toán';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showErrorToast('Có lỗi xảy ra khi kết nối với máy chủ');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Xác nhận thanh toán';
+        }
+    }
+
+    function showSuccessToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-success';
+        toast.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function showErrorToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-error';
+        toast.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    function showInfoToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-info';
+        toast.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Gửi thông báo thanh toán qua email
+    async function sendPaymentNotification(maGiaoDich, kyTraNo) {
+        showInfoToast(`Đang gửi thông báo thanh toán kỳ ${kyTraNo}...`);
+        
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const response = await fetch('@Url.Action("SendPaymentNotification", "Payment")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ MaGiaoDich: maGiaoDich })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                showSuccessToast(result.message);
+            } else {
+                showErrorToast(result.message || 'Có lỗi xảy ra');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showErrorToast('Có lỗi xảy ra khi gửi thông báo');
+        }
+    }
+
+    // Close modal on overlay click
+    document.getElementById('paymentModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePaymentModal();
+        }
+    });
+</script>

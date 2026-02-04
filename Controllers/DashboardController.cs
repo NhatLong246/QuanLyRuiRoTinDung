@@ -184,44 +184,106 @@ namespace QuanLyRuiRoTinDung.Controllers
                 {
                     id = kv.MaKhoanVay,
                     type = "approved",
-                    title = "Hồ sơ đã được duyệt",
-                    message = $"Hồ sơ #{kv.MaKhoanVayCode} đã được phê duyệt",
+                    title = "Khoản vay đã được duyệt",
+                    message = $"Hồ sơ #{kv.MaKhoanVayCode} đã được phê duyệt, cần giải ngân",
                     date = kv.NgayCapNhat,
-                    icon = "check-circle"
+                    icon = "check-circle",
+                    color = "#10B981"
                 })
                 .ToListAsync();
 
             notifications.AddRange(hoSoDaDuyet);
 
-            // 2. Hồ sơ nháp lâu chưa bổ sung (hơn 3 ngày)
-            var threeDaysAgo = DateTime.Now.AddDays(-3);
-            var hoSoNhapCuData = await _context.KhoanVays
+            // 2. Hồ sơ bị từ chối (trong 7 ngày gần đây)
+            var hoSoBiTuChoi = await _context.KhoanVays
                 .Where(kv => kv.MaNhanVienTinDung == maNguoiDung &&
-                    kv.TrangThaiKhoanVay == "Nháp" &&
-                    kv.NgayTao < threeDaysAgo)
-                .OrderBy(kv => kv.NgayTao)
+                    kv.TrangThaiKhoanVay == "Từ chối" &&
+                    kv.NgayCapNhat >= DateTime.Now.AddDays(-7))
+                .OrderByDescending(kv => kv.NgayCapNhat)
                 .Take(5)
                 .Select(kv => new
                 {
-                    MaKhoanVay = kv.MaKhoanVay,
-                    MaKhoanVayCode = kv.MaKhoanVayCode,
-                    NgayTao = kv.NgayTao
+                    id = kv.MaKhoanVay,
+                    type = "rejected",
+                    title = "Khoản vay bị từ chối",
+                    message = $"Hồ sơ #{kv.MaKhoanVayCode} đã bị từ chối phê duyệt",
+                    date = kv.NgayCapNhat,
+                    icon = "x-circle",
+                    color = "#EF4444"
                 })
                 .ToListAsync();
 
-            var hoSoNhapCu = hoSoNhapCuData.Select(kv => new
-            {
-                id = kv.MaKhoanVay,
-                type = "draft",
-                title = "Hồ sơ nháp chờ hoàn thiện",
-                message = $"Hồ sơ #{kv.MaKhoanVayCode} đã nháp {(kv.NgayTao.HasValue ? (int)(DateTime.Now - kv.NgayTao.Value).TotalDays : 0)} ngày",
-                date = kv.NgayTao,
-                icon = "file-text"
-            }).ToList();
+            notifications.AddRange(hoSoBiTuChoi);
 
-            notifications.AddRange(hoSoNhapCu);
+            // 3. Nhắc nhở giải ngân (khoản vay đã duyệt quá 3 ngày chưa giải ngân)
+            var threeDaysAgo = DateTime.Now.AddDays(-3);
+            var canGiaiNgan = await _context.KhoanVays
+                .Where(kv => kv.MaNhanVienTinDung == maNguoiDung &&
+                    kv.TrangThaiKhoanVay == "Đã duyệt" &&
+                    kv.NgayCapNhat < threeDaysAgo)
+                .OrderBy(kv => kv.NgayCapNhat)
+                .Take(5)
+                .Select(kv => new
+                {
+                    id = kv.MaKhoanVay,
+                    type = "disbursement_reminder",
+                    title = "Nhắc nhở giải ngân",
+                    message = $"Hồ sơ #{kv.MaKhoanVayCode} đã duyệt, cần giải ngân sớm",
+                    date = kv.NgayCapNhat,
+                    icon = "clock",
+                    color = "#F59E0B"
+                })
+                .ToListAsync();
 
-            // 3. Hồ sơ yêu cầu bổ sung
+            notifications.AddRange(canGiaiNgan);
+
+            // 4. Khoản vay quá hạn thanh toán
+            var khoanVayQuaHan = await _context.KhoanVays
+                .Where(kv => kv.MaNhanVienTinDung == maNguoiDung &&
+                    (kv.TrangThaiKhoanVay == "Đã giải ngân" || kv.TrangThaiKhoanVay == "Đang trả nợ") &&
+                    kv.SoNgayQuaHan > 0)
+                .OrderByDescending(kv => kv.SoNgayQuaHan)
+                .Take(5)
+                .Select(kv => new
+                {
+                    id = kv.MaKhoanVay,
+                    type = "overdue",
+                    title = "Khoản vay quá hạn",
+                    message = $"Hồ sơ #{kv.MaKhoanVayCode} quá hạn {kv.SoNgayQuaHan} ngày",
+                    date = kv.NgayCapNhat,
+                    icon = "alert-triangle",
+                    color = "#EF4444"
+                })
+                .ToListAsync();
+
+            notifications.AddRange(khoanVayQuaHan);
+
+            // 5. Khoản vay sắp đến hạn thanh toán (trong 7 ngày)
+            var ngayHomNay = DateOnly.FromDateTime(DateTime.Now);
+            var ngay7NgaySau = DateOnly.FromDateTime(DateTime.Now.AddDays(7));
+            var sapDenHan = await _context.KhoanVays
+                .Where(kv => kv.MaNhanVienTinDung == maNguoiDung &&
+                    (kv.TrangThaiKhoanVay == "Đã giải ngân" || kv.TrangThaiKhoanVay == "Đang trả nợ") &&
+                    kv.NgayDaoHan.HasValue &&
+                    kv.NgayDaoHan.Value > ngayHomNay &&
+                    kv.NgayDaoHan.Value <= ngay7NgaySau)
+                .OrderBy(kv => kv.NgayDaoHan)
+                .Take(5)
+                .Select(kv => new
+                {
+                    id = kv.MaKhoanVay,
+                    type = "due_soon",
+                    title = "Sắp đến hạn thanh toán",
+                    message = $"Hồ sơ #{kv.MaKhoanVayCode} đến hạn vào {(kv.NgayDaoHan.HasValue ? kv.NgayDaoHan.Value.ToString("dd/MM/yyyy") : "N/A")}",
+                    date = kv.NgayCapNhat,
+                    icon = "calendar",
+                    color = "#3B82F6"
+                })
+                .ToListAsync();
+
+            notifications.AddRange(sapDenHan);
+
+            // 6. Hồ sơ yêu cầu bổ sung
             var hoSoBoSung = await _context.KhoanVays
                 .Where(kv => kv.MaNhanVienTinDung == maNguoiDung &&
                     kv.TrangThaiKhoanVay == "Chờ bổ sung")
@@ -234,16 +296,40 @@ namespace QuanLyRuiRoTinDung.Controllers
                     title = "Yêu cầu bổ sung hồ sơ",
                     message = $"Hồ sơ #{kv.MaKhoanVayCode} cần bổ sung thông tin",
                     date = kv.NgayCapNhat,
-                    icon = "alert-circle"
+                    icon = "alert-circle",
+                    color = "#8B5CF6"
                 })
                 .ToListAsync();
 
             notifications.AddRange(hoSoBoSung);
 
+            // 7. Hồ sơ nháp lâu ngày (quá 3 ngày chưa gửi duyệt)
+            var threeDaysAgoForDraft = DateTime.Now.AddDays(-3);
+            var hoSoNhapLauNgay = await _context.KhoanVays
+                .Where(kv => kv.MaNhanVienTinDung == maNguoiDung &&
+                    kv.TrangThaiKhoanVay == "Nháp" &&
+                    kv.NgayTao <= threeDaysAgoForDraft)
+                .OrderBy(kv => kv.NgayTao)
+                .Take(5)
+                .ToListAsync();
+
+            var hoSoNhapLauNgayNotifications = hoSoNhapLauNgay.Select(kv => new
+            {
+                id = kv.MaKhoanVay,
+                type = "draft_reminder",
+                title = "Hồ sơ nháp cần xử lý",
+                message = $"Hồ sơ #{kv.MaKhoanVayCode} đã lưu nháp {(kv.NgayTao.HasValue ? (int)(DateTime.Now - kv.NgayTao.Value).TotalDays : 0)} ngày, cần hoàn thiện và gửi duyệt",
+                date = kv.NgayTao,
+                icon = "file-text",
+                color = "#6366F1"
+            }).ToList();
+
+            notifications.AddRange(hoSoNhapLauNgayNotifications);
+
             // Sắp xếp theo ngày mới nhất
             var sortedNotifications = notifications
                 .OrderByDescending(n => ((dynamic)n).date)
-                .Take(10)
+                .Take(15)
                 .ToList();
 
             return Json(new { notifications = sortedNotifications, count = sortedNotifications.Count });

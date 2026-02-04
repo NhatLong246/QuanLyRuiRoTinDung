@@ -53,6 +53,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.EnableServiceProviderCaching(); // Cache service provider
 });
 
+// Add HttpClient for ZaloPay
+builder.Services.AddHttpClient("ZaloPay", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // Add Services
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
@@ -62,6 +68,14 @@ builder.Services.AddScoped<ICicService, CicService>();
 builder.Services.AddScoped<IRuiRoService, RuiRoService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IZaloPayService, ZaloPayService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Add Background Service for payment reminders
+builder.Services.AddHostedService<PaymentReminderBackgroundService>();
+
+// Add Background Service for overdue payment processing (CIC penalty, interest increase)
+builder.Services.AddHostedService<OverduePaymentBackgroundService>();
 
 var app = builder.Build();
 

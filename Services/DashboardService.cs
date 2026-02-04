@@ -69,37 +69,62 @@ namespace QuanLyRuiRoTinDung.Services
                         && k.NgayNopHoSo.Value.Date <= ngayHomNay)
                     .CountAsync();
 
-                // 6. Trạng thái khoản vay
-                var tongKhoanVayDangQuanLy = await _context.KhoanVays
+                // 6. Trạng thái khoản vay - Dựa trên LichSuTraNo
+                var ngayHomNayDateOnly = DateOnly.FromDateTime(ngayHomNay);
+                
+                // Lấy tất cả khoản vay đã giải ngân của nhân viên
+                // Các trạng thái được coi là đang hoạt động: Đã giải ngân, Đang vay, Đang trả nợ
+                var khoanVayDaGiaiNgan = await _context.KhoanVays
                     .Where(k => k.MaNhanVienTinDung == maNhanVien
-                        && (k.TrangThaiKhoanVay == "Đã giải ngân" || k.TrangThaiKhoanVay == "Đang trả nợ"))
-                    .CountAsync();
+                        && (k.TrangThaiKhoanVay == "Đã giải ngân" 
+                            || k.TrangThaiKhoanVay == "Đang vay"
+                            || k.TrangThaiKhoanVay == "Đang trả nợ"))
+                    .Select(k => k.MaKhoanVay)
+                    .ToListAsync();
+
+                var tongKhoanVayDangQuanLy = khoanVayDaGiaiNgan.Count;
 
                 if (tongKhoanVayDangQuanLy > 0)
                 {
-                    viewModel.DangHoatDong = await _context.KhoanVays
-                        .Where(k => k.MaNhanVienTinDung == maNhanVien
-                            && (k.TrangThaiKhoanVay == "Đã giải ngân" || k.TrangThaiKhoanVay == "Đang trả nợ")
-                            && (k.SoNgayQuaHan == null || k.SoNgayQuaHan == 0))
-                        .CountAsync();
+                    // Lấy các kỳ thanh toán chưa thanh toán của các khoản vay này
+                    var lichSuChuaThanhToan = await _context.LichSuTraNos
+                        .Where(l => khoanVayDaGiaiNgan.Contains(l.MaKhoanVay)
+                            && l.TrangThai != "Đã thanh toán")
+                        .ToListAsync();
 
-                    var ngayHomNayDateOnly = DateOnly.FromDateTime(ngayHomNay);
-                    var ngay7NgaySau = DateOnly.FromDateTime(ngayHomNay.AddDays(7));
-                    
-                    viewModel.DenHan7Ngay = await _context.KhoanVays
-                        .Where(k => k.MaNhanVienTinDung == maNhanVien
-                            && (k.TrangThaiKhoanVay == "Đã giải ngân" || k.TrangThaiKhoanVay == "Đang trả nợ")
-                            && k.NgayDaoHan.HasValue
-                            && k.NgayDaoHan.Value <= ngay7NgaySau
-                            && k.NgayDaoHan.Value > ngayHomNayDateOnly
-                            && (k.SoNgayQuaHan == null || k.SoNgayQuaHan == 0))
-                        .CountAsync();
+                    // Phân loại khoản vay
+                    var khoanVayQuaHanSet = new HashSet<int>(); // Có kỳ quá hạn (NgayTraDuKien < hôm nay)
+                    var khoanVayDenHanSet = new HashSet<int>(); // Có kỳ đến hạn hôm nay hoặc trong 7 ngày tới
+                    var khoanVayHoatDongSet = new HashSet<int>(khoanVayDaGiaiNgan); // Mặc định tất cả đang hoạt động
 
-                    viewModel.QuaHan = await _context.KhoanVays
-                        .Where(k => k.MaNhanVienTinDung == maNhanVien
-                            && (k.TrangThaiKhoanVay == "Đã giải ngân" || k.TrangThaiKhoanVay == "Đang trả nợ")
-                            && k.SoNgayQuaHan > 0)
-                        .CountAsync();
+                    foreach (var lichSu in lichSuChuaThanhToan)
+                    {
+                        if (lichSu.NgayTraDuKien < ngayHomNayDateOnly)
+                        {
+                            // Kỳ đã quá hạn
+                            khoanVayQuaHanSet.Add(lichSu.MaKhoanVay);
+                            khoanVayHoatDongSet.Remove(lichSu.MaKhoanVay);
+                        }
+                        else if (lichSu.NgayTraDuKien <= ngayHomNayDateOnly.AddDays(7))
+                        {
+                            // Kỳ đến hạn trong 7 ngày (bao gồm hôm nay)
+                            if (!khoanVayQuaHanSet.Contains(lichSu.MaKhoanVay))
+                            {
+                                khoanVayDenHanSet.Add(lichSu.MaKhoanVay);
+                                khoanVayHoatDongSet.Remove(lichSu.MaKhoanVay);
+                            }
+                        }
+                    }
+
+                    // Loại bỏ khoản vay quá hạn khỏi đến hạn (ưu tiên quá hạn)
+                    foreach (var maKV in khoanVayQuaHanSet)
+                    {
+                        khoanVayDenHanSet.Remove(maKV);
+                    }
+
+                    viewModel.DangHoatDong = khoanVayHoatDongSet.Count;
+                    viewModel.DenHan7Ngay = khoanVayDenHanSet.Count;
+                    viewModel.QuaHan = khoanVayQuaHanSet.Count;
 
                     // Tính phần trăm
                     viewModel.TyLeDangHoatDong = (double)viewModel.DangHoatDong / tongKhoanVayDangQuanLy * 100;
@@ -107,21 +132,48 @@ namespace QuanLyRuiRoTinDung.Services
                     viewModel.TyLeQuaHan = (double)viewModel.QuaHan / tongKhoanVayDangQuanLy * 100;
                 }
 
-                // 7. Cảnh báo cần chú ý
+                // 7. Cảnh báo cần chú ý - Chỉ lấy khoản vay quá hạn thanh toán
                 var khoanVayIds = await _context.KhoanVays
                     .Where(k => k.MaNhanVienTinDung == maNhanVien)
                     .Select(k => k.MaKhoanVay)
                     .ToListAsync();
 
-                viewModel.CanhBaos = await _context.CanhBaos
-                    .Where(c => c.MaKhoanVay != null
-                        && khoanVayIds.Contains(c.MaKhoanVay.Value)
-                        && (c.TrangThai == "Chưa xử lý" || c.TrangThai == null))
-                    .OrderByDescending(c => c.NgayCanhBao)
-                    .Take(5)
-                    .Include(c => c.MaLoaiCanhBaoNavigation)
-                    .Include(c => c.MaKhoanVayNavigation)
+                // Lấy khoản vay quá hạn thanh toán
+                var khoanVayQuaHan = await _context.KhoanVays
+                    .Where(k => k.MaNhanVienTinDung == maNhanVien
+                        && (k.TrangThaiKhoanVay == "Đã giải ngân" 
+                            || k.TrangThaiKhoanVay == "Đang vay"
+                            || k.TrangThaiKhoanVay == "Đang trả nợ")
+                        && k.SoNgayQuaHan > 0)
+                    .OrderByDescending(k => k.SoNgayQuaHan)
+                    .Take(10)
                     .ToListAsync();
+
+                // Chuyển đổi khoản vay quá hạn thành cảnh báo
+                viewModel.CanhBaos = new List<CanhBao>();
+                foreach (var kv in khoanVayQuaHan)
+                {
+                    var mucDoNghiemTrong = kv.SoNgayQuaHan switch
+                    {
+                        > 90 => "Khẩn cấp",
+                        > 60 => "Rất cao",
+                        > 30 => "Cao",
+                        > 7 => "Trung bình",
+                        _ => "Thấp"
+                    };
+
+                    viewModel.CanhBaos.Add(new CanhBao
+                    {
+                        MaCanhBao = kv.MaKhoanVay,
+                        MaKhoanVay = kv.MaKhoanVay,
+                        TieuDe = $"Khoản vay #{kv.MaKhoanVayCode} quá hạn {kv.SoNgayQuaHan} ngày",
+                        NoiDung = $"Khách hàng chưa thanh toán đúng hạn. Số tiền: {kv.SoTienVay:N0} VNĐ",
+                        MucDoNghiemTrong = mucDoNghiemTrong,
+                        NgayCanhBao = DateTime.Now,
+                        TrangThai = "Chưa xử lý",
+                        MaKhoanVayNavigation = kv
+                    });
+                }
 
                 // 8. Hồ sơ vay cần xử lý
                 var hoSoVayList = await _context.KhoanVays

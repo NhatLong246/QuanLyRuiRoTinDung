@@ -208,7 +208,7 @@
                         : ("Không xác định", "CaNhan", "", (string?)null);
                     var isMyLoan = loan.MaNhanVienTinDung == maNhanVien;
                     
-                    <div class="loan-card @(isMyLoan ? "my-loan" : "")">
+                    <div class="loan-card @(isMyLoan ? "my-loan" : "") @(loan.TrangThaiKhoanVay == "Từ chối" ? "rejected-loan" : "")">
                         <div class="card-header">
                             <div class="loan-code-wrapper">
                                 <span class="loan-code">@loan.MaKhoanVayCode</span>
@@ -217,6 +217,16 @@
                                     <span class="my-loan-badge" title="Hồ sơ của tôi">
                                         <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                                             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                        </svg>
+                                    </span>
+                                }
+                                @if (loan.TrangThaiKhoanVay == "Từ chối")
+                                {
+                                    <span class="rejected-badge" title="Hồ sơ bị từ chối">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <line x1="15" y1="9" x2="9" y2="15"/>
+                                            <line x1="9" y1="9" x2="15" y2="15"/>
                                         </svg>
                                     </span>
                                 }
@@ -332,6 +342,17 @@
                                 </svg>
                                 <span>Xem</span>
                             </a>
+                            @if (loan.TrangThaiKhoanVay == "Từ chối")
+                            {
+                                <button onclick="showRejectionReason('@loan.MaKhoanVayCode', '@(loan.LyDoTuChoi?.Replace("'", "\\'").Replace("\n", "\\n") ?? "Không có lý do được ghi nhận")')" class="btn-action btn-rejection-reason" title="Xem lý do từ chối">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="12" y1="8" x2="12" y2="12"/>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                    </svg>
+                                    <span>Lý do</span>
+                                </button>
+                            }
                             @if (loan.TrangThaiKhoanVay == "Nháp" && isMyLoan)
                             {
                                 <a href="@Url.Action("Edit", "Loan", new { loanId = loan.MaKhoanVay })" class="btn-action btn-edit" title="Chỉnh sửa">
@@ -1543,7 +1564,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 10000;
     animation: fadeIn 0.3s ease;
 }
 
@@ -1687,6 +1708,123 @@
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
+/* Modal Dialog Styles for Rejection Modal */
+.modal-dialog {
+    background: white;
+    border-radius: 16px;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: visible;
+    position: relative;
+    z-index: 10001;
+}
+
+.modal-header {
+    padding: 24px 24px 16px;
+    text-align: center;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header.rejection-header {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+}
+
+.modal-header .modal-icon {
+    margin-bottom: 12px;
+}
+
+.modal-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 8px 0;
+}
+
+.modal-header p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.rejection-reason-box {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.rejection-reason-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.rejection-reason-label svg {
+    width: 18px;
+    height: 18px;
+    color: #6b7280;
+}
+
+.rejection-reason-content {
+    font-size: 15px;
+    color: #1f2937;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.modal-footer {
+    padding: 16px 24px 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    position: relative;
+    z-index: 10002;
+}
+
+.modal-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    pointer-events: auto;
+    position: relative;
+    z-index: 10003;
+}
+
+.modal-btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.modal-btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.modal-btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.modal-btn-secondary:hover {
+    background: #e5e7eb;
+}
+
 /* ==================== RESPONSIVE ==================== */
 @@media (max-width: 768px) {
     .page-header {
@@ -1828,12 +1966,24 @@ function closeResultModal() {
     document.getElementById('resultModal').style.display = 'none';
 }
 
+// Show Rejection Reason Modal
+function showRejectionReason(loanCode, reason) {
+    document.getElementById('rejectionLoanCode').textContent = loanCode;
+    document.getElementById('rejectionReasonText').textContent = reason;
+    document.getElementById('rejectionModal').style.display = 'flex';
+}
+
+function closeRejectionModal() {
+    document.getElementById('rejectionModal').style.display = 'none';
+}
+
 // Close modals on escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeDeleteModal();
         closeCancelModal();
         closeResultModal();
+        closeRejectionModal();
     }
 });
 
@@ -1846,3 +1996,130 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
     });
 });
 </script>
+
+<!-- Rejection Reason Modal -->
+<div id="rejectionModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-header rejection-header">
+            <div class="modal-icon error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </div>
+            <h3>Lý do từ chối hồ sơ</h3>
+            <p>Hồ sơ <strong id="rejectionLoanCode"></strong></p>
+        </div>
+        <div class="modal-body">
+            <div class="rejection-reason-box">
+                <div class="rejection-reason-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"/>
+                    </svg>
+                    Nội dung từ chối từ lãnh đạo:
+                </div>
+                <div class="rejection-reason-content" id="rejectionReasonText">
+                    Không có lý do được ghi nhận
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-btn modal-btn-primary" onclick="closeRejectionModal()">
+                Đã hiểu
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Rejected Loan Card Styling */
+.loan-card.rejected-loan {
+    border: 2px solid #fecaca;
+    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.15);
+}
+
+.loan-card.rejected-loan:hover {
+    border-color: #f87171;
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.2);
+}
+
+.loan-card.rejected-loan .card-header {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.loan-card.rejected-loan .loan-code {
+    color: #dc2626;
+}
+
+.rejected-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #dc2626;
+    color: white;
+    border-radius: 50%;
+    margin-left: 6px;
+}
+
+.rejected-badge svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Rejection Reason Button */
+.btn-rejection-reason {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.btn-rejection-reason:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    border-color: #dc2626;
+}
+
+/* Rejection Modal Styling */
+.rejection-header {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+}
+
+.rejection-header h3,
+.rejection-header p {
+    color: #7f1d1d !important;
+}
+
+.rejection-reason-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.rejection-reason-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #b91c1c;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.rejection-reason-label svg {
+    width: 18px;
+    height: 18px;
+}
+
+.rejection-reason-content {
+    color: #7f1d1d;
+    font-size: 15px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+</style>

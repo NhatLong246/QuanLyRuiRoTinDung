@@ -400,72 +400,72 @@ namespace QuanLyRuiRoTinDung.Controllers
             return View();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return View(model);
+        //    }
 
-            try
-            {
-                // Tìm người dùng theo email
-                var nguoiDung = await _context.NguoiDungs
-                    .FirstOrDefaultAsync(u => u.Email != null && u.Email.Trim().ToLower() == model.Email.Trim().ToLower());
+        //    try
+        //    {
+        //        // Tìm người dùng theo email
+        //        var nguoiDung = await _context.NguoiDungs
+        //            .FirstOrDefaultAsync(u => u.Email != null && u.Email.Trim().ToLower() == model.Email.Trim().ToLower());
 
-                // Luôn hiển thị thông báo thành công để bảo mật (không tiết lộ email có tồn tại hay không)
-                if (nguoiDung == null)
-                {
-                    _logger.LogWarning("Password reset requested for non-existent email: {Email}", model.Email);
-                    TempData["SuccessMessage"] = "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được mã xác nhận qua email.";
-                    return RedirectToAction("ForgotPassword");
-                }
+        //        // Luôn hiển thị thông báo thành công để bảo mật (không tiết lộ email có tồn tại hay không)
+        //        if (nguoiDung == null)
+        //        {
+        //            _logger.LogWarning("Password reset requested for non-existent email: {Email}", model.Email);
+        //            TempData["SuccessMessage"] = "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được mã xác nhận qua email.";
+        //            return RedirectToAction("ForgotPassword");
+        //        }
 
-                // Kiểm tra tài khoản có đang hoạt động không
-                if (nguoiDung.TrangThaiHoatDong == false)
-                {
-                    _logger.LogWarning("Password reset requested for inactive account: {Email}", model.Email);
-                    TempData["SuccessMessage"] = "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được mã xác nhận qua email.";
-                    return RedirectToAction("ForgotPassword");
-                }
+        //        // Kiểm tra tài khoản có đang hoạt động không
+        //        if (nguoiDung.TrangThaiHoatDong == false)
+        //        {
+        //            _logger.LogWarning("Password reset requested for inactive account: {Email}", model.Email);
+        //            TempData["SuccessMessage"] = "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được mã xác nhận qua email.";
+        //            return RedirectToAction("ForgotPassword");
+        //        }
 
-                // Tạo mã OTP 6 chữ số
-                var random = new Random();
-                var otpCode = random.Next(100000, 999999).ToString();
+        //        // Tạo mã OTP 6 chữ số
+        //        var random = new Random();
+        //        var otpCode = random.Next(100000, 999999).ToString();
 
-                // Lưu mã OTP và thông tin vào session (hết hạn sau 10 phút)
-                HttpContext.Session.SetString($"OtpCode_{model.Email.ToLower()}", otpCode);
-                HttpContext.Session.SetString($"OtpEmail_{model.Email.ToLower()}", model.Email);
-                HttpContext.Session.SetString($"OtpUserId_{model.Email.ToLower()}", nguoiDung.MaNguoiDung.ToString());
-                HttpContext.Session.SetString($"OtpExpiry_{model.Email.ToLower()}", DateTime.UtcNow.AddMinutes(10).ToString("O"));
+        //        // Lưu mã OTP và thông tin vào session (hết hạn sau 10 phút)
+        //        HttpContext.Session.SetString($"OtpCode_{model.Email.ToLower()}", otpCode);
+        //        HttpContext.Session.SetString($"OtpEmail_{model.Email.ToLower()}", model.Email);
+        //        HttpContext.Session.SetString($"OtpUserId_{model.Email.ToLower()}", nguoiDung.MaNguoiDung.ToString());
+        //        HttpContext.Session.SetString($"OtpExpiry_{model.Email.ToLower()}", DateTime.UtcNow.AddMinutes(10).ToString("O"));
 
-                // Gửi email chứa mã OTP
-                var emailSent = await _emailService.SendOtpEmailAsync(nguoiDung.Email!, nguoiDung.HoTen, otpCode);
+        //        // Gửi email chứa mã OTP
+        //        var emailSent = await _emailService.SendOtpEmailAsync(nguoiDung.Email!, nguoiDung.HoTen, otpCode);
 
-                if (emailSent)
-                {
-                    _logger.LogInformation("OTP email sent successfully to {Email}", model.Email);
-                    TempData["SuccessMessage"] = "Chúng tôi đã gửi mã xác nhận đến email của bạn. Vui lòng kiểm tra hộp thư (cả thư mục Spam).";
-                    TempData["EmailForOtp"] = model.Email;
-                    return RedirectToAction("VerifyOtp", new { email = model.Email });
-                }
-                else
-                {
-                    _logger.LogError("Failed to send OTP email to {Email}", model.Email);
-                    TempData["ErrorMessage"] = "Không thể gửi email. Vui lòng kiểm tra cấu hình email hoặc thử lại sau.";
-                }
+        //        if (emailSent)
+        //        {
+        //            _logger.LogInformation("OTP email sent successfully to {Email}", model.Email);
+        //            TempData["SuccessMessage"] = "Chúng tôi đã gửi mã xác nhận đến email của bạn. Vui lòng kiểm tra hộp thư (cả thư mục Spam).";
+        //            TempData["EmailForOtp"] = model.Email;
+        //            return RedirectToAction("VerifyOtp", new { email = model.Email });
+        //        }
+        //        else
+        //        {
+        //            _logger.LogError("Failed to send OTP email to {Email}", model.Email);
+        //            TempData["ErrorMessage"] = "Không thể gửi email. Vui lòng kiểm tra cấu hình email hoặc thử lại sau.";
+        //        }
 
-                return RedirectToAction("ForgotPassword");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing forgot password request for email: {Email}", model.Email);
-                TempData["ErrorMessage"] = "Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại sau.";
-                return View(model);
-            }
-        }
+        //        return RedirectToAction("ForgotPassword");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error processing forgot password request for email: {Email}", model.Email);
+        //        TempData["ErrorMessage"] = "Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại sau.";
+        //        return View(model);
+        //    }
+        //}
 
         [HttpGet]
         public IActionResult VerifyOtp(string? email)

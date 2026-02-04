@@ -955,8 +955,20 @@
             });
         }
 
+        // Biến toàn cục để lưu thông tin khoản vay hiện tại
+        window.currentLoanInfo = null;
+
         function displayAssessmentDetail(data) {
             const khoanVay = data.khoanVay;
+            
+            // Lưu thông tin khoản vay vào biến toàn cục
+            window.currentLoanInfo = {
+                loaiVay: data.loaiVay ? data.loaiVay.tenLoaiVay : null,
+                maLoaiVay: khoanVay.maLoaiVay,
+                coTaiSanDamBao: data.taiSanDamBaos && data.taiSanDamBaos.length > 0,
+                soTienVay: khoanVay.soTienVay,
+                kyHanVay: khoanVay.kyHanVay
+            };
             
             // Thông tin khoản vay
             $('#detailMaKhoanVay').text(khoanVay.maKhoanVayCode);
@@ -2094,7 +2106,7 @@ $('body').append(modalHtml);
             const dateValue = $('#dateInput').val();
             
             if (!dateValue) {
-                alert('Vui lòng chọn ngày!');
+                showAlertModal('Vui lòng chọn ngày!', 'warning');
                 return;
             }
             
@@ -2123,15 +2135,15 @@ $('body').append(modalHtml);
                     closeDateEditDialog();
                     showNotification('Đã cập nhật thành công!', 'success');
                 } else {
-                    alert('Lỗi: ' + (result.message || 'Không thể cập nhật'));
+                    showAlertModal('Lỗi: ' + (result.message || 'Không thể cập nhật'), 'error');
                 }
             } catch (error) {
                 console.error('Lỗi khi cập nhật:', error);
-                alert('Có lỗi xảy ra khi cập nhật!');
+                showAlertModal('Có lỗi xảy ra khi cập nhật!', 'error');
             }
         }
         
-        // Hàm hiển thị thông báo
+        // Hàm hiển thị thông báo toast
         function showNotification(message, type = 'info') {
             const colors = {
                 'success': '#10b981',
@@ -2154,6 +2166,194 @@ $('body').append(modalHtml);
                     $(this).remove();
                 });
             }, 3000);
+        }
+
+        // Hàm hiển thị modal thông báo (thay thế alert)
+        function showAlertModal(message, type = 'info', onClose = null) {
+            const icons = {
+                'success': '<i class="fas fa-check-circle" style="color: #10b981; font-size: 48px;"></i>',
+                'error': '<i class="fas fa-times-circle" style="color: #ef4444; font-size: 48px;"></i>',
+                'warning': '<i class="fas fa-exclamation-triangle" style="color: #f59e0b; font-size: 48px;"></i>',
+                'info': '<i class="fas fa-info-circle" style="color: #3b82f6; font-size: 48px;"></i>'
+            };
+
+            const titles = {
+                'success': 'Thành công',
+                'error': 'Lỗi',
+                'warning': 'Cảnh báo',
+                'info': 'Thông báo'
+            };
+
+            // Xóa modal cũ nếu có
+            $('.custom-alert-modal-overlay').remove();
+
+            const modalHtml = `
+                <div class="custom-alert-modal-overlay" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 20000;
+                    animation: fadeIn 0.2s ease;
+                ">
+                    <div class="custom-alert-modal" style="
+                        background: white;
+                        border-radius: 16px;
+                        padding: 30px;
+                        max-width: 400px;
+                        width: 90%;
+                        text-align: center;
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                        animation: scaleIn 0.3s ease;
+                    ">
+                        <div style="margin-bottom: 20px;">
+                            ${icons[type] || icons['info']}
+                        </div>
+                        <h4 style="margin: 0 0 15px 0; color: #1f2937; font-size: 20px; font-weight: 600;">
+                            ${titles[type] || titles['info']}
+                        </h4>
+                        <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 15px; line-height: 1.6;">
+                            ${message}
+                        </p>
+                        <button onclick="closeAlertModal()" style="
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            padding: 12px 40px;
+                            border-radius: 8px;
+                            font-size: 15px;
+                            font-weight: 500;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)';"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';">
+                            Đã hiểu
+                        </button>
+                    </div>
+                </div>
+                <style>
+                    @@keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @@keyframes scaleIn {
+                        from { transform: scale(0.8); opacity: 0; }
+                        to { transform: scale(1); opacity: 1; }
+                    }
+                </style>
+            `;
+
+            $('body').append(modalHtml);
+            window.alertModalCallback = onClose;
+        }
+
+        function closeAlertModal() {
+            const overlay = $('.custom-alert-modal-overlay');
+            overlay.fadeOut(200, function() {
+                $(this).remove();
+                if (window.alertModalCallback) {
+                    window.alertModalCallback();
+                    window.alertModalCallback = null;
+                }
+            });
+        }
+
+        // Hàm hiển thị modal xác nhận (thay thế confirm)
+        function showConfirmModal(message, onConfirm, onCancel = null) {
+            // Xóa modal cũ nếu có
+            $('.custom-confirm-modal-overlay').remove();
+
+            const modalHtml = `
+                <div class="custom-confirm-modal-overlay" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 20000;
+                    animation: fadeIn 0.2s ease;
+                ">
+                    <div class="custom-confirm-modal" style="
+                        background: white;
+                        border-radius: 16px;
+                        padding: 30px;
+                        max-width: 420px;
+                        width: 90%;
+                        text-align: center;
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                        animation: scaleIn 0.3s ease;
+                    ">
+                        <div style="margin-bottom: 20px;">
+                            <i class="fas fa-question-circle" style="color: #3b82f6; font-size: 48px;"></i>
+                        </div>
+                        <h4 style="margin: 0 0 15px 0; color: #1f2937; font-size: 20px; font-weight: 600;">
+                            Xác nhận
+                        </h4>
+                        <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 15px; line-height: 1.6;">
+                            ${message}
+                        </p>
+                        <div style="display: flex; gap: 12px; justify-content: center;">
+                            <button onclick="closeConfirmModal(false)" style="
+                                background: #f3f4f6;
+                                color: #374151;
+                                border: 1px solid #d1d5db;
+                                padding: 12px 30px;
+                                border-radius: 8px;
+                                font-size: 15px;
+                                font-weight: 500;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.background='#e5e7eb';"
+                               onmouseout="this.style.background='#f3f4f6';">
+                                <i class="fas fa-times mr-2"></i> Hủy
+                            </button>
+                            <button onclick="closeConfirmModal(true)" style="
+                                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                color: white;
+                                border: none;
+                                padding: 12px 30px;
+                                border-radius: 8px;
+                                font-size: 15px;
+                                font-weight: 500;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+                            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(16, 185, 129, 0.5)';"
+                               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(16, 185, 129, 0.4)';">
+                                <i class="fas fa-check mr-2"></i> Xác nhận
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('body').append(modalHtml);
+            window.confirmModalCallbackConfirm = onConfirm;
+            window.confirmModalCallbackCancel = onCancel;
+        }
+
+        function closeConfirmModal(confirmed) {
+            const overlay = $('.custom-confirm-modal-overlay');
+            overlay.fadeOut(200, function() {
+                $(this).remove();
+                if (confirmed && window.confirmModalCallbackConfirm) {
+                    window.confirmModalCallbackConfirm();
+                } else if (!confirmed && window.confirmModalCallbackCancel) {
+                    window.confirmModalCallbackCancel();
+                }
+                window.confirmModalCallbackConfirm = null;
+                window.confirmModalCallbackCancel = null;
+            });
         }
 
         function closeAssessmentModal() {
@@ -2253,6 +2453,10 @@ $('body').append(modalHtml);
                 if (result.success && result.data) {
                     displayCicInfo(result.data);
                     $('#cicInfoSection').slideDown();
+                    
+                    // Tự động điền đánh giá rủi ro dựa trên CIC cho khoản vay không có tài sản đảm bảo
+                    // (ví dụ: vay sinh viên, vay tín chấp doanh nghiệp)
+                    autoFillRiskAssessmentFromCIC(result.data);
                 } else {
                     $('#cicInfoContent').html(`
                         <div class="text-warning">
@@ -2264,8 +2468,129 @@ $('body').append(modalHtml);
                 }
             } catch (error) {
                 console.error('Lỗi khi lấy thông tin CIC:', error);
-                alert('Có lỗi xảy ra khi lấy thông tin CIC: ' + error.message);
+                showAlertModal('Có lỗi xảy ra khi lấy thông tin CIC: ' + error.message, 'error');
             }
+        }
+
+        // Hàm tự động điền đánh giá rủi ro dựa trên CIC cho khoản vay không có tài sản đảm bảo
+        function autoFillRiskAssessmentFromCIC(cic) {
+            // Kiểm tra xem khoản vay có tài sản đảm bảo không
+            const loanInfo = window.currentLoanInfo;
+            if (!loanInfo) return;
+
+            // Chỉ tự động điền cho các khoản vay:
+            // 1. Không có tài sản đảm bảo (vay tín chấp)
+            // 2. Hoặc là loại vay sinh viên
+            const loaiVay = (loanInfo.loaiVay || '').toLowerCase();
+            const isVaySinhVien = loaiVay.includes('sinh viên') || loaiVay.includes('sinh vien');
+            const isVayTinChap = loaiVay.includes('tín chấp') || loaiVay.includes('tin chap');
+            const khongCoTaiSan = !loanInfo.coTaiSanDamBao;
+
+            if (!isVaySinhVien && !isVayTinChap && !khongCoTaiSan) {
+                // Có tài sản đảm bảo và không phải vay sinh viên/tín chấp -> không tự động điền
+                return;
+            }
+
+            // Tính toán đánh giá rủi ro dựa trên điểm CIC
+            const diemCIC = cic.diemTinDungCic || 0;
+            const tyLeTraNoDungHan = cic.tyLeTraNoDungHanCic || 0;
+            const soKhoanVayQuaHan = cic.soKhoanVayQuaHanCic || 0;
+            const soKhoanVayNoXau = cic.soKhoanVayNoXauCic || 0;
+            const khuyenNghiCIC = cic.khuyenNghiChoVay || '';
+
+            // Thuật toán tính điểm rủi ro dựa trên CIC (thang 0-100, điểm càng thấp càng tốt)
+            let tongDiemRuiRo = 0;
+            let mucDoRuiRo = '';
+            let xepHang = '';
+            let kienNghi = '';
+            let nhanXet = '';
+
+            // 1. Điểm CIC (chiếm 50% trọng số) - điểm CIC từ 0-1000
+            // Điểm CIC cao = rủi ro thấp
+            const diemTuCIC = Math.max(0, 50 - (diemCIC / 1000 * 50)); // 0-50 điểm
+
+            // 2. Tỷ lệ trả nợ đúng hạn (chiếm 25% trọng số)
+            // Tỷ lệ cao = rủi ro thấp
+            const diemTuTyLe = Math.max(0, 25 - (tyLeTraNoDungHan / 100 * 25)); // 0-25 điểm
+
+            // 3. Số khoản vay quá hạn và nợ xấu (chiếm 25% trọng số)
+            const diemTuQuaHan = Math.min(25, soKhoanVayQuaHan * 5 + soKhoanVayNoXau * 10); // 0-25 điểm
+
+            tongDiemRuiRo = Math.round((diemTuCIC + diemTuTyLe + diemTuQuaHan) * 10) / 10;
+
+            // Xác định mức độ rủi ro và xếp hạng
+            if (diemCIC >= 800 && tyLeTraNoDungHan >= 95 && soKhoanVayNoXau === 0) {
+                mucDoRuiRo = 'Thấp';
+                xepHang = 'AAA';
+                kienNghi = 'Chấp thuận';
+            } else if (diemCIC >= 700 && tyLeTraNoDungHan >= 85 && soKhoanVayNoXau === 0) {
+                mucDoRuiRo = 'Thấp';
+                xepHang = 'AA';
+                kienNghi = 'Chấp thuận';
+            } else if (diemCIC >= 600 && tyLeTraNoDungHan >= 75 && soKhoanVayNoXau <= 1) {
+                mucDoRuiRo = 'Trung bình';
+                xepHang = 'A';
+                kienNghi = 'Chấp thuận';
+            } else if (diemCIC >= 500 && tyLeTraNoDungHan >= 65) {
+                mucDoRuiRo = 'Trung bình';
+                xepHang = 'BBB';
+                kienNghi = 'Cân nhắc';
+            } else if (diemCIC >= 400 && tyLeTraNoDungHan >= 50) {
+                mucDoRuiRo = 'Cao';
+                xepHang = 'BB';
+                kienNghi = 'Cân nhắc';
+            } else if (diemCIC >= 300) {
+                mucDoRuiRo = 'Cao';
+                xepHang = 'B';
+                kienNghi = 'Từ chối';
+            } else if (diemCIC >= 200) {
+                mucDoRuiRo = 'Rất cao';
+                xepHang = 'C';
+                kienNghi = 'Từ chối';
+            } else {
+                mucDoRuiRo = 'Rất cao';
+                xepHang = 'D';
+                kienNghi = 'Từ chối';
+            }
+
+            // Điều chỉnh theo khuyến nghị CIC
+            if (khuyenNghiCIC === 'KhongChoVay' && kienNghi !== 'Từ chối') {
+                kienNghi = 'Cân nhắc';
+            }
+
+            // Tạo nhận xét tự động
+            nhanXet = `📊 ĐÁNH GIÁ RỦI RO DỰA TRÊN ĐIỂM CIC (Tự động)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📌 LOẠI KHOẢN VAY: ${loanInfo.loaiVay || 'N/A'}
+${khongCoTaiSan ? '⚠️ Đây là khoản vay KHÔNG CÓ TÀI SẢN ĐẢM BẢO\n' : ''}
+📈 THÔNG TIN CIC:
+• Điểm tín dụng CIC: ${diemCIC}/1000
+• Xếp hạng tín dụng CIC: ${cic.xepHangTinDungCic || 'N/A'}
+• Tỷ lệ trả nợ đúng hạn: ${tyLeTraNoDungHan}%
+• Số khoản vay quá hạn: ${soKhoanVayQuaHan}
+• Số khoản vay nợ xấu: ${soKhoanVayNoXau}
+• Tổng dư nợ hiện tại: ${formatCurrency(cic.tongDuNoCic || 0)}
+
+🔍 PHÂN TÍCH:
+• Điểm từ CIC: ${diemTuCIC.toFixed(1)}/50
+• Điểm từ tỷ lệ trả nợ: ${diemTuTyLe.toFixed(1)}/25  
+• Điểm từ nợ quá hạn: ${diemTuQuaHan.toFixed(1)}/25
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 TỔNG ĐIỂM RỦI RO: ${tongDiemRuiRo}/100
+
+💡 KHUYẾN NGHỊ TỪ CIC: ${khuyenNghiCIC === 'ChoVay' ? '✅ Cho vay' : khuyenNghiCIC === 'KhongChoVay' ? '❌ Không cho vay' : '⚠️ Cần thận trọng'}
+${cic.lyDoKhuyenNghi ? `Lý do: ${cic.lyDoKhuyenNghi}` : ''}`;
+
+            // Điền vào form
+            $('#assessTongDiem').val(tongDiemRuiRo);
+            $('#assessMucDoRuiRo').val(mucDoRuiRo);
+            $('#assessXepHang').val(xepHang);
+            $('#assessKienNghi').val(kienNghi);
+            $('#assessNhanXet').val(nhanXet);
+
+            // Hiển thị thông báo
+            showNotification(`✅ Đã tự động điền đánh giá rủi ro dựa trên điểm CIC (${diemCIC} điểm)`, 'success');
         }
 
         function displayCicInfo(cic) {
@@ -2411,13 +2736,13 @@ $('body').append(modalHtml);
                 // Validate
                 if (!$('#assessTongDiem').val() || !$('#assessMucDoRuiRo').val() || 
                     !$('#assessXepHang').val() || !$('#assessKienNghi').val()) {
-                    alert('Vui lòng điền đầy đủ các trường bắt buộc!');
+                    showAlertModal('Vui lòng điền đầy đủ các trường bắt buộc!', 'warning');
                     return;
                 }
 
-                if (confirm('Bạn có chắc chắn muốn hoàn thành đánh giá này?')) {
+                showConfirmModal('Bạn có chắc chắn muốn hoàn thành đánh giá này?', function() {
                     saveAssessment('Đã đánh giá');
-                }
+                });
             });
 
             // Đóng modal khi click bên ngoài

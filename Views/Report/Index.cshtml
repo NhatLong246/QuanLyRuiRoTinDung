@@ -13,6 +13,32 @@
     var trendData = ViewBag.TrendData as TrendData ?? new TrendData();
     var selectedYear = ViewBag.SelectedYear as int? ?? DateTime.Now.Year;
     var employeeName = ViewBag.EmployeeName as string ?? "Nhân viên";
+    
+    // New chart data
+    var paymentStatusData = ViewBag.PaymentStatusData as List<PaymentStatusData> ?? new List<PaymentStatusData>();
+    var disbursementTrendData = ViewBag.DisbursementTrendData as List<DisbursementTrendData> ?? new List<DisbursementTrendData>();
+    var collectionRateData = ViewBag.CollectionRateData as CollectionRateData ?? new CollectionRateData();
+    var loanAmountRangeData = ViewBag.LoanAmountRangeData as List<LoanAmountRangeData> ?? new List<LoanAmountRangeData>();
+    
+    // Helper function để format số tiền
+    Func<decimal, string> formatMoney = (amount) => {
+        if (amount >= 1000000000) // >= 1 tỷ
+        {
+            return (amount / 1000000000).ToString("N2") + " tỷ";
+        }
+        else if (amount >= 1000000) // >= 1 triệu
+        {
+            return (amount / 1000000).ToString("N1") + " triệu";
+        }
+        else if (amount >= 1000) // >= 1 nghìn
+        {
+            return (amount / 1000).ToString("N0") + " nghìn";
+        }
+        else
+        {
+            return amount.ToString("N0") + " đ";
+        }
+    };
 }
 
 <style>
@@ -233,6 +259,11 @@
         gap: 6px;
         min-width: 120px;
         flex: 0 1 auto;
+        transition: all 0.3s ease;
+    }
+
+    .filter-group.hidden {
+        display: none !important;
     }
 
     .filter-group label {
@@ -759,6 +790,158 @@
         .stats-row { grid-template-columns: repeat(2, 1fr); }
         .charts-row-3 { grid-template-columns: 1fr; }
     }
+
+    /* Export Toast Styles */
+    .export-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        z-index: 10000;
+        animation: slideInRight 0.3s ease-out;
+        max-width: 450px;
+    }
+
+    .export-toast-success {
+        border-left: 4px solid var(--success);
+    }
+
+    .export-toast-error {
+        border-left: 4px solid var(--danger);
+    }
+
+    .export-toast-icon {
+        font-size: 24px;
+    }
+
+    .export-toast-success .export-toast-icon {
+        color: var(--success);
+    }
+
+    .export-toast-error .export-toast-icon {
+        color: var(--danger);
+    }
+
+    .export-toast-content {
+        flex: 1;
+    }
+
+    .export-toast-title {
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 4px;
+    }
+
+    .export-toast-message {
+        font-size: 13px;
+        color: var(--gray-500);
+        word-break: break-all;
+    }
+
+    .export-toast-close {
+        background: none;
+        border: none;
+        color: var(--gray-400);
+        cursor: pointer;
+        padding: 4px;
+        font-size: 14px;
+    }
+
+    .export-toast-close:hover {
+        color: var(--gray-600);
+    }
+
+    .export-toast-hide {
+        animation: slideOutRight 0.3s ease-out forwards;
+    }
+
+    @@keyframes slideOutRight {
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+
+    /* Notification Modal Styles */
+    .notification-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .notification-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .notification-modal {
+        background: white;
+        border-radius: 20px;
+        padding: 32px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        transform: scale(0.9) translateY(-20px);
+        transition: all 0.3s ease;
+    }
+
+    .notification-modal-overlay.active .notification-modal {
+        transform: scale(1) translateY(0);
+    }
+
+    .notification-modal-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .notification-modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 8px;
+    }
+
+    .notification-modal-message {
+        font-size: 14px;
+        color: var(--gray-500);
+        margin-bottom: 24px;
+        line-height: 1.6;
+        word-break: break-word;
+    }
+
+    .notification-modal-btn {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%);
+        color: white;
+        border: none;
+        padding: 12px 48px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .notification-modal-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
 </style>
 
 <div class="report-page">
@@ -782,16 +965,6 @@
                 </div>
             </div>
             <div class="header-actions">
-                <button class="btn-export" onclick="exportReport('pdf')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
-                        <path d="M16 13H8"/>
-                        <path d="M16 17H8"/>
-                        <path d="M10 9H8"/>
-                    </svg>
-                    Xuất PDF
-                </button>
                 <button class="btn-export" onclick="exportReport('excel')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
@@ -816,7 +989,8 @@
             Bộ lọc báo cáo
         </div>
         <div class="filter-grid">
-            <div class="filter-group">
+            <!-- Năm - luôn hiển thị khi lọc theo năm/quý/tháng -->
+            <div class="filter-group" id="yearGroup">
                 <label>Năm</label>
                 <select id="yearFilter">
                     @foreach (var y in Model.AvailableYears)
@@ -832,9 +1006,10 @@
                     }
                 </select>
             </div>
-            <div class="filter-group">
+            <!-- Quý -->
+            <div class="filter-group" id="quarterGroup">
                 <label>Quý</label>
-                <select id="quarterFilter">
+                <select id="quarterFilter" onchange="onFilterTypeChange('quarter')">
                     <option value="">Tất cả</option>
                     @for (int q = 1; q <= 4; q++)
                     {
@@ -849,9 +1024,10 @@
                     }
                 </select>
             </div>
-            <div class="filter-group">
+            <!-- Tháng -->
+            <div class="filter-group" id="monthGroup">
                 <label>Tháng</label>
-                <select id="monthFilter">
+                <select id="monthFilter" onchange="onFilterTypeChange('month')">
                     <option value="">Tất cả</option>
                     @for (int m = 1; m <= 12; m++)
                     {
@@ -866,13 +1042,14 @@
                     }
                 </select>
             </div>
-            <div class="filter-group">
+            <!-- Khoảng thời gian -->
+            <div class="filter-group" id="fromDateGroup">
                 <label>Từ ngày</label>
-                <input type="date" id="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd") ?? "")">
+                <input type="date" id="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd") ?? "")" onchange="onFilterTypeChange('dateRange')">
             </div>
-            <div class="filter-group">
+            <div class="filter-group" id="toDateGroup">
                 <label>Đến ngày</label>
-                <input type="date" id="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd") ?? "")">
+                <input type="date" id="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd") ?? "")" onchange="onFilterTypeChange('dateRange')">
             </div>
             <div class="filter-actions">
                 <button class="btn-filter primary" onclick="applyFilters()">
@@ -908,7 +1085,7 @@
                 <div class="card-label">Hồ sơ chờ duyệt</div>
             </div>
             <div class="card-sub">
-                Tổng giá trị: <strong>@((Model.PendingAmount / 1000000).ToString("N0")) triệu</strong>
+                Tổng giá trị: <strong>@formatMoney(Model.PendingAmount)</strong>
             </div>
         </div>
 
@@ -944,7 +1121,7 @@
                 <div class="card-label">Hồ sơ đã duyệt</div>
             </div>
             <div class="card-sub">
-                Tổng giá trị: <strong>@((Model.ApprovedAmount / 1000000).ToString("N0")) triệu</strong>
+                Tổng giá trị: <strong>@formatMoney(Model.ApprovedAmount)</strong>
             </div>
         </div>
 
@@ -958,7 +1135,7 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="card-value">@((Model.TotalOutstandingDebt / 1000000000).ToString("N2")) tỷ</div>
+                <div class="card-value">@formatMoney(Model.TotalOutstandingDebt)</div>
                 <div class="card-label">Tổng dư nợ</div>
             </div>
             <div class="card-sub">
@@ -1146,6 +1323,74 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Row 4: Payment Status & Disbursement Trend (NEW) -->
+        <div class="charts-row-3">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        Tình trạng thanh toán
+                    </h3>
+                </div>
+                <div class="chart-body donut">
+                    <canvas id="paymentStatusChart"></canvas>
+                    <div class="donut-center">
+                        <span class="donut-value">@paymentStatusData.Sum(p => p.Count)</span>
+                        <span class="donut-label">Khoản vay</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">
+                            <path d="M18 20V10M12 20V4M6 20v-6"/>
+                        </svg>
+                        Xu hướng giải ngân theo quý
+                    </h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="disbursementTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Row 5: Collection Rate & Loan Amount Range (NEW) -->
+        <div class="charts-row-3">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        Tỷ lệ thu hồi nợ
+                    </h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="collectionRateChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18M9 21V9"/>
+                        </svg>
+                        Phân bổ theo số tiền vay
+                    </h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="loanAmountRangeChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Data Table -->
@@ -1175,8 +1420,8 @@
                                 <td class="text-center">
                                     <span class="status-badge approved">@item.ApprovedCount.ToString("N0")</span>
                                 </td>
-                                <td class="text-right">@((item.TotalAmount / 1000000).ToString("N0")) triệu</td>
-                                <td class="text-right">@((item.ApprovedAmount / 1000000).ToString("N0")) triệu</td>
+                                <td class="text-right">@formatMoney(item.TotalAmount)</td>
+                                <td class="text-right">@formatMoney(item.ApprovedAmount)</td>
                             </tr>
                         }
                     }
@@ -1204,6 +1449,12 @@
         const loansByType = @Html.Raw(Json.Serialize(loansByType));
         const riskLevelData = @Html.Raw(Json.Serialize(riskLevelData));
         const customerTypeData = @Html.Raw(Json.Serialize(customerTypeData));
+        
+        // New chart data
+        const paymentStatusData = @Html.Raw(Json.Serialize(paymentStatusData));
+        const disbursementTrendData = @Html.Raw(Json.Serialize(disbursementTrendData));
+        const collectionRateData = @Html.Raw(Json.Serialize(collectionRateData));
+        const loanAmountRangeData = @Html.Raw(Json.Serialize(loanAmountRangeData));
 
         // Global animation options - Chậm hơn để mượt mà
         const defaultAnimation = {
@@ -1583,6 +1834,438 @@
                 }
             }
         });
+        
+        // ===== NEW CHARTS =====
+        
+        // 7. Payment Status Chart (Doughnut)
+        const paymentStatusCtx = document.getElementById('paymentStatusChart').getContext('2d');
+        const paymentStatusColors = {
+            'Đã thanh toán đầy đủ': '#10B981',
+            'Đang trả nợ đúng hạn': '#3B82F6',
+            'Quá hạn 1-30 ngày': '#F59E0B',
+            'Quá hạn 31-90 ngày': '#F97316',
+            'Quá hạn trên 90 ngày': '#EF4444'
+        };
+        
+        new Chart(paymentStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: paymentStatusData.map(d => d.status),
+                datasets: [{
+                    data: paymentStatusData.map(d => d.count),
+                    backgroundColor: paymentStatusData.map(d => paymentStatusColors[d.status] || colors.info),
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 2500,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 12,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                const data = paymentStatusData[context.dataIndex];
+                                return [
+                                    context.label + ': ' + context.raw + ' khoản',
+                                    'Giá trị: ' + (data.totalAmount / 1000000).toLocaleString() + ' triệu'
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 8. Disbursement Trend Chart (Stacked Bar)
+        const disbursementTrendCtx = document.getElementById('disbursementTrendChart').getContext('2d');
+        new Chart(disbursementTrendCtx, {
+            type: 'bar',
+            data: {
+                labels: disbursementTrendData.map(d => d.quarterName),
+                datasets: [
+                    {
+                        label: 'Đề xuất',
+                        data: disbursementTrendData.map(d => d.proposedAmount / 1000000000),
+                        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                        borderColor: colors.primary,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Đã giải ngân',
+                        data: disbursementTrendData.map(d => d.disbursedAmount / 1000000000),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: colors.success,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Từ chối',
+                        data: disbursementTrendData.map(d => d.rejectedAmount / 1000000000),
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: colors.danger,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: defaultAnimation,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { usePointStyle: true, padding: 15 }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw.toFixed(2) + ' tỷ';
+                            },
+                            afterBody: function(tooltipItems) {
+                                const index = tooltipItems[0].dataIndex;
+                                const rate = disbursementTrendData[index].disbursementRate;
+                                return '\nTỷ lệ giải ngân: ' + rate + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + ' tỷ';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+        
+        // 9. Collection Rate Chart (Horizontal Bar with Progress)
+        const collectionRateCtx = document.getElementById('collectionRateChart').getContext('2d');
+        new Chart(collectionRateCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Tổng giải ngân', 'Đã thu hồi', 'Đúng hạn', 'Quá hạn'],
+                datasets: [{
+                    label: 'Số tiền (tỷ đồng)',
+                    data: [
+                        collectionRateData.totalDisbursedAmount / 1000000000,
+                        collectionRateData.totalCollectedAmount / 1000000000,
+                        collectionRateData.onTimeAmount / 1000000000,
+                        collectionRateData.overdueAmount / 1000000000
+                    ],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                        colors.primary,
+                        colors.success,
+                        colors.info,
+                        colors.danger
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                animation: defaultAnimation,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw.toFixed(2) + ' tỷ đồng';
+                            },
+                            afterBody: function(tooltipItems) {
+                                if (tooltipItems[0].dataIndex === 1) {
+                                    return '\nTỷ lệ thu hồi: ' + collectionRateData.collectionRate + '%';
+                                } else if (tooltipItems[0].dataIndex === 2) {
+                                    return '\nTỷ lệ đúng hạn: ' + collectionRateData.onTimeRate + '%';
+                                }
+                                return '';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + ' tỷ';
+                            }
+                        }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+        
+        // 10. Loan Amount Range Chart (Horizontal Bar)
+        const loanAmountRangeCtx = document.getElementById('loanAmountRangeChart').getContext('2d');
+        const rangeGradients = [
+            '#6366F1', '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E'
+        ];
+        
+        new Chart(loanAmountRangeCtx, {
+            type: 'bar',
+            data: {
+                labels: loanAmountRangeData.map(d => d.rangeName),
+                datasets: [
+                    {
+                        label: 'Tổng hồ sơ',
+                        data: loanAmountRangeData.map(d => d.count),
+                        backgroundColor: loanAmountRangeData.map((_, i) => rangeGradients[i % rangeGradients.length] + '99'),
+                        borderColor: loanAmountRangeData.map((_, i) => rangeGradients[i % rangeGradients.length]),
+                        borderWidth: 1,
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Đã duyệt',
+                        data: loanAmountRangeData.map(d => d.approvedCount),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: colors.success,
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                animation: defaultAnimation,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { usePointStyle: true, padding: 15 }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            afterBody: function(tooltipItems) {
+                                const index = tooltipItems[0].dataIndex;
+                                const data = loanAmountRangeData[index];
+                                return '\nTổng giá trị: ' + (data.totalAmount / 1000000000).toFixed(2) + ' tỷ';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // ===== FILTER LOGIC =====
+        // Các loại lọc: 'none', 'quarter', 'month', 'dateRange'
+        let currentFilterType = 'none';
+
+        // Khởi tạo trạng thái filter khi load trang
+        function initFilterState() {
+            const quarter = document.getElementById('quarterFilter').value;
+            const month = document.getElementById('monthFilter').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            if (fromDate || toDate) {
+                currentFilterType = 'dateRange';
+            } else if (month) {
+                currentFilterType = 'month';
+            } else if (quarter) {
+                currentFilterType = 'quarter';
+            } else {
+                currentFilterType = 'none';
+            }
+            
+            updateFilterVisibility();
+        }
+
+        // Xử lý khi người dùng thay đổi loại lọc
+        function onFilterTypeChange(type) {
+            if (type === 'quarter') {
+                const quarter = document.getElementById('quarterFilter').value;
+                if (quarter) {
+                    currentFilterType = 'quarter';
+                    // Reset các filter khác
+                    document.getElementById('monthFilter').value = '';
+                    document.getElementById('fromDate').value = '';
+                    document.getElementById('toDate').value = '';
+                } else {
+                    currentFilterType = 'none';
+                }
+            } else if (type === 'month') {
+                const month = document.getElementById('monthFilter').value;
+                if (month) {
+                    currentFilterType = 'month';
+                    // Reset các filter khác
+                    document.getElementById('quarterFilter').value = '';
+                    document.getElementById('fromDate').value = '';
+                    document.getElementById('toDate').value = '';
+                } else {
+                    currentFilterType = 'none';
+                }
+            } else if (type === 'dateRange') {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                if (fromDate || toDate) {
+                    currentFilterType = 'dateRange';
+                    // Reset các filter khác
+                    document.getElementById('quarterFilter').value = '';
+                    document.getElementById('monthFilter').value = '';
+                } else {
+                    currentFilterType = 'none';
+                }
+            }
+            
+            updateFilterVisibility();
+            updateDateConstraints();
+        }
+
+        // Cập nhật ràng buộc min/max cho date inputs
+        function updateDateConstraints() {
+            const fromDateInput = document.getElementById('fromDate');
+            const toDateInput = document.getElementById('toDate');
+            const fromDate = fromDateInput.value;
+            const toDate = toDateInput.value;
+
+            // Nếu đã chọn "Từ ngày", set min cho "Đến ngày"
+            if (fromDate) {
+                toDateInput.min = fromDate;
+            } else {
+                toDateInput.removeAttribute('min');
+            }
+
+            // Nếu đã chọn "Đến ngày", set max cho "Từ ngày"
+            if (toDate) {
+                fromDateInput.max = toDate;
+            } else {
+                fromDateInput.removeAttribute('max');
+            }
+        }
+
+        // Cập nhật hiển thị các filter group
+        function updateFilterVisibility() {
+            const yearGroup = document.getElementById('yearGroup');
+            const quarterGroup = document.getElementById('quarterGroup');
+            const monthGroup = document.getElementById('monthGroup');
+            const fromDateGroup = document.getElementById('fromDateGroup');
+            const toDateGroup = document.getElementById('toDateGroup');
+
+            // Reset tất cả về hiển thị
+            yearGroup.classList.remove('hidden');
+            quarterGroup.classList.remove('hidden');
+            monthGroup.classList.remove('hidden');
+            fromDateGroup.classList.remove('hidden');
+            toDateGroup.classList.remove('hidden');
+
+            switch (currentFilterType) {
+                case 'quarter':
+                    // Hiện: Năm + Quý, Ẩn: Tháng + Khoảng thời gian
+                    monthGroup.classList.add('hidden');
+                    fromDateGroup.classList.add('hidden');
+                    toDateGroup.classList.add('hidden');
+                    break;
+                case 'month':
+                    // Hiện: Năm + Tháng, Ẩn: Quý + Khoảng thời gian
+                    quarterGroup.classList.add('hidden');
+                    fromDateGroup.classList.add('hidden');
+                    toDateGroup.classList.add('hidden');
+                    break;
+                case 'dateRange':
+                    // Hiện: Khoảng thời gian, Ẩn: Năm + Quý + Tháng
+                    yearGroup.classList.add('hidden');
+                    quarterGroup.classList.add('hidden');
+                    monthGroup.classList.add('hidden');
+                    break;
+                default:
+                    // Hiện tất cả
+                    break;
+            }
+        }
+
+        // Hiển thị thông báo dạng modal thay vì alert
+        function showNotification(type, title, message) {
+            // Remove existing notification
+            const existingNotif = document.querySelector('.notification-modal-overlay');
+            if (existingNotif) existingNotif.remove();
+
+            const iconHtml = type === 'success' 
+                ? '<i class="fas fa-check-circle" style="color: #10B981;"></i>'
+                : type === 'error'
+                ? '<i class="fas fa-times-circle" style="color: #EF4444;"></i>'
+                : '<i class="fas fa-exclamation-circle" style="color: #F59E0B;"></i>';
+
+            const modal = document.createElement('div');
+            modal.className = 'notification-modal-overlay';
+            modal.innerHTML = `
+                <div class="notification-modal">
+                    <div class="notification-modal-icon">${iconHtml}</div>
+                    <div class="notification-modal-title">${title}</div>
+                    <div class="notification-modal-message">${message}</div>
+                    <button class="notification-modal-btn" onclick="this.closest('.notification-modal-overlay').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Add active class after a small delay for animation
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        // Gọi khi trang load
+        initFilterState();
+        updateDateConstraints();
 
         // Filter functions
         function applyFilters() {
@@ -1593,16 +2276,35 @@
             const toDate = document.getElementById('toDate').value;
 
             let url = '@Url.Action("Index", "Report")?';
-            if (year) url += `year=${year}&`;
-            if (quarter) url += `quarter=${quarter}&`;
-            if (month) url += `month=${month}&`;
-            if (fromDate) url += `fromDate=${fromDate}&`;
-            if (toDate) url += `toDate=${toDate}&`;
+            
+            // Chỉ gửi params tương ứng với loại filter đang chọn
+            if (currentFilterType === 'dateRange') {
+                if (fromDate) url += `fromDate=${fromDate}&`;
+                if (toDate) url += `toDate=${toDate}&`;
+            } else if (currentFilterType === 'quarter') {
+                if (year) url += `year=${year}&`;
+                if (quarter) url += `quarter=${quarter}&`;
+            } else if (currentFilterType === 'month') {
+                if (year) url += `year=${year}&`;
+                if (month) url += `month=${month}&`;
+            } else {
+                // Mặc định chỉ lọc theo năm
+                if (year) url += `year=${year}&`;
+            }
 
             window.location.href = url.slice(0, -1);
         }
 
         function resetFilters() {
+            currentFilterType = 'none';
+            document.getElementById('quarterFilter').value = '';
+            document.getElementById('monthFilter').value = '';
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            // Reset date constraints
+            document.getElementById('fromDate').removeAttribute('max');
+            document.getElementById('toDate').removeAttribute('min');
+            updateFilterVisibility();
             window.location.href = '@Url.Action("Index", "Report")';
         }
 
@@ -1614,13 +2316,67 @@
             const toDate = document.getElementById('toDate').value;
 
             let url = `@Url.Action("Export", "Report")?format=${format}&`;
-            if (year) url += `year=${year}&`;
-            if (quarter) url += `quarter=${quarter}&`;
-            if (month) url += `month=${month}&`;
-            if (fromDate) url += `fromDate=${fromDate}&`;
-            if (toDate) url += `toDate=${toDate}&`;
+            
+            // Chỉ gửi params tương ứng với loại filter đang chọn (giống applyFilters)
+            if (currentFilterType === 'dateRange') {
+                if (fromDate) url += `fromDate=${fromDate}&`;
+                if (toDate) url += `toDate=${toDate}&`;
+            } else if (currentFilterType === 'quarter') {
+                if (year) url += `year=${year}&`;
+                if (quarter) url += `quarter=${quarter}&`;
+            } else if (currentFilterType === 'month') {
+                if (year) url += `year=${year}&`;
+                if (month) url += `month=${month}&`;
+            } else {
+                // Mặc định chỉ lọc theo năm
+                if (year) url += `year=${year}&`;
+            }
 
-            window.open(url.slice(0, -1), '_blank');
+            // Use fetch to get JSON response
+            fetch(url.slice(0, -1))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('success', `Xuất ${format.toUpperCase()} thành công!`, data.filePath);
+                    } else {
+                        showNotification('error', 'Lỗi xuất báo cáo', data.message);
+                    }
+                })
+                .catch(error => {
+                    showNotification('error', 'Lỗi kết nối', error.message);
+                });
+        }
+
+        function showExportToast(type, title, message) {
+            // Remove existing toast
+            const existingToast = document.querySelector('.export-toast');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `export-toast export-toast-${type}`;
+            toast.innerHTML = `
+                <div class="export-toast-icon">
+                    ${type === 'success' 
+                        ? '<i class="fas fa-check-circle"></i>' 
+                        : '<i class="fas fa-times-circle"></i>'}
+                </div>
+                <div class="export-toast-content">
+                    <div class="export-toast-title">${title}</div>
+                    <div class="export-toast-message">${message}</div>
+                </div>
+                <button class="export-toast-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            document.body.appendChild(toast);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.add('export-toast-hide');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
         }
 
         // Add enter key support for date inputs

@@ -89,8 +89,8 @@ namespace QuanLyRuiRoTinDung.Controllers
             return View();
         }
 
-        // GET: Loan/Manage - Quản lý khoản vay (các khoản vay đã duyệt, đang hoạt động)
-        public async Task<IActionResult> Manage(string? trangThai = null, string? searchTerm = null)
+        // GET: Loan/Manage - Quản lý khoản vay (hiển thị danh sách khách hàng có khoản vay)
+        public async Task<IActionResult> Manage(string? tab = "my", string? loaiKhachHang = null, string? searchTerm = null)
         {
             var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
             if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
@@ -98,50 +98,107 @@ namespace QuanLyRuiRoTinDung.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            // Lấy danh sách khoản vay đã duyệt (đang hoạt động, quá hạn, đã thanh toán...)
-            var activeLoans = await _loanService.GetActiveLoansAsync(maNhanVien, trangThai, searchTerm);
+            bool onlyMyLoans = tab != "all";
 
-            // Lấy thông tin khách hàng cho từng khoản vay
-            var customerInfoDict = new Dictionary<int, (string TenKhachHang, string LoaiKhachHang, string? MaKhachHangCode, string? AnhDaiDien)>();
+            // Lấy danh sách khách hàng có khoản vay (gộp theo khách hàng)
+            var customers = await _loanService.GetCustomersWithActiveLoansAsync(maNhanVien, loaiKhachHang, searchTerm, onlyMyLoans);
+
+            // Tính toán thống kê
+            var allCustomers = await _loanService.GetCustomersWithActiveLoansAsync(maNhanVien, null, null, onlyMyLoans);
+            var caNhanCount = allCustomers.Count(c => c.LoaiKhachHang == "CaNhan");
+            var doanhNghiepCount = allCustomers.Count(c => c.LoaiKhachHang == "DoanhNghiep");
             
-            foreach (var loan in activeLoans)
+            // Thống kê tổng hợp
+            var totalLoans = allCustomers.Sum(c => c.TongKhoanVay);
+            var choGiaiNgan = allCustomers.Sum(c => c.ChoGiaiNgan);
+            var dangVay = allCustomers.Sum(c => c.DangVay);
+            var quaHan = allCustomers.Sum(c => c.QuaHan);
+
+            ViewBag.Customers = customers;
+            ViewBag.CurrentTab = tab ?? "my";
+            ViewBag.CurrentLoaiKhachHang = loaiKhachHang ?? "all";
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.MaNhanVien = maNhanVien;
+            ViewBag.CaNhanCount = caNhanCount;
+            ViewBag.DoanhNghiepCount = doanhNghiepCount;
+            ViewBag.TotalLoans = totalLoans;
+            ViewBag.ChoGiaiNgan = choGiaiNgan;
+            ViewBag.DangVay = dangVay;
+            ViewBag.QuaHan = quaHan;
+
+            return View();
+        }
+        
+        // GET: Loan/CustomerLoans - Danh sách khoản vay của một khách hàng
+        public async Task<IActionResult> CustomerLoans(int customerId, string customerType, string? trangThai = null)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
             {
-                if (!customerInfoDict.ContainsKey(loan.MaKhoanVay))
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (customerId <= 0 || string.IsNullOrEmpty(customerType))
+            {
+                return RedirectToAction("Manage");
+            }
+
+            // Lấy thông tin khách hàng
+            string tenKhachHang = "";
+            string? maKhachHangCode = null;
+            string? anhDaiDien = null;
+            string? soDienThoai = null;
+            string? email = null;
+
+            if (customerType == "CaNhan")
+            {
+                var kh = await _loanService.GetKhachHangCaNhanAsync(customerId);
+                if (kh != null)
                 {
-                    string tenKH = "";
-                    string? maKHCode = null;
-                    string? anhDaiDien = null;
-                    
-                    if (loan.LoaiKhachHang == "CaNhan")
-                    {
-                        var kh = await _loanService.GetKhachHangCaNhanAsync(loan.MaKhachHang);
-                        if (kh != null)
-                        {
-                            tenKH = kh.HoTen;
-                            maKHCode = kh.MaKhachHangCode;
-                            anhDaiDien = kh.AnhDaiDien;
-                        }
-                    }
-                    else
-                    {
-                        var kh = await _loanService.GetKhachHangDoanhNghiepAsync(loan.MaKhachHang);
-                        if (kh != null)
-                        {
-                            tenKH = kh.TenCongTy;
-                            maKHCode = kh.MaKhachHangCode;
-                            anhDaiDien = kh.AnhNguoiDaiDien;
-                        }
-                    }
-                    
-                    customerInfoDict[loan.MaKhoanVay] = (tenKH, loan.LoaiKhachHang, maKHCode, anhDaiDien);
+                    tenKhachHang = kh.HoTen;
+                    maKhachHangCode = kh.MaKhachHangCode;
+                    anhDaiDien = kh.AnhDaiDien;
+                    soDienThoai = kh.SoDienThoai;
+                    email = kh.Email;
+                }
+            }
+            else
+            {
+                var kh = await _loanService.GetKhachHangDoanhNghiepAsync(customerId);
+                if (kh != null)
+                {
+                    tenKhachHang = kh.TenCongTy;
+                    maKhachHangCode = kh.MaKhachHangCode;
+                    anhDaiDien = kh.AnhNguoiDaiDien;
+                    soDienThoai = kh.SoDienThoai;
+                    email = kh.Email;
                 }
             }
 
-            ViewBag.ActiveLoans = activeLoans;
-            ViewBag.CustomerInfoDict = customerInfoDict;
+            // Lấy danh sách khoản vay của khách hàng
+            var loans = await _loanService.GetLoansByCustomerForManageAsync(customerId, customerType, trangThai);
+
+            // Thống kê khoản vay
+            var allLoans = await _loanService.GetLoansByCustomerForManageAsync(customerId, customerType, null);
+            var choGiaiNgan = allLoans.Count(l => l.TrangThaiKhoanVay == "Đã phê duyệt" || l.TrangThaiKhoanVay == "Đã duyệt");
+            var dangVay = allLoans.Count(l => l.TrangThaiKhoanVay == "Đang vay");
+            var quaHan = allLoans.Count(l => l.TrangThaiKhoanVay == "Quá hạn");
+            var daThanhToan = allLoans.Count(l => l.TrangThaiKhoanVay == "Đã thanh toán");
+
+            ViewBag.Loans = loans;
+            ViewBag.CustomerId = customerId;
+            ViewBag.CustomerType = customerType;
+            ViewBag.TenKhachHang = tenKhachHang;
+            ViewBag.MaKhachHangCode = maKhachHangCode;
+            ViewBag.AnhDaiDien = anhDaiDien;
+            ViewBag.SoDienThoai = soDienThoai;
+            ViewBag.Email = email;
             ViewBag.CurrentTrangThai = trangThai ?? "all";
-            ViewBag.SearchTerm = searchTerm;
-            ViewBag.MaNhanVien = maNhanVien;
+            ViewBag.TotalLoans = allLoans.Count;
+            ViewBag.ChoGiaiNgan = choGiaiNgan;
+            ViewBag.DangVay = dangVay;
+            ViewBag.QuaHan = quaHan;
+            ViewBag.DaThanhToan = daThanhToan;
 
             return View();
         }
@@ -1258,6 +1315,97 @@ namespace QuanLyRuiRoTinDung.Controllers
             return View(loan);
         }
         
+        // POST: Loan/GiaiNgan - Giải ngân khoản vay đã được duyệt
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GiaiNgan([FromBody] GiaiNganRequest request)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
+            {
+                return Json(new { success = false, message = "Bạn cần đăng nhập để thực hiện thao tác này." });
+            }
+
+            try
+            {
+                var result = await _loanService.GiaiNganKhoanVayAsync(request.LoanId, maNhanVien);
+                if (result)
+                {
+                    return Json(new { success = true, message = "Giải ngân thành công! Khoản vay đã chuyển sang trạng thái 'Đang vay'." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Không thể giải ngân. Khoản vay không tồn tại hoặc chưa được duyệt." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error disbursing loan {LoanId}", request.LoanId);
+                return Json(new { success = false, message = "Có lỗi xảy ra khi giải ngân khoản vay." });
+            }
+        }
+
+        // GET: Loan/LichSuTraNo/{id} - Xem lịch sử trả nợ của khoản vay
+        public async Task<IActionResult> LichSuTraNo(int id)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var loan = await _loanService.GetLoanByIdAsync(id);
+            if (loan == null)
+            {
+                return NotFound();
+            }
+
+            var lichSuTraNo = await _loanService.GetLichSuTraNoAsync(id);
+
+            // Lấy thông tin khách hàng
+            string tenKhachHang = "";
+            if (loan.LoaiKhachHang == "CaNhan")
+            {
+                var kh = await _loanService.GetKhachHangCaNhanAsync(loan.MaKhachHang);
+                tenKhachHang = kh?.HoTen ?? "";
+            }
+            else
+            {
+                var kh = await _loanService.GetKhachHangDoanhNghiepAsync(loan.MaKhachHang);
+                tenKhachHang = kh?.TenCongTy ?? "";
+            }
+
+            ViewBag.LichSuTraNo = lichSuTraNo;
+            ViewBag.TenKhachHang = tenKhachHang;
+            ViewBag.Loan = loan;
+            ViewBag.CustomerName = tenKhachHang;
+            
+            return View(loan);
+        }
+        
+        // POST: Loan/GhiNhanThanhToan - API ghi nhận thanh toán kỳ trả nợ
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GhiNhanThanhToan([FromBody] GhiNhanThanhToanRequest request)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
+            {
+                return Json(new { success = false, message = "Bạn cần đăng nhập để thực hiện thao tác này." });
+            }
+
+            try
+            {
+                var (success, message) = await _loanService.GhiNhanThanhToanAsync(request.MaGiaoDich, request.SoTienTra, maNhanVien);
+                return Json(new { success, message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error recording payment for transaction {MaGiaoDich}", request.MaGiaoDich);
+                return Json(new { success = false, message = "Có lỗi xảy ra khi ghi nhận thanh toán." });
+            }
+        }
+        
         // GET: Loan/ThanhToanKhoanVay?loanCode=LOAN0001 hoặc ?loanId=1
         public IActionResult ThanhToanKhoanVay(string? loanCode, int? loanId)
         {
@@ -1269,6 +1417,64 @@ namespace QuanLyRuiRoTinDung.Controllers
             
             return View();
         }
+
+        // GET: Loan/OverduePayments - Xem danh sách các khoản quá hạn
+        [HttpGet]
+        public async Task<IActionResult> OverduePayments()
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var thresholdDate = today.AddDays(-3);
+
+            // Lấy các khoản quá hạn > 3 ngày
+            var overduePayments = await _loanService.GetOverduePaymentsAsync(thresholdDate);
+            
+            ViewBag.OverduePayments = overduePayments;
+            ViewBag.Today = today;
+            
+            return View();
+        }
+
+        // POST: Loan/ProcessOverduePayment - Xử lý khoản quá hạn thủ công
+        [HttpPost]
+        public async Task<IActionResult> ProcessOverduePayment([FromBody] ProcessOverdueRequest request)
+        {
+            try
+            {
+                var result = await _loanService.ProcessOverduePaymentAsync(request.MaGiaoDich);
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi xử lý khoản quá hạn {MaGiaoDich}", request.MaGiaoDich);
+                return Json(new { success = false, message = "Có lỗi xảy ra khi xử lý khoản quá hạn." });
+            }
+        }
+
+        // GET: Loan/GetOverdueInfo/{maGiaoDich} - Lấy thông tin chi tiết khoản quá hạn
+        [HttpGet]
+        public async Task<IActionResult> GetOverdueInfo(int id)
+        {
+            try
+            {
+                var info = await _loanService.GetOverduePaymentInfoAsync(id);
+                if (info == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy thông tin khoản quá hạn." });
+                }
+                return Json(new { success = true, data = info });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi lấy thông tin khoản quá hạn {MaGiaoDich}", id);
+                return Json(new { success = false, message = "Có lỗi xảy ra." });
+            }
+        }
     }
 
     // ViewModel cho SelectCustomer
@@ -1276,6 +1482,11 @@ namespace QuanLyRuiRoTinDung.Controllers
     {
         public List<KhachHangCaNhan> KhachHangCaNhans { get; set; } = new();
         public List<KhachHangDoanhNghiep> KhachHangDoanhNghieps { get; set; } = new();
+    }
+
+    public class ProcessOverdueRequest
+    {
+        public int MaGiaoDich { get; set; }
     }
 
     public class DeleteLoanRequest
@@ -1288,5 +1499,31 @@ namespace QuanLyRuiRoTinDung.Controllers
     {
         public int LoanId { get; set; }
         public int Id { get; set; }
+    }
+
+    public class GiaiNganRequest
+    {
+        public int LoanId { get; set; }
+    }
+    
+    public class GhiNhanThanhToanRequest
+    {
+        public int MaGiaoDich { get; set; }
+        public decimal SoTienTra { get; set; }
+    }
+
+    public class OverduePaymentInfo
+    {
+        public int MaGiaoDich { get; set; }
+        public string MaGiaoDichCode { get; set; } = "";
+        public string MaKhoanVayCode { get; set; } = "";
+        public string TenKhachHang { get; set; } = "";
+        public int KyTraNo { get; set; }
+        public string NgayTraDuKien { get; set; } = "";
+        public int SoNgayQuaHan { get; set; }
+        public decimal TongPhaiTra { get; set; }
+        public decimal PhiPhat { get; set; }
+        public int DiemCicTru { get; set; }
+        public string TrangThai { get; set; } = "";
     }
 }
