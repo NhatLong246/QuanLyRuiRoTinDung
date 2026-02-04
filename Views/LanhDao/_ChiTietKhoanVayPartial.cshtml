@@ -1,5 +1,6 @@
 @using QuanLyRuiRoTinDung.Models.Entities
 @using System.Linq
+@using System.IO
 @model KhoanVay
 
 <div class="row">
@@ -13,34 +14,14 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Mã khoản vay</label>
-                            <p class="mb-0"><strong>@Model.MaKhoanVayCode</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Mã khách hàng</label>
-                            <p class="mb-0"><strong>@Model.MaKhachHang</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Loại khách hàng</label>
-                            <p class="mb-0"><strong>@Model.LoaiKhachHang</strong></p>
-                        </div>
+                        <p class="mb-2"><strong class="text-muted">Mã khoản vay:</strong> <span>@Model.MaKhoanVayCode</span></p>
+                        <p class="mb-2"><strong class="text-muted">Tên khách hàng:</strong> <span>@(ViewBag.TenKhachHang as string ?? $"KH-{Model.MaKhachHang}")</span></p>
+                        <p class="mb-2"><strong class="text-muted">Loại khách hàng:</strong> <span>@Model.LoaiKhachHang</span></p>
                     </div>
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Mục đích vay</label>
-                            <p class="mb-0"><strong>@Model.MucDichVay</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Ngày nộp hồ sơ</label>
-                            <p class="mb-0"><strong>@Model.NgayNopHoSo?.ToString("dd/MM/yyyy")</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Trạng thái</label>
-                            <p class="mb-0">
-                                <span class="badge bg-info">@Model.TrangThaiKhoanVay</span>
-                            </p>
-                        </div>
+                        <p class="mb-2"><strong class="text-muted">Mục đích vay:</strong> <span>@Model.MucDichVay</span></p>
+                        <p class="mb-2"><strong class="text-muted">Ngày nộp hồ sơ:</strong> <span>@Model.NgayNopHoSo?.ToString("dd/MM/yyyy")</span></p>
+                        <p class="mb-2"><strong class="text-muted">Trạng thái:</strong> <span class="badge bg-info">@Model.TrangThaiKhoanVay</span></p>
                     </div>
                 </div>
             </div>
@@ -54,43 +35,13 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Số tiền vay</label>
-                            <p class="mb-0"><strong class="text-success h5">@Model.SoTienVay.ToString("N0") VND</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Lãi suất hàng năm</label>
-                            <p class="mb-0"><strong>@Model.LaiSuat%</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Kỳ hạn vay</label>
-                            <p class="mb-0"><strong>@Model.KyHanVay tháng</strong></p>
-                        </div>
+                        <p class="mb-2"><strong class="text-muted">Số tiền vay:</strong> <span class="text-success fw-bold">@Model.SoTienVay.ToString("N0") VND</span></p>
+                        <p class="mb-2"><strong class="text-muted">Lãi suất hàng năm:</strong> <span>@Model.LaiSuat%</span></p>
+                        <p class="mb-2"><strong class="text-muted">Kỳ hạn vay:</strong> <span>@Model.KyHanVay tháng</span></p>
                     </div>
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Hình thức trả nợ</label>
-                            <p class="mb-0"><strong>@Model.HinhThucTraNo</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Nhân viên tín dụng</label>
-                            <p class="mb-0"><strong>@Model.MaNhanVienTinDungNavigation?.HoTen</strong></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Mức độ rủi ro</label>
-                            <p class="mb-0">
-                                @{
-                                    var riskClass = Model.MucDoRuiRo switch
-                                    {
-                                        "Cao" => "bg-danger",
-                                        "Trung bình" => "bg-warning",
-                                        "Thấp" => "bg-success",
-                                        _ => "bg-secondary"
-                                    };
-                                }
-                                <span class="badge @riskClass">@Model.MucDoRuiRo</span>
-                            </p>
-                        </div>
+                        <p class="mb-2"><strong class="text-muted">Hình thức trả nợ:</strong> <span>@Model.HinhThucTraNo</span></p>
+                        <p class="mb-2"><strong class="text-muted">Nhân viên tín dụng:</strong> <span>@Model.MaNhanVienTinDungNavigation?.HoTen</span></p>
                     </div>
                 </div>
             </div>
@@ -144,76 +95,38 @@
                                 
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small mb-1">
-                                                <i class="fas fa-user me-1"></i>Người đánh giá
-                                            </label>
-                                            <p class="mb-0">
-                                                <strong>@(danhGia.NguoiDanhGiaNavigation?.HoTen ?? $"ID: {danhGia.NguoiDanhGia}")</strong>
-                                            </p>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small mb-1">
-                                                <i class="fas fa-calculator me-1"></i>Tổng điểm
-                                            </label>
-                                            <p class="mb-0">
-                                                <strong class="h5 @(danhGia.TongDiem.HasValue && danhGia.TongDiem.Value >= 70 ? "text-success" : danhGia.TongDiem.HasValue && danhGia.TongDiem.Value >= 50 ? "text-warning" : "text-danger")">
-                                                    @(danhGia.TongDiem?.ToString("N2") ?? "N/A")
-                                                </strong>
-                                            </p>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small mb-1">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>Mức độ rủi ro
-                                            </label>
-                                            <p class="mb-0">
-                                                @{
-                                                    var riskBadgeClass = "bg-secondary";
-                                                    if (!string.IsNullOrEmpty(danhGia.MucDoRuiRo))
+                                        <p class="mb-2"><strong class="text-muted"><i class="fas fa-user me-1"></i>Người đánh giá:</strong> <span>@(danhGia.NguoiDanhGiaNavigation?.HoTen ?? $"ID: {danhGia.NguoiDanhGia}")</span></p>
+                                        <p class="mb-2">
+                                            <strong class="text-muted"><i class="fas fa-calculator me-1"></i>Tổng điểm:</strong> 
+                                            <span class="@(danhGia.TongDiem.HasValue && danhGia.TongDiem.Value >= 70 ? "text-success" : danhGia.TongDiem.HasValue && danhGia.TongDiem.Value >= 50 ? "text-warning" : "text-danger") fw-bold">
+                                                @(danhGia.TongDiem?.ToString("N2") ?? "N/A")
+                                            </span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong class="text-muted"><i class="fas fa-exclamation-triangle me-1"></i>Mức độ rủi ro:</strong> 
+                                            @{
+                                                var riskBadgeClass = "bg-secondary";
+                                                if (!string.IsNullOrEmpty(danhGia.MucDoRuiRo))
+                                                {
+                                                    riskBadgeClass = danhGia.MucDoRuiRo switch
                                                     {
-                                                        riskBadgeClass = danhGia.MucDoRuiRo switch
-                                                        {
-                                                            "Thấp" => "bg-success",
-                                                            "Trung bình" => "bg-warning",
-                                                            "Cao" => "bg-danger",
-                                                            "Rất cao" => "bg-danger",
-                                                            _ => "bg-secondary"
-                                                        };
-                                                    }
+                                                        "Thấp" => "bg-success",
+                                                        "Trung bình" => "bg-warning",
+                                                        "Cao" => "bg-danger",
+                                                        "Rất cao" => "bg-danger",
+                                                        _ => "bg-secondary"
+                                                    };
                                                 }
-                                                <span class="badge @riskBadgeClass" style="font-size: 1rem;">
-                                                    @(danhGia.MucDoRuiRo ?? "Chưa xác định")
-                                                </span>
-                                            </p>
-                                        </div>
+                                            }
+                                            <span class="badge @riskBadgeClass">@(danhGia.MucDoRuiRo ?? "Chưa xác định")</span>
+                                        </p>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small mb-1">
-                                                <i class="fas fa-trophy me-1"></i>Xếp hạng rủi ro
-                                            </label>
-                                            <p class="mb-0">
-                                                <strong class="h6">@(danhGia.XepHangRuiRo ?? "N/A")</strong>
-                                            </p>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label text-muted small mb-1">
-                                                <i class="fas fa-lightbulb me-1"></i>Kiến nghị
-                                            </label>
-                                            <p class="mb-0">
-                                                <strong>@(danhGia.KienNghi ?? "N/A")</strong>
-                                            </p>
-                                        </div>
+                                        <p class="mb-2"><strong class="text-muted"><i class="fas fa-trophy me-1"></i>Xếp hạng rủi ro:</strong> <span>@(danhGia.XepHangRuiRo ?? "N/A")</span></p>
+                                        <p class="mb-2"><strong class="text-muted"><i class="fas fa-lightbulb me-1"></i>Kiến nghị:</strong> <span>@(danhGia.KienNghi ?? "N/A")</span></p>
                                         @if (!string.IsNullOrEmpty(danhGia.TrangThai))
                                         {
-                                            <div class="mb-3">
-                                                <label class="form-label text-muted small mb-1">
-                                                    <i class="fas fa-info-circle me-1"></i>Trạng thái
-                                                </label>
-                                                <p class="mb-0">
-                                                    <span class="badge bg-info">@danhGia.TrangThai</span>
-                                                </p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted"><i class="fas fa-info-circle me-1"></i>Trạng thái:</strong> <span class="badge bg-info">@danhGia.TrangThai</span></p>
                                         }
                                     </div>
                                 </div>
@@ -222,11 +135,9 @@
                                 {
                                     <div class="row mt-2">
                                         <div class="col-12">
-                                            <label class="form-label text-muted small mb-1">
-                                                <i class="fas fa-comment-alt me-1"></i>Nhận xét
-                                            </label>
+                                            <p class="mb-2"><strong class="text-muted"><i class="fas fa-comment-alt me-1"></i>Nhận xét:</strong></p>
                                             <div class="alert alert-light py-2 mb-0">
-                                                <p class="mb-0 small">@danhGia.NhanXet</p>
+                                                <p class="mb-0">@danhGia.NhanXet</p>
                                             </div>
                                         </div>
                                     </div>
@@ -273,117 +184,71 @@
                                         <h6 class="text-primary mb-3">
                                             <i class="fas fa-tag me-2"></i>@taiSan?.TenGoi
                                         </h6>
-                                        <div class="mb-2">
-                                            <label class="form-label text-muted small mb-1">Mã tài sản</label>
-                                            <p class="mb-0"><strong>@taiSan?.MaTaiSanCode</strong></p>
-                                        </div>
-                                        <div class="mb-2">
-                                            <label class="form-label text-muted small mb-1">Loại tài sản</label>
-                                            <p class="mb-0">
-                                                <span class="badge bg-info">@loaiTaiSan?.TenLoaiTaiSan</span>
-                                            </p>
-                                        </div>
+                                        <p class="mb-2"><strong class="text-muted">Mã tài sản:</strong> <span>@taiSan?.MaTaiSanCode</span></p>
+                                        <p class="mb-2"><strong class="text-muted">Loại tài sản:</strong> <span class="badge bg-info">@loaiTaiSan?.TenLoaiTaiSan</span></p>
                                         @if (!string.IsNullOrEmpty(taiSan?.MoTaChiTiet))
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Mô tả</label>
-                                                <p class="mb-0"><small>@taiSan.MoTaChiTiet</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Mô tả:</strong> <span>@taiSan.MoTaChiTiet</span></p>
                                         }
                                         @if (!string.IsNullOrEmpty(taiSan?.DiaChi))
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Địa chỉ</label>
-                                                <p class="mb-0"><small>@taiSan.DiaChi</small></p>
-                                                @if (!string.IsNullOrEmpty(taiSan.Quan) || !string.IsNullOrEmpty(taiSan.ThanhPho))
-                                                {
-                                                    <p class="mb-0"><small>@taiSan.Quan, @taiSan.ThanhPho</small></p>
-                                                }
-                                            </div>
+                                            <p class="mb-2">
+                                                <strong class="text-muted">Địa chỉ:</strong> 
+                                                <span>@taiSan.DiaChi@(string.IsNullOrEmpty(taiSan.Quan) && string.IsNullOrEmpty(taiSan.ThanhPho) ? "" : $", {taiSan.Quan}, {taiSan.ThanhPho}")</span>
+                                            </p>
                                         }
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="mb-2">
-                                            <label class="form-label text-muted small mb-1">Giá trị định giá</label>
-                                            <p class="mb-0">
-                                                <strong class="text-success h6">@giaTriHienThi.ToString("N0") VNĐ</strong>
-                                            </p>
+                                        <p class="mb-2">
+                                            <strong class="text-muted">Giá trị định giá:</strong> 
+                                            <span class="text-success fw-bold">@giaTriHienThi.ToString("N0") VNĐ</span>
                                             @if (asset.GiaTriDinhGiaTaiThoiDiemVay.HasValue && taiSan?.GiaTriDinhGia.HasValue == true)
                                             {
                                                 <small class="text-muted">(Giá trị tại thời điểm vay)</small>
                                             }
-                                        </div>
+                                        </p>
                                         @if (asset.TyLeTheChap.HasValue)
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Tỷ lệ thế chấp</label>
-                                                <p class="mb-0"><strong>@asset.TyLeTheChap%</strong></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Tỷ lệ thế chấp:</strong> <span>@asset.TyLeTheChap%</span></p>
                                         }
                                         @if (asset.NgayTheChap.HasValue)
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Ngày thế chấp</label>
-                                                <p class="mb-0"><small>@asset.NgayTheChap.Value.ToString("dd/MM/yyyy")</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Ngày thế chấp:</strong> <span>@asset.NgayTheChap.Value.ToString("dd/MM/yyyy")</span></p>
                                         }
                                         @if (!string.IsNullOrEmpty(taiSan?.SoGiayTo))
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Số giấy tờ</label>
-                                                <p class="mb-0"><small>@taiSan.SoGiayTo</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Số giấy tờ:</strong> <span>@taiSan.SoGiayTo</span></p>
                                         }
                                         @if (taiSan?.NgayCap.HasValue == true)
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Ngày cấp</label>
-                                                <p class="mb-0"><small>@taiSan.NgayCap.Value.ToString("dd/MM/yyyy")</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Ngày cấp:</strong> <span>@taiSan.NgayCap.Value.ToString("dd/MM/yyyy")</span></p>
                                         }
                                         @if (!string.IsNullOrEmpty(taiSan?.ChuSoHuu))
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Chủ sở hữu</label>
-                                                <p class="mb-0"><small>@taiSan.ChuSoHuu</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Chủ sở hữu:</strong> <span>@taiSan.ChuSoHuu</span></p>
                                         }
                                         @if (taiSan?.DienTich.HasValue == true)
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Diện tích</label>
-                                                <p class="mb-0"><small>@taiSan.DienTich.Value.ToString("N2") m²</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Diện tích:</strong> <span>@taiSan.DienTich.Value.ToString("N2") m²</span></p>
                                         }
                                         @if (taiSan?.NamSanXuat.HasValue == true)
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Năm sản xuất</label>
-                                                <p class="mb-0"><small>@taiSan.NamSanXuat</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Năm sản xuất:</strong> <span>@taiSan.NamSanXuat</span></p>
                                         }
                                         @if (!string.IsNullOrEmpty(taiSan?.TinhTrang))
                                         {
-                                            <div class="mb-2">
-                                                <label class="form-label text-muted small mb-1">Tình trạng</label>
-                                                <p class="mb-0"><small>@taiSan.TinhTrang</small></p>
-                                            </div>
+                                            <p class="mb-2"><strong class="text-muted">Tình trạng:</strong> <span>@taiSan.TinhTrang</span></p>
                                         }
-                                        <div class="mb-2">
-                                            <label class="form-label text-muted small mb-1">Trạng thái</label>
-                                            <p class="mb-0">
-                                                <span class="badge bg-success">@asset.TrangThai</span>
-                                            </p>
-                                        </div>
+                                        <p class="mb-2"><strong class="text-muted">Trạng thái:</strong> <span class="badge bg-success">@asset.TrangThai</span></p>
                                     </div>
                                 </div>
                                 @if (!string.IsNullOrEmpty(asset.GhiChu))
                                 {
                                     <div class="row mt-2">
                                         <div class="col-12">
+                                            <p class="mb-2"><strong class="text-muted">Ghi chú:</strong></p>
                                             <div class="alert alert-light py-2 mb-0">
-                                                <label class="form-label text-muted small mb-1">Ghi chú</label>
-                                                <p class="mb-0"><small>@asset.GhiChu</small></p>
+                                                <p class="mb-0">@asset.GhiChu</p>
                                             </div>
                                         </div>
                                     </div>
@@ -410,6 +275,125 @@
                 </div>
             </div>
         }
+
+        <!-- File đính kèm -->
+        @{
+            var files = ViewBag.Files as List<HoSoVayFileDinhKem> ?? new List<HoSoVayFileDinhKem>();
+            var hasFiles = files.Any();
+        }
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-paperclip me-2"></i>Hồ sơ File đính kèm
+                </h6>
+            </div>
+            <div class="card-body">
+                @if (hasFiles)
+                {
+                    <div class="row g-3">
+                        @foreach (var file in files)
+                        {
+                            var fileUrl = file.DuongDan;
+                            if (!string.IsNullOrEmpty(fileUrl) && !fileUrl.StartsWith("/") && !fileUrl.StartsWith("http"))
+                            {
+                                fileUrl = "/" + fileUrl.TrimStart('/');
+                            }
+                            
+                            var fileExtension = file.DinhDang?.ToLower() ?? "";
+                            if (string.IsNullOrEmpty(fileExtension) && !string.IsNullOrEmpty(file.TenFile))
+                            {
+                                var lastDotIndex = file.TenFile.LastIndexOf('.');
+                                if (lastDotIndex >= 0 && lastDotIndex < file.TenFile.Length - 1)
+                                {
+                                    fileExtension = file.TenFile.Substring(lastDotIndex + 1).ToLower();
+                                }
+                            }
+                            var isImage = fileExtension == "jpg" || fileExtension == "jpeg" || fileExtension == "png" || fileExtension == "gif";
+                            var isPdf = fileExtension == "pdf";
+                            var canPreview = isImage || isPdf;
+                            
+                            var fileSize = file.KichThuoc.HasValue 
+                                ? (file.KichThuoc.Value < 1024 
+                                    ? $"{file.KichThuoc.Value} B"
+                                    : file.KichThuoc.Value < 1024 * 1024
+                                        ? $"{file.KichThuoc.Value / 1024.0:F1} KB"
+                                        : $"{file.KichThuoc.Value / (1024.0 * 1024.0):F1} MB")
+                                : "N/A";
+                            
+                            var displayFileName = file.TenFile.Length > 30 ? file.TenFile.Substring(0, 30) + "..." : file.TenFile;
+                            
+                            <div class="col-md-6 col-lg-4 col-xl-3">
+                                <div class="file-card h-100" data-file-url="@fileUrl" data-file-name="@file.TenFile" data-file-type="@fileExtension" data-can-preview="@canPreview.ToString().ToLower()">
+                                    <div class="file-preview-container">
+                                        @if (isImage)
+                                        {
+                                            <div class="file-preview-image" style="background-image: url('@fileUrl'); background-size: cover; background-position: center; cursor: pointer;" onclick="openFilePreview('@fileUrl', '@file.TenFile', 'image')">
+                                                <div class="file-preview-overlay">
+                                                    <i class="fas fa-eye fa-2x text-white"></i>
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (isPdf)
+                                        {
+                                            <div class="file-preview-pdf" onclick="openFilePreview('@fileUrl', '@file.TenFile', 'pdf')" style="cursor: pointer;">
+                                                <i class="fas fa-file-pdf fa-4x text-danger"></i>
+                                                <div class="file-preview-overlay">
+                                                    <i class="fas fa-eye fa-2x text-white"></i>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="file-preview-other" onclick="openFilePreview('@fileUrl', '@file.TenFile', '@fileExtension')" style="cursor: pointer;">
+                                                @{
+                                                    var fileIcon = fileExtension switch
+                                                    {
+                                                        "doc" or "docx" => "fa-file-word text-primary",
+                                                        "xls" or "xlsx" => "fa-file-excel text-success",
+                                                        "txt" => "fa-file-alt text-secondary",
+                                                        _ => "fa-file text-secondary"
+                                                    };
+                                                }
+                                                <i class="fas @fileIcon fa-4x"></i>
+                                                <div class="file-preview-overlay">
+                                                    <i class="fas fa-external-link-alt fa-2x text-white"></i>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="file-info p-2">
+                                        <h6 class="file-name mb-1" title="@file.TenFile" style="font-size: 0.9rem; font-weight: 500;">
+                                            @displayFileName
+                                        </h6>
+                                        <small class="text-muted d-block mb-2">
+                                            @fileSize
+                                            @if (file.NgayTao.HasValue)
+                                            {
+                                                <span> • @file.NgayTao.Value.ToString("d/M/yyyy")</span>
+                                            }
+                                        </small>
+                                        <a href="@fileUrl" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-primary w-100"
+                                           download="@file.TenFile"
+                                           onclick="event.stopPropagation();">
+                                            <i class="fas fa-download me-1"></i>Tải xuống
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Khoản vay này chưa có file đính kèm.
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 
     <!-- Decision Panel -->
@@ -535,10 +519,6 @@
                                 <small class="text-muted">Mục đích vay:</small>
                                 <p class="mb-0"><strong id="confirmLoanPurpose_@Model.MaKhoanVay">-</strong></p>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <small class="text-muted">Mức độ rủi ro:</small>
-                                <p class="mb-0"><span id="confirmRiskLevel_@Model.MaKhoanVay">-</span></p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -585,13 +565,17 @@
         
         // Hàm lấy thông tin khoản vay
         function getLoanInfo() {
+            @{
+                var latestDanhGia = Model.DanhGiaRuiRos?.OrderByDescending(d => d.NgayDanhGia ?? DateTime.MinValue).FirstOrDefault();
+                var riskLevel = latestDanhGia?.MucDoRuiRo ?? Model.MucDoRuiRo ?? "Chưa xác định";
+            }
             return {
                 loanCode: '@Model.MaKhoanVayCode',
                 customerId: '@Model.MaKhachHang',
                 customerType: '@Model.LoaiKhachHang',
                 loanAmount: '@Model.SoTienVay.ToString("N0") VND',
                 loanPurpose: '@Model.MucDichVay',
-                riskLevel: '@(Model.MucDoRuiRo ?? "Chưa xác định")'
+                riskLevel: '@riskLevel'
             };
         }
         
@@ -621,19 +605,6 @@
             document.getElementById('confirmCustomerType').textContent = loanInfo.customerType || '-';
             document.getElementById('confirmLoanAmount').textContent = loanInfo.loanAmount || '-';
             document.getElementById('confirmLoanPurpose').textContent = loanInfo.loanPurpose || '-';
-            
-            // Hiển thị mức độ rủi ro với badge màu
-            const riskLevelEl = document.getElementById('confirmRiskLevel');
-            const riskLevel = loanInfo.riskLevel || '-';
-            if (riskLevel !== '-' && riskLevel !== 'N/A' && riskLevel.length > 0) {
-                let badgeClass = 'bg-secondary';
-                if (riskLevel.includes('Cao') || riskLevel.includes('Rất cao')) badgeClass = 'bg-danger';
-                else if (riskLevel.includes('Trung bình')) badgeClass = 'bg-warning';
-                else if (riskLevel.includes('Thấp')) badgeClass = 'bg-success';
-                riskLevelEl.innerHTML = `<span class="badge ${badgeClass}">${riskLevel}</span>`;
-            } else {
-                riskLevelEl.innerHTML = '<span class="badge bg-secondary">-</span>';
-            }
             
             if (decision === 'approve') {
                 // Chấp nhận
@@ -723,5 +694,180 @@
         // Chạy ngay lập tức
         initDecisionButtons();
     })();
+</script>
+
+<!-- Modal Preview File -->
+<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="filePreviewModalLabel">
+                    <i class="fas fa-file me-2"></i><span id="filePreviewTitle">Xem file</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="min-height: 500px;">
+                <div id="filePreviewContent" class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="filePreviewDownload" href="#" class="btn btn-primary" download>
+                    <i class="fas fa-download me-2"></i>Tải xuống
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .file-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .file-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .file-preview-container {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        background: #f8f9fa;
+        overflow: hidden;
+    }
+
+    .file-preview-image {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+
+    .file-preview-pdf,
+    .file-preview-other {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+
+    .file-preview-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .file-card:hover .file-preview-overlay {
+        opacity: 1;
+    }
+
+    .file-info {
+        background: white;
+    }
+
+    .file-name {
+        word-break: break-word;
+        line-height: 1.4;
+    }
+
+    #filePreviewContent {
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #filePreviewContent img {
+        max-width: 100%;
+        max-height: 70vh;
+        object-fit: contain;
+    }
+
+    #filePreviewContent iframe {
+        width: 100%;
+        height: 70vh;
+        border: none;
+    }
+</style>
+
+<script>
+    function openFilePreview(fileUrl, fileName, fileType) {
+        const modal = new bootstrap.Modal(document.getElementById('filePreviewModal'));
+        const modalTitle = document.getElementById('filePreviewTitle');
+        const modalContent = document.getElementById('filePreviewContent');
+        const downloadLink = document.getElementById('filePreviewDownload');
+        
+        modalTitle.textContent = fileName;
+        downloadLink.href = fileUrl;
+        downloadLink.download = fileName;
+        
+        // Hiển thị loading
+        modalContent.innerHTML = `
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+            <p class="mt-3 text-muted">Đang tải file...</p>
+        `;
+        
+        modal.show();
+        
+        // Load nội dung file
+        if (fileType === 'image' || fileType === 'jpg' || fileType === 'jpeg' || fileType === 'png' || fileType === 'gif') {
+            // Hiển thị hình ảnh
+            const img = document.createElement('img');
+            img.src = fileUrl;
+            img.onload = function() {
+                modalContent.innerHTML = '';
+                modalContent.appendChild(img);
+            };
+            img.onerror = function() {
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Không thể tải hình ảnh. Vui lòng thử tải xuống.
+                    </div>
+                `;
+            };
+        } else if (fileType === 'pdf') {
+            // Hiển thị PDF
+            const iframe = document.createElement('iframe');
+            iframe.src = fileUrl + '#toolbar=1';
+            iframe.onload = function() {
+                modalContent.innerHTML = '';
+                modalContent.appendChild(iframe);
+            };
+            iframe.onerror = function() {
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Không thể tải PDF. Vui lòng thử tải xuống.
+                    </div>
+                `;
+            };
+        } else {
+            // Mở trong tab mới cho các file khác
+            window.open(fileUrl, '_blank');
+            modal.hide();
+        }
+    }
 </script>
 

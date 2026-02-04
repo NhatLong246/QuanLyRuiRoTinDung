@@ -147,8 +147,8 @@ namespace QuanLyRuiRoTinDung.Controllers
         // Phê duyệt hoặc từ chối khoản vay
         public async Task<IActionResult> PheDuyetKhoanVay(string search = "", string status = "", string riskLevel = "")
         {
-            // Luôn lọc theo trạng thái "Chờ phê duyệt"
-            var fixedStatus = "Chờ phê duyệt";
+            // Luôn lọc theo trạng thái "Chờ duyệt"
+            var fixedStatus = "Chờ duyệt";
             
             var khoanVayQuery = _context.KhoanVays
                 .Include(k => k.MaNhanVienTinDungNavigation)
@@ -280,12 +280,38 @@ namespace QuanLyRuiRoTinDung.Controllers
                 .Include(k => k.KhoanVayTaiSans)
                     .ThenInclude(kt => kt.MaTaiSanNavigation)
                         .ThenInclude(ts => ts.MaLoaiTaiSanNavigation)
+                .Include(k => k.HoSoVayFileDinhKems)
                 .FirstOrDefaultAsync(k => k.MaKhoanVay == id);
 
             if (khoanVay == null)
             {
                 return NotFound();
             }
+
+            // Load file đính kèm
+            var files = await _context.HoSoVayFileDinhKems
+                .Where(f => f.MaKhoanVay == id && (f.TrangThai == null || f.TrangThai == true))
+                .OrderBy(f => f.LoaiFile)
+                .ThenBy(f => f.NgayTao)
+                .ToListAsync();
+
+            ViewBag.Files = files;
+
+            // Load tên khách hàng
+            string? tenKhachHang = null;
+            if (khoanVay.LoaiKhachHang == "CaNhan")
+            {
+                var khachHangCaNhan = await _context.KhachHangCaNhans
+                    .FirstOrDefaultAsync(k => k.MaKhachHang == khoanVay.MaKhachHang);
+                tenKhachHang = khachHangCaNhan?.HoTen;
+            }
+            else if (khoanVay.LoaiKhachHang == "DoanhNghiep")
+            {
+                var khachHangDoanhNghiep = await _context.KhachHangDoanhNghieps
+                    .FirstOrDefaultAsync(k => k.MaKhachHang == khoanVay.MaKhachHang);
+                tenKhachHang = khachHangDoanhNghiep?.TenCongTy;
+            }
+            ViewBag.TenKhachHang = tenKhachHang ?? $"KH-{khoanVay.MaKhachHang}";
 
             if (partial)
             {
