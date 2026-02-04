@@ -957,6 +957,18 @@ namespace QuanLyRuiRoTinDung.Controllers
                 return Json(new { success = false, message = "Có lỗi xảy ra khi hủy gửi hồ sơ." });
             }
         }
+
+        // GET: Loan/ThanhToanKhoanVay?loanCode=LOAN0001 hoặc ?loanId=1
+        public IActionResult ThanhToanKhoanVay(string? loanCode, int? loanId)
+        {
+            // Trang này có thể truy cập công khai qua link từ email
+            // Không cần kiểm tra đăng nhập ở đây (có thể kiểm tra sau khi có backend)
+            
+            ViewBag.LoanCode = loanCode ?? "LOAN0001";
+            ViewBag.LoanId = loanId;
+            
+            return View();
+        }
     }
 
     // ViewModel cho SelectCustomer

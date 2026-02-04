@@ -327,9 +327,9 @@
                                 formatter: (value, ctx) => {
                                     const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                                     return percentage + '%';
-                                }
                             }
                         }
+                    }
                     },
                     plugins: [ChartDataLabels]
                 });

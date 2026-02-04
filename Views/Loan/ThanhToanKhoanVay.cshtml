@@ -1,0 +1,662 @@
+@{
+    ViewData["Title"] = "Thanh toán khoản vay";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-money-bill-wave me-2 text-primary"></i>Thanh toán khoản vay
+            </h2>
+            <p class="text-muted mb-0">Thanh toán khoản vay theo từng đợt</p>
+        </div>
+    </div>
+
+    <!-- Thông tin khoản vay -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Thông tin khoản vay
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Mã khoản vay</label>
+                                <h5 class="mb-0">LOAN0001</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Số tiền vay</label>
+                                <h5 class="mb-0 text-success">2,000,000,000 VNĐ</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Số tiền đã thanh toán</label>
+                                <h5 class="mb-0 text-info">500,000,000 VNĐ</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Số tiền còn nợ</label>
+                                <h5 class="mb-0 text-danger">1,500,000,000 VNĐ</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Lãi suất</label>
+                                <h6 class="mb-0">12.5% / năm</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Kỳ hạn vay</label>
+                                <h6 class="mb-0">12 tháng</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Số kỳ đã trả</label>
+                                <h6 class="mb-0">3 / 12</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="text-muted small">Số kỳ còn lại</label>
+                                <h6 class="mb-0 text-warning">9 kỳ</h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="text-muted small">Hình thức trả nợ</label>
+                                <h6 class="mb-0">Trả góp đều</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="text-muted small">Số tiền trả mỗi kỳ</label>
+                                <h6 class="mb-0 text-primary">178,000,000 VNĐ</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tiến độ thanh toán -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Tiến độ thanh toán
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
+                            <strong>25%</strong>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">Đã thanh toán: 500,000,000 VNĐ</small>
+                        <small class="text-muted">Còn lại: 1,500,000,000 VNĐ</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lịch thanh toán -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Lịch thanh toán các đợt
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="8%">Kỳ</th>
+                                    <th width="12%">Ngày đến hạn</th>
+                                    <th width="12%">Số tiền gốc</th>
+                                    <th width="12%">Số tiền lãi</th>
+                                    <th width="12%">Tổng phải trả</th>
+                                    <th width="12%">Đã thanh toán</th>
+                                    <th width="10%">Trạng thái</th>
+                                    <th width="10%">Ngày thanh toán</th>
+                                    <th width="12%">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentScheduleTable">
+                                <!-- Dữ liệu mẫu -->
+                                <tr>
+                                    <td><strong>1</strong></td>
+                                    <td>15/01/2026</td>
+                                    <td>158,333,333</td>
+                                    <td>20,833,333</td>
+                                    <td><strong class="text-primary">179,166,666</strong></td>
+                                    <td class="text-success"><strong>179,166,666</strong></td>
+                                    <td><span class="badge bg-success">Đã thanh toán</span></td>
+                                    <td>15/01/2026</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-check"></i> Đã trả
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>2</strong></td>
+                                    <td>15/02/2026</td>
+                                    <td>159,982,639</td>
+                                    <td>19,184,027</td>
+                                    <td><strong class="text-primary">179,166,666</strong></td>
+                                    <td class="text-success"><strong>179,166,666</strong></td>
+                                    <td><span class="badge bg-success">Đã thanh toán</span></td>
+                                    <td>15/02/2026</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-check"></i> Đã trả
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>3</strong></td>
+                                    <td>15/03/2026</td>
+                                    <td>161,651,084</td>
+                                    <td>17,515,582</td>
+                                    <td><strong class="text-primary">179,166,666</strong></td>
+                                    <td class="text-success"><strong>179,166,666</strong></td>
+                                    <td><span class="badge bg-success">Đã thanh toán</span></td>
+                                    <td>15/03/2026</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-check"></i> Đã trả
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="table-warning">
+                                    <td><strong>4</strong></td>
+                                    <td><strong>15/04/2026</strong></td>
+                                    <td>163,338,845</td>
+                                    <td>15,827,821</td>
+                                    <td><strong class="text-danger">179,166,666</strong></td>
+                                    <td class="text-danger"><strong>0</strong></td>
+                                    <td><span class="badge bg-warning">Đến hạn</span></td>
+                                    <td>-</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="openPaymentModal(4, '15/04/2026', 163338845, 15827821, 179166666)">
+                                            <i class="fas fa-money-bill-wave me-1"></i>Thanh toán
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>5</strong></td>
+                                    <td>15/05/2026</td>
+                                    <td>165,046,101</td>
+                                    <td>14,120,565</td>
+                                    <td><strong class="text-primary">179,166,666</strong></td>
+                                    <td class="text-danger"><strong>0</strong></td>
+                                    <td><span class="badge bg-secondary">Chưa đến hạn</span></td>
+                                    <td>-</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="openPaymentModal(5, '15/05/2026', 165046101, 14120565, 179166666)">
+                                            <i class="fas fa-money-bill-wave me-1"></i>Thanh toán
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>6</strong></td>
+                                    <td>15/06/2026</td>
+                                    <td>166,773,025</td>
+                                    <td>12,393,641</td>
+                                    <td><strong class="text-primary">179,166,666</strong></td>
+                                    <td class="text-danger"><strong>0</strong></td>
+                                    <td><span class="badge bg-secondary">Chưa đến hạn</span></td>
+                                    <td>-</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="openPaymentModal(6, '15/06/2026', 166773025, 12393641, 179166666)">
+                                            <i class="fas fa-money-bill-wave me-1"></i>Thanh toán
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- Thêm các kỳ khác... -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thanh toán -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="paymentModalLabel">
+                    <i class="fas fa-money-bill-wave me-2"></i>Thanh toán đợt <span id="paymentPeriodNumber"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="paymentForm">
+                <div class="modal-body">
+                    <!-- Thông tin đợt thanh toán -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="text-muted small">Ngày đến hạn</label>
+                                    <h6 class="mb-3" id="paymentDueDate">-</h6>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted small">Kỳ thanh toán</label>
+                                    <h6 class="mb-3">Kỳ <span id="paymentPeriod">-</span></h6>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="text-muted small">Số tiền gốc</label>
+                                    <h6 class="text-primary" id="paymentPrincipal">0 VNĐ</h6>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="text-muted small">Số tiền lãi</label>
+                                    <h6 class="text-info" id="paymentInterest">0 VNĐ</h6>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="text-muted small">Tổng phải trả</label>
+                                    <h5 class="text-danger mb-0" id="paymentTotal">0 VNĐ</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thông tin thanh toán -->
+                    <h6 class="mb-3">
+                        <i class="fas fa-credit-card me-2"></i>Thông tin thanh toán
+                    </h6>
+                    
+                    <div class="mb-3">
+                        <label for="paymentAmount" class="form-label">
+                            Số tiền thanh toán <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" 
+                                   class="form-control form-control-lg" 
+                                   id="paymentAmount" 
+                                   name="paymentAmount" 
+                                   required 
+                                   min="0"
+                                   step="1000">
+                            <span class="input-group-text">VNĐ</span>
+                        </div>
+                        <small class="form-text text-muted">
+                            Số tiền tối thiểu: <span id="minPaymentAmount" class="text-danger">0 VNĐ</span>
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="paymentMethod" class="form-label">
+                            Hình thức thanh toán <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="paymentMethod" name="paymentMethod" required>
+                            <option value="">-- Chọn hình thức thanh toán --</option>
+                            <option value="ChuyenKhoan">Chuyển khoản ngân hàng</option>
+                            <option value="TheTinDung">Thẻ tín dụng</option>
+                            <option value="TheGhiNo">Thẻ ghi nợ</option>
+                            <option value="TienMat">Tiền mặt</option>
+                            <option value="ViDienTu">Ví điện tử</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="bankInfoGroup" style="display: none;">
+                        <label for="bankName" class="form-label">Ngân hàng</label>
+                        <input type="text" class="form-control" id="bankName" name="bankName" placeholder="VD: Vietcombank, BIDV, Techcombank...">
+                    </div>
+
+                    <div class="mb-3" id="transactionCodeGroup" style="display: none;">
+                        <label for="transactionCode" class="form-label">Mã giao dịch</label>
+                        <input type="text" class="form-control" id="transactionCode" name="transactionCode" placeholder="Nhập mã giao dịch từ ngân hàng">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="paymentNote" class="form-label">Ghi chú</label>
+                        <textarea class="form-control" id="paymentNote" name="paymentNote" rows="3" placeholder="Ghi chú thêm về giao dịch thanh toán (nếu có)"></textarea>
+                    </div>
+
+                    <!-- Cảnh báo nếu thanh toán trước hạn -->
+                    <div class="alert alert-info" id="earlyPaymentAlert" style="display: none;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Lưu ý:</strong> Bạn đang thanh toán trước hạn. Việc thanh toán sớm có thể giúp giảm tổng số tiền lãi phải trả.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-check me-2"></i>Xác nhận thanh toán
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Xác nhận thanh toán -->
+<div class="modal fade" id="confirmPaymentModal" tabindex="-1" aria-labelledby="confirmPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="confirmPaymentModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>Xác nhận thanh toán
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                    <h5>Bạn có chắc chắn muốn thanh toán?</h5>
+                </div>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="text-muted small">Kỳ thanh toán</label>
+                                <h6 id="confirmPeriod">-</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Số tiền</label>
+                                <h6 class="text-danger" id="confirmAmount">-</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Hình thức</label>
+                                <h6 id="confirmMethod">-</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Ngân hàng</label>
+                                <h6 id="confirmBank">-</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success btn-lg" id="finalConfirmBtn">
+                    <i class="fas fa-check me-2"></i>Xác nhận
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thông báo -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="alertModalHeader">
+                <h5 class="modal-title" id="alertModalLabel">Thông báo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="alertModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPaymentData = {};
+
+    // Format số tiền
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', { 
+            style: 'currency', 
+            currency: 'VND' 
+        }).format(amount);
+    }
+
+    // Format số không có VNĐ
+    function formatNumber(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount);
+    }
+
+    // Mở modal thanh toán
+    function openPaymentModal(period, dueDate, principal, interest, total) {
+        currentPaymentData = {
+            period: period,
+            dueDate: dueDate,
+            principal: principal,
+            interest: interest,
+            total: total
+        };
+
+        $('#paymentPeriodNumber').text(period);
+        $('#paymentPeriod').text(period);
+        $('#paymentDueDate').text(dueDate);
+        $('#paymentPrincipal').text(formatCurrency(principal));
+        $('#paymentInterest').text(formatCurrency(interest));
+        $('#paymentTotal').text(formatCurrency(total));
+        $('#minPaymentAmount').text(formatCurrency(total));
+        
+        // Set giá trị mặc định
+        $('#paymentAmount').val(total);
+        $('#paymentAmount').attr('min', total);
+        $('#paymentMethod').val('');
+        $('#bankName').val('');
+        $('#transactionCode').val('');
+        $('#paymentNote').val('');
+
+        // Kiểm tra nếu thanh toán trước hạn
+        const today = new Date();
+        const dueDateObj = new Date(dueDate.split('/').reverse().join('-'));
+        if (today < dueDateObj) {
+            $('#earlyPaymentAlert').show();
+        } else {
+            $('#earlyPaymentAlert').hide();
+        }
+
+        // Reset form
+        $('#paymentForm')[0].reset();
+        $('#paymentAmount').val(total);
+        $('#paymentAmount').attr('min', total);
+
+        $('#paymentModal').modal('show');
+    }
+
+    // Hiển thị/ẩn các trường theo hình thức thanh toán
+    $('#paymentMethod').on('change', function() {
+        const method = $(this).val();
+        if (method === 'ChuyenKhoan' || method === 'TheTinDung' || method === 'TheGhiNo') {
+            $('#bankInfoGroup').show();
+            $('#transactionCodeGroup').show();
+        } else {
+            $('#bankInfoGroup').hide();
+            $('#transactionCodeGroup').hide();
+        }
+    });
+
+    // Validate số tiền thanh toán
+    $('#paymentAmount').on('input', function() {
+        const amount = parseFloat($(this).val()) || 0;
+        const minAmount = currentPaymentData.total;
+        
+        if (amount < minAmount) {
+            $(this).addClass('is-invalid');
+            $(this).removeClass('is-valid');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).addClass('is-valid');
+        }
+    });
+
+    // Submit form thanh toán
+    $('#paymentForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const amount = parseFloat($('#paymentAmount').val()) || 0;
+        const minAmount = currentPaymentData.total;
+        
+        if (amount < minAmount) {
+            showAlert('Số tiền thanh toán phải lớn hơn hoặc bằng số tiền phải trả!', 'error');
+            return;
+        }
+
+        // Hiển thị modal xác nhận
+        $('#confirmPeriod').text('Kỳ ' + currentPaymentData.period);
+        $('#confirmAmount').text(formatCurrency(amount));
+        $('#confirmMethod').text($('#paymentMethod option:selected').text());
+        $('#confirmBank').text($('#bankName').val() || '-');
+        
+        $('#paymentModal').modal('hide');
+        $('#confirmPaymentModal').modal('show');
+    });
+
+    // Xác nhận thanh toán cuối cùng
+    $('#finalConfirmBtn').on('click', function() {
+        // TODO: Gọi API để xử lý thanh toán
+        // Ở đây chỉ là frontend nên chỉ hiển thị thông báo
+        
+        const paymentData = {
+            period: currentPaymentData.period,
+            amount: parseFloat($('#paymentAmount').val()),
+            method: $('#paymentMethod').val(),
+            bankName: $('#bankName').val(),
+            transactionCode: $('#transactionCode').val(),
+            note: $('#paymentNote').val()
+        };
+
+        console.log('Payment Data:', paymentData);
+
+        // Hiển thị thông báo thành công
+        $('#confirmPaymentModal').modal('hide');
+        showAlert('Thanh toán thành công! Giao dịch đang được xử lý.', 'success');
+        
+        // Reload trang sau 2 giây
+        setTimeout(function() {
+            location.reload();
+        }, 2000);
+    });
+
+    // Hàm hiển thị thông báo
+    function showAlert(message, type = 'info') {
+        var headerClass = 'bg-primary';
+        var title = 'Thông báo';
+        
+        if (type === 'success') {
+            headerClass = 'bg-success';
+            title = 'Thành công';
+        } else if (type === 'error' || type === 'danger') {
+            headerClass = 'bg-danger';
+            title = 'Lỗi';
+        } else if (type === 'warning') {
+            headerClass = 'bg-warning';
+            title = 'Cảnh báo';
+        }
+        
+        $('#alertModalHeader').removeClass('bg-primary bg-success bg-danger bg-warning').addClass(headerClass + ' text-white');
+        $('#alertModalLabel').text(title);
+        $('#alertModalMessage').text(message);
+        $('#alertModal').modal('show');
+    }
+</script>
+
+    <style>
+        .card {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .table th {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        .badge {
+            padding: 0.5em 0.75em;
+            font-size: 0.85rem;
+        }
+
+        .progress {
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-header {
+            border-bottom: none;
+        }
+
+        .modal-footer {
+            border-top: none;
+        }
+
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        .btn {
+            border-radius: 5px;
+        }
+
+        .table-warning {
+            background-color: #fff3cd;
+        }
+    </style>
+    
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Đảm bảo jQuery đã load trước khi chạy các script khác
+        $(document).ready(function() {
+            // Các event listener đã được định nghĩa ở trên sẽ hoạt động sau khi DOM ready
+        });
+    </script>
+</body>
+</html>
+

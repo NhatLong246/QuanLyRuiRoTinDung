@@ -1,0 +1,760 @@
+@model List<QuanLyRuiRoTinDung.Models.Entities.NguoiDung>
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Header -->
+<section class="work-overview">
+    <div class="section-header">
+        <h2 class="section-title">Quản lý người dùng</h2>
+        <p class="welcome-message">Quản lý thông tin người dùng, vai trò và quyền truy cập hệ thống</p>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            @Html.AntiForgeryToken()
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Tìm kiếm theo tên đăng nhập, họ tên, email..." 
+                           name="search" 
+                           value="@ViewBag.Search">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="role">
+                        <option value="">-- Tất cả vai trò --</option>
+                        @if (ViewBag.VaiTros != null)
+                        {
+                            @foreach (var vaiTro in (List<QuanLyRuiRoTinDung.Models.Entities.VaiTro>)ViewBag.VaiTros)
+                            {
+                                <option value="@vaiTro.TenVaiTro" selected="@(ViewBag.SelectedRole?.ToString() == vaiTro.TenVaiTro)">
+                                    @vaiTro.TenVaiTro
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="status">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="true" selected="@(ViewBag.SelectedStatus?.ToString() == "True")">Hoạt động</option>
+                        <option value="false" selected="@(ViewBag.SelectedStatus?.ToString() == "False")">Đã khóa</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mb-3">
+        <a href="@Url.Action("TaoTaiKhoanNhanVien", "Account")" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>Tạo tài khoản mới
+        </a>
+    </div>
+
+    <!-- Users Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>TÊN ĐĂNG NHẬP</th>
+                    <th>HỌ TÊN</th>
+                    <th>EMAIL</th>
+                    <th>SỐ ĐIỆN THOẠI</th>
+                    <th>VAI TRÒ</th>
+                    <th>PHÒNG BAN</th>
+                    <th>TRẠNG THÁI</th>
+                    <th>NGÀY TẠO</th>
+                    <th>THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var nguoiDung in Model)
+                    {
+                        var trangThaiClass = nguoiDung.TrangThaiHoatDong == true ? "status-badge status-pending" : "status-badge status-request";
+                        var trangThaiText = nguoiDung.TrangThaiHoatDong == true ? "Hoạt động" : "Đã khóa";
+                        var tenPhongBan = "";
+                        if (nguoiDung.MaPhongBan.HasValue && ViewBag.PhongBans != null)
+                        {
+                            var phongBan = ((List<QuanLyRuiRoTinDung.Models.Entities.PhongBan>)ViewBag.PhongBans)
+                                .FirstOrDefault(p => p.MaPhongBan == nguoiDung.MaPhongBan!.Value);
+                            tenPhongBan = phongBan?.TenPhongBan ?? "N/A";
+                        }
+                        else
+                        {
+                            tenPhongBan = "N/A";
+                        }
+                        
+                        <tr>
+                            <td>
+                                <a href="#" class="loan-code" onclick="viewUserDetail(@nguoiDung.MaNguoiDung); return false;">
+                                    @nguoiDung.TenDangNhap
+                                </a>
+                            </td>
+                            <td>@nguoiDung.HoTen</td>
+                            <td>@(string.IsNullOrEmpty(nguoiDung.Email) ? "N/A" : nguoiDung.Email)</td>
+                            <td>@(string.IsNullOrEmpty(nguoiDung.SoDienThoai) ? "N/A" : nguoiDung.SoDienThoai)</td>
+                            <td>@(nguoiDung.MaVaiTroNavigation?.TenVaiTro ?? "N/A")</td>
+                            <td>@tenPhongBan</td>
+                            <td>
+                                <span class="@trangThaiClass">@trangThaiText</span>
+                            </td>
+                            <td>@(nguoiDung.NgayTao?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap align-items-center">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-info" 
+                                            onclick="viewUserDetail(@nguoiDung.MaNguoiDung)"
+                                            title="Xem chi tiết">
+                                        <i class="fas fa-eye me-1"></i>Xem
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-warning" 
+                                            onclick="editUser(@nguoiDung.MaNguoiDung)"
+                                            title="Sửa thông tin">
+                                        <i class="fas fa-edit me-1"></i>Sửa
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="no-data">Không có người dùng nào</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Modal: View User Detail -->
+<div class="modal fade" id="viewUserModal" tabindex="-1" aria-labelledby="viewUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewUserModalLabel">Chi tiết người dùng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="viewUserModalBody">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-secondary" id="btnResetPasswordInModal" onclick="resetPasswordFromModal()" style="display: none;">
+                    <i class="fas fa-key me-1"></i>Reset mật khẩu
+                </button>
+                <button type="button" class="btn btn-danger" id="btnLockUserInModal" onclick="toggleUserStatusFromModal()" style="display: none;">
+                    <i class="fas fa-lock me-1"></i>Khóa tài khoản
+                </button>
+                <button type="button" class="btn btn-success" id="btnUnlockUserInModal" onclick="toggleUserStatusFromModal()" style="display: none;">
+                    <i class="fas fa-unlock me-1"></i>Mở khóa tài khoản
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit User -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalLabel">Sửa thông tin người dùng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId" name="id">
+                    <div class="mb-3">
+                        <label for="editHoTen" class="form-label">Họ tên <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editHoTen" name="hoTen" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSoDienThoai" class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" id="editSoDienThoai" name="soDienThoai">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editMaVaiTro" class="form-label">Vai trò <span class="text-danger">*</span></label>
+                        <select class="form-select" id="editMaVaiTro" name="maVaiTro" required>
+                            <option value="">-- Chọn vai trò --</option>
+                            @if (ViewBag.VaiTros != null)
+                            {
+                                @foreach (var vaiTro in (List<QuanLyRuiRoTinDung.Models.Entities.VaiTro>)ViewBag.VaiTros)
+                                {
+                                    <option value="@vaiTro.MaVaiTro">@vaiTro.TenVaiTro</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editMaPhongBan" class="form-label">Phòng ban</label>
+                        <select class="form-select" id="editMaPhongBan" name="maPhongBan">
+                            <option value="">-- Chọn phòng ban --</option>
+                            @if (ViewBag.PhongBans != null)
+                            {
+                                @foreach (var phongBan in (List<QuanLyRuiRoTinDung.Models.Entities.PhongBan>)ViewBag.PhongBans)
+                                {
+                                    <option value="@phongBan.MaPhongBan">@phongBan.TenPhongBan</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmation -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Xác nhận</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="confirmModalOkBtn">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Alert/Notification -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="alertModalHeader">
+                <h5 class="modal-title" id="alertModalLabel">Thông báo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="alertModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Reset Password -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetPasswordModalLabel">Reset mật khẩu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="resetPasswordForm">
+                <div class="modal-body">
+                    <input type="hidden" id="resetPasswordUserId" name="id">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Mật khẩu mới sẽ được đặt cho người dùng này. Vui lòng nhập mật khẩu mới (tối thiểu 6 ký tự).
+                    </div>
+                    <div class="mb-3">
+                        <label for="resetPasswordNew" class="form-label">Mật khẩu mới <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="resetPasswordNew" name="matKhauMoi" minlength="6" required>
+                        <small class="form-text text-muted">Mật khẩu phải có ít nhất 6 ký tự</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="resetPasswordConfirm" class="form-label">Xác nhận mật khẩu <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="resetPasswordConfirm" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Reset mật khẩu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Get anti-forgery token
+        function getToken() {
+            return $('input[name="__RequestVerificationToken"]').val() || '';
+        }
+        
+        // Hàm hiển thị modal thông báo thay thế alert()
+        function showAlert(message, type = 'info') {
+            var headerClass = 'bg-primary';
+            var title = 'Thông báo';
+            
+            if (type === 'success') {
+                headerClass = 'bg-success';
+                title = 'Thành công';
+            } else if (type === 'error' || type === 'danger') {
+                headerClass = 'bg-danger';
+                title = 'Lỗi';
+            } else if (type === 'warning') {
+                headerClass = 'bg-warning';
+                title = 'Cảnh báo';
+            }
+            
+            $('#alertModalHeader').removeClass('bg-primary bg-success bg-danger bg-warning').addClass(headerClass + ' text-white');
+            $('#alertModalLabel').text(title);
+            $('#alertModalMessage').text(message);
+            $('#alertModal').modal('show');
+        }
+        
+        // Hàm hiển thị modal xác nhận thay thế confirm()
+        function showConfirm(message, onConfirm) {
+            $('#confirmModalMessage').text(message);
+            $('#confirmModal').modal('show');
+            
+            // Xóa các event listener cũ
+            $('#confirmModalOkBtn').off('click');
+            
+            // Thêm event listener mới
+            $('#confirmModalOkBtn').on('click', function() {
+                $('#confirmModal').modal('hide');
+                if (onConfirm && typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+            });
+        }
+
+        // Lưu userId hiện tại đang xem
+        var currentViewingUserId = null;
+
+        // View User Detail
+        function viewUserDetail(userId) {
+            currentViewingUserId = userId;
+            $('#viewUserModalBody').html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+            
+            // Ẩn tất cả các nút hành động trước khi load
+            $('#btnResetPasswordInModal').hide();
+            $('#btnLockUserInModal').hide();
+            $('#btnUnlockUserInModal').hide();
+            
+            $('#viewUserModal').modal('show');
+            
+            $.ajax({
+                url: '@Url.Action("ChiTietNguoiDung", "Admin")',
+                type: 'GET',
+                data: { id: userId },
+                success: function(response) {
+                    if (response.success) {
+                        var data = response.data;
+                        var html = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">Thông tin cơ bản</h6>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td width="40%"><strong>Tên đăng nhập:</strong></td>
+                                            <td>${data.tenDangNhap}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Họ tên:</strong></td>
+                                            <td>${data.hoTen}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email:</strong></td>
+                                            <td>${data.email || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Số điện thoại:</strong></td>
+                                            <td>${data.soDienThoai || 'N/A'}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">Thông tin công việc</h6>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td width="40%"><strong>Vai trò:</strong></td>
+                                            <td>${data.tenVaiTro}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Phòng ban:</strong></td>
+                                            <td>${data.tenPhongBan || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Trạng thái:</strong></td>
+                                            <td>
+                                                <span class="badge ${data.trangThaiHoatDong ? 'bg-success' : 'bg-danger'}">
+                                                    ${data.trangThaiHoatDong ? 'Hoạt động' : 'Đã khóa'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Ngày tạo:</strong></td>
+                                            <td>${data.ngayTao}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Lần đăng nhập cuối:</strong></td>
+                                            <td>${data.lanDangNhapCuoi}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                        
+                        if (data.lichSuDangNhap && data.lichSuDangNhap.length > 0) {
+                            html += `
+                                <hr>
+                                <h6 class="text-muted mb-3">Lịch sử đăng nhập gần đây</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Thời gian</th>
+                                                <th>Địa chỉ IP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                            `;
+                            data.lichSuDangNhap.forEach(function(item) {
+                                html += `
+                                    <tr>
+                                        <td>${item.thoiGian}</td>
+                                        <td>${item.diaChiIP || 'N/A'}</td>
+                                    </tr>
+                                `;
+                            });
+                            html += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `;
+                        }
+                        
+                        $('#viewUserModalBody').html(html);
+                        
+                        // Hiển thị các nút hành động phù hợp
+                        $('#btnResetPasswordInModal').show();
+                        if (data.trangThaiHoatDong) {
+                            $('#btnLockUserInModal').show();
+                            $('#btnUnlockUserInModal').hide();
+                        } else {
+                            $('#btnLockUserInModal').hide();
+                            $('#btnUnlockUserInModal').show();
+                        }
+                    } else {
+                        $('#viewUserModalBody').html('<div class="alert alert-danger">' + response.message + '</div>');
+                        showAlert(response.message, 'error');
+                    }
+                },
+                error: function() {
+                    $('#viewUserModalBody').html('<div class="alert alert-danger">Có lỗi xảy ra khi tải dữ liệu</div>');
+                    showAlert('Có lỗi xảy ra khi tải dữ liệu', 'error');
+                }
+            });
+        }
+        
+        // Reset Password từ modal
+        function resetPasswordFromModal() {
+            if (!currentViewingUserId) {
+                showAlert('Không tìm thấy thông tin người dùng', 'error');
+                return;
+            }
+            resetPassword(currentViewingUserId);
+        }
+        
+        // Toggle User Status từ modal
+        function toggleUserStatusFromModal() {
+            if (!currentViewingUserId) {
+                showAlert('Không tìm thấy thông tin người dùng', 'error');
+                return;
+            }
+            
+            // Lấy trạng thái hiện tại từ modal
+            var currentStatus = $('#btnLockUserInModal').is(':visible');
+            var newStatus = currentStatus ? 'false' : 'true';
+            
+            toggleUserStatus(currentViewingUserId, newStatus);
+        }
+
+        // Edit User
+        function editUser(userId) {
+            // Load user data
+            $.ajax({
+                url: '@Url.Action("ChiTietNguoiDung", "Admin")',
+                type: 'GET',
+                data: { id: userId },
+                success: function(response) {
+                    if (response.success) {
+                        var data = response.data;
+                        $('#editUserId').val(data.maNguoiDung);
+                        $('#editHoTen').val(data.hoTen);
+                        $('#editEmail').val(data.email || '');
+                        $('#editSoDienThoai').val(data.soDienThoai || '');
+                        
+                        // Set role
+                        var roleOption = $('#editMaVaiTro option').filter(function() {
+                            return $(this).text() === data.tenVaiTro;
+                        });
+                        if (roleOption.length > 0) {
+                            $('#editMaVaiTro').val(roleOption.val());
+                        }
+                        
+                        // Set department
+                        if (data.tenPhongBan) {
+                            var deptOption = $('#editMaPhongBan option').filter(function() {
+                                return $(this).text() === data.tenPhongBan;
+                            });
+                            if (deptOption.length > 0) {
+                                $('#editMaPhongBan').val(deptOption.val());
+                            }
+                        } else {
+                            $('#editMaPhongBan').val('');
+                        }
+                        
+                        $('#editUserModal').modal('show');
+                    } else {
+                        showAlert('Không thể tải thông tin người dùng: ' + response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showAlert('Có lỗi xảy ra khi tải dữ liệu', 'error');
+                }
+            });
+        }
+
+        // Submit Edit User Form
+        $('#editUserForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            var formData = {
+                id: $('#editUserId').val(),
+                hoTen: $('#editHoTen').val(),
+                email: $('#editEmail').val(),
+                soDienThoai: $('#editSoDienThoai').val(),
+                maVaiTro: $('#editMaVaiTro').val(),
+                maPhongBan: $('#editMaPhongBan').val() || null
+            };
+            
+            $.ajax({
+                url: '@Url.Action("CapNhatNguoiDung", "Admin")',
+                type: 'POST',
+                headers: {
+                    'RequestVerificationToken': getToken()
+                },
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('Cập nhật thông tin thành công!', 'success');
+                        $('#editUserModal').modal('hide');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        showAlert('Lỗi: ' + response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showAlert('Có lỗi xảy ra khi cập nhật thông tin', 'error');
+                }
+            });
+        });
+
+        // Reset Password
+        function resetPassword(userId) {
+            $('#resetPasswordUserId').val(userId);
+            $('#resetPasswordNew').val('');
+            $('#resetPasswordConfirm').val('');
+            $('#resetPasswordModal').modal('show');
+        }
+
+        // Submit Reset Password Form
+        $('#resetPasswordForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            var newPassword = $('#resetPasswordNew').val();
+            var confirmPassword = $('#resetPasswordConfirm').val();
+            
+            if (newPassword !== confirmPassword) {
+                showAlert('Mật khẩu xác nhận không khớp!', 'warning');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showAlert('Mật khẩu phải có ít nhất 6 ký tự!', 'warning');
+                return;
+            }
+            
+            var formData = {
+                id: $('#resetPasswordUserId').val(),
+                matKhauMoi: newPassword
+            };
+            
+            $.ajax({
+                url: '@Url.Action("ResetMatKhau", "Admin")',
+                type: 'POST',
+                headers: {
+                    'RequestVerificationToken': getToken()
+                },
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('Reset mật khẩu thành công!', 'success');
+                        $('#resetPasswordModal').modal('hide');
+                        $('#resetPasswordNew').val('');
+                        $('#resetPasswordConfirm').val('');
+                    } else {
+                        showAlert('Lỗi: ' + response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showAlert('Có lỗi xảy ra khi reset mật khẩu', 'error');
+                }
+            });
+        });
+
+        // Toggle User Status
+        function toggleUserStatus(userId, newStatus) {
+            var action = newStatus === 'true' ? 'mở khóa' : 'khóa';
+            
+            showConfirm('Bạn có chắc chắn muốn ' + action + ' tài khoản này?', function() {
+                $.ajax({
+                    url: '@Url.Action("KhoaMoKhoaTaiKhoan", "Admin")',
+                    type: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getToken()
+                    },
+                    data: { id: userId },
+                    success: function(response) {
+                        if (response.success) {
+                            showAlert(response.message, 'success');
+                            // Nếu đang mở modal xem chi tiết, refresh lại modal thay vì reload toàn bộ trang
+                            if ($('#viewUserModal').hasClass('show')) {
+                                setTimeout(function() {
+                                    viewUserDetail(userId);
+                                }, 1000);
+                            } else {
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1000);
+                            }
+                        } else {
+                            showAlert('Lỗi: ' + response.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        showAlert('Có lỗi xảy ra khi thực hiện thao tác', 'error');
+                    }
+                });
+            });
+        }
+        
+        // Reset modal khi đóng
+        $('#viewUserModal').on('hidden.bs.modal', function() {
+            currentViewingUserId = null;
+            $('#viewUserModalBody').html('');
+            $('#btnResetPasswordInModal').hide();
+            $('#btnLockUserInModal').hide();
+            $('#btnUnlockUserInModal').hide();
+        });
+    </script>
+    
+    <style>
+        /* Cải thiện hiển thị các nút hành động */
+        .data-table td:last-child {
+            white-space: nowrap;
+            min-width: 150px;
+            width: 150px;
+        }
+        
+        .data-table .btn {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .data-table .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .data-table .btn i {
+            font-size: 0.875rem;
+        }
+        
+        /* Đảm bảo các nút không bị thu nhỏ */
+        .data-table .d-flex.gap-1 {
+            gap: 0.5rem !important;
+        }
+        
+        /* Đảm bảo container không bị overflow */
+        .data-table .d-flex {
+            flex-wrap: wrap;
+            max-width: 100%;
+        }
+        
+        /* Modal footer buttons */
+        #viewUserModal .modal-footer .btn {
+            margin-left: 0.5rem;
+        }
+        
+        /* Modal xác nhận và thông báo */
+        #confirmModal .modal-header,
+        #alertModal .modal-header {
+            border-bottom: none;
+        }
+        
+        #confirmModal .modal-body,
+        #alertModal .modal-body {
+            padding: 1.5rem;
+            font-size: 1rem;
+        }
+        
+        #confirmModal .modal-footer,
+        #alertModal .modal-footer {
+            border-top: none;
+            padding: 1rem 1.5rem;
+        }
+        
+        /* Responsive cho mobile */
+        @@media (max-width: 768px) {
+            .data-table td:last-child {
+                min-width: auto;
+                width: auto;
+            }
+            
+            .data-table .btn {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.5rem;
+            }
+        }
+    </style>
+}
+

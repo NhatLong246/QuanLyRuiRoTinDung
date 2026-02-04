@@ -19,7 +19,26 @@ namespace QuanLyRuiRoTinDung.Controllers
             var maNguoiDung = HttpContext.Session.GetString("MaNguoiDung");
             if (!string.IsNullOrEmpty(maNguoiDung))
             {
-                // Đã đăng nhập, redirect đến Dashboard
+                // Đã đăng nhập, redirect đến Dashboard dựa trên vai trò
+                var tenVaiTro = HttpContext.Session.GetString("TenVaiTro");
+                if (!string.IsNullOrWhiteSpace(tenVaiTro))
+                {
+                    var tenVaiTroNormalized = tenVaiTro.Trim();
+                    
+                    if (tenVaiTroNormalized.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return RedirectToAction("Index", "Admin");
+                    }
+                    if (tenVaiTroNormalized.Equals("LanhDao", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return RedirectToAction("Index", "LanhDao");
+                    }
+                    if (tenVaiTroNormalized.Equals("QuanLyRuiRo", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return RedirectToAction("Index", "QuanLyRuiRo");
+                    }
+                }
+                // Mặc định redirect đến Dashboard nhân viên
                 return RedirectToAction("Index", "Dashboard");
             }
 

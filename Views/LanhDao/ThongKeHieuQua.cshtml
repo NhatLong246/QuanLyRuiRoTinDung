@@ -83,16 +83,16 @@
         </div>
 
         <div class="col-md-3">
-            <div class="card border-left-warning h-100">
+            <div class="card border-left-danger h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-warning font-weight-bold text-uppercase mb-1 small">Tỷ Lệ Phê Duyệt</div>
-                            <div class="h3 mb-0">@Model.ApprovalRate%</div>
-                            <small class="text-muted">Trong tháng này</small>
+                            <div class="text-danger font-weight-bold text-uppercase mb-1 small">Tỷ Lệ Nợ Xấu</div>
+                            <div class="h3 mb-0">@Model.BadDebtRatio%</div>
+                            <small class="text-muted">Tổng số khoản vay</small>
                         </div>
-                        <div class="text-warning">
-                            <i class="fas fa-percentage fa-2x opacity-50"></i>
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
                         </div>
                     </div>
                 </div>
@@ -141,6 +141,22 @@
                 </div>
                 <div class="card-body">
                     <canvas id="comparisonChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Loan Amount Chart Row -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Tổng vốn vay 6 tháng gần đây
+                    </h6>
+                </div>
+                <div class="card-body" style="height: 300px;">
+                    <canvas id="totalLoanAmountChart"></canvas>
                 </div>
             </div>
         </div>
@@ -344,6 +360,324 @@
                     </text>
                 }
             }
+
+            // Total Loan Amount Chart (6 months)
+            @{
+                var monthlyDataForLoan = Model.MonthlySummary as System.Collections.ICollection;
+                if (monthlyDataForLoan != null && monthlyDataForLoan.Count > 0)
+                {
+                    var monthsForLoan = new List<string>();
+                    var totalLoanAmounts = new List<decimal>();
+                    decimal maxAmount = 0;
+                    
+                    foreach (var item in Model.MonthlySummary)
+                    {
+                        monthsForLoan.Add(item.Month);
+                        totalLoanAmounts.Add(item.TotalLoanAmount);
+                        if (item.TotalLoanAmount > maxAmount)
+                        {
+                            maxAmount = item.TotalLoanAmount;
+                        }
+                    }
+                    
+                    // Tính toán max value dựa trên giá trị cao nhất
+                    // Ví dụ: 0.5 tỷ -> làm tròn lên thành 1 tỷ hoặc 2 tỷ, chia thành các mốc cao hơn
+                    decimal suggestedMax = 0;
+                    decimal stepSize = 0;
+                    
+                    if (maxAmount > 0)
+                    {
+                        // Làm tròn giá trị cao nhất lên thành số đẹp và tăng thêm để biểu đồ cao hơn
+                        if (maxAmount >= 1000000000m) // >= 1 tỷ
+                        {
+                            // Ví dụ: 0.5 tỷ -> làm tròn lên thành 1 tỷ, chia thành 0, 0.5, 1 tỷ
+                            // Ví dụ: 5.6 tỷ -> làm tròn lên thành 6 tỷ, chia thành 0, 2, 4, 6 tỷ
+                            decimal ty = maxAmount / 1000000000m;
+                            decimal roundedTy = Math.Ceiling(ty); // Làm tròn lên
+                            
+                            // Tăng thêm để biểu đồ cao hơn (ít nhất gấp đôi giá trị cao nhất)
+                            if (roundedTy <= 1)
+                            {
+                                // Nếu <= 1 tỷ, đặt max = 2 tỷ, chia thành 0, 0.5, 1, 1.5, 2 tỷ
+                                suggestedMax = 2000000000m; // 2 tỷ
+                                stepSize = 500000000m; // 0.5 tỷ
+                            }
+                            else if (roundedTy <= 2)
+                            {
+                                // Nếu <= 2 tỷ, đặt max = 3 tỷ, chia thành 0, 1, 2, 3 tỷ
+                                suggestedMax = 3000000000m; // 3 tỷ
+                                stepSize = 1000000000m; // 1 tỷ
+                            }
+                            else if (roundedTy <= 3)
+                            {
+                                // Nếu <= 3 tỷ, đặt max = 4 tỷ, chia thành 0, 1, 2, 3, 4 tỷ
+                                suggestedMax = 4000000000m; // 4 tỷ
+                                stepSize = 1000000000m; // 1 tỷ
+                            }
+                            else if (roundedTy <= 6)
+                            {
+                                // Nếu <= 6 tỷ, đặt max = 8 tỷ, chia thành 0, 2, 4, 6, 8 tỷ
+                                suggestedMax = 8000000000m; // 8 tỷ
+                                stepSize = 2000000000m; // 2 tỷ
+                            }
+                            else if (roundedTy <= 10)
+                            {
+                                // Nếu <= 10 tỷ, đặt max = 12 tỷ, chia thành 0, 2, 4, 6, 8, 10, 12 tỷ
+                                suggestedMax = 12000000000m; // 12 tỷ
+                                stepSize = 2000000000m; // 2 tỷ
+                            }
+                            else
+                            {
+                                // Nếu > 10 tỷ, đặt max = roundedTy * 1.5, chia thành các mốc 5 tỷ
+                                suggestedMax = Math.Ceiling(roundedTy * 1.5m) * 1000000000m;
+                                stepSize = 5000000000m; // 5 tỷ
+                            }
+                        }
+                        else if (maxAmount >= 1000000m) // >= 1 triệu
+                        {
+                            // Làm tròn lên đến triệu gần nhất và tăng thêm
+                            decimal trieu = maxAmount / 1000000m;
+                            decimal roundedTrieu = Math.Ceiling(trieu);
+                            
+                            if (roundedTrieu <= 1)
+                            {
+                                suggestedMax = 2000000m; // 2 triệu
+                                stepSize = 500000m; // 0.5 triệu
+                            }
+                            else if (roundedTrieu <= 3)
+                            {
+                                suggestedMax = 4000000m; // 4 triệu
+                                stepSize = 1000000m; // 1 triệu
+                            }
+                            else if (roundedTrieu <= 6)
+                            {
+                                suggestedMax = 8000000m; // 8 triệu
+                                stepSize = 2000000m; // 2 triệu
+                            }
+                            else
+                            {
+                                suggestedMax = Math.Ceiling(roundedTrieu * 1.5m) * 1000000m;
+                                stepSize = 5000000m; // 5 triệu
+                            }
+                        }
+                        else if (maxAmount >= 1000m)
+                        {
+                            decimal nghin = maxAmount / 1000m;
+                            decimal roundedNghin = Math.Ceiling(nghin);
+                            
+                            if (roundedNghin <= 6)
+                            {
+                                suggestedMax = Math.Ceiling(roundedNghin * 1.5m) * 1000m;
+                                stepSize = 2000m; // 2 nghìn
+                            }
+                            else
+                            {
+                                suggestedMax = Math.Ceiling(roundedNghin * 1.5m) * 1000m;
+                                stepSize = 5000m; // 5 nghìn
+                            }
+                        }
+                        else
+                        {
+                            suggestedMax = Math.Ceiling(maxAmount * 2m);
+                            stepSize = Math.Ceiling(suggestedMax / 4m);
+                        }
+                    }
+                    else
+                    {
+                        // Nếu không có dữ liệu, đặt giá trị mặc định
+                        suggestedMax = 2000000000m; // 2 tỷ
+                        stepSize = 500000000m; // 0.5 tỷ
+                    }
+                    
+                    // Điều chỉnh lại suggestedMax để chia hết cho stepSize
+                    int numberOfSteps = (int)Math.Ceiling(suggestedMax / stepSize);
+                    suggestedMax = stepSize * numberOfSteps;
+                    
+                    // Tạo danh sách các giá trị ticks (bao gồm 0)
+                    var yTicks = new List<decimal>();
+                    for (int i = 0; i <= numberOfSteps; i++)
+                    {
+                        yTicks.Add(i * stepSize);
+                    }
+                    
+                    <text>
+                    const totalLoanAmountCtx = document.getElementById('totalLoanAmountChart').getContext('2d');
+                    const chartData = {
+                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthsForLoan)),
+                        datasets: [{
+                            label: 'Tổng vốn vay (VNĐ)',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(totalLoanAmounts)),
+                            backgroundColor: 'rgba(6, 182, 212, 0.7)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    };
+                    
+                    const yTicksValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(yTicks));
+                    
+                    // Plugin tùy chỉnh để vẽ nhãn số tiền
+                    const drawLabelsPlugin = {
+                        id: 'drawLabels',
+                        afterDatasetsDraw: function(chart) {
+                            const ctx = chart.ctx;
+                            ctx.save();
+                            
+                            // Set font trước khi measure
+                            ctx.font = 'bold 12px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            
+                            chart.data.datasets.forEach((dataset, i) => {
+                                const meta = chart.getDatasetMeta(i);
+                                if (!meta || !meta.data) return;
+                                
+                                meta.data.forEach((bar, index) => {
+                                    if (!bar || typeof bar.x === 'undefined' || typeof bar.y === 'undefined') return;
+                                    
+                                    const value = dataset.data[index];
+                                    if (value === 0 || value === null || value === undefined) return;
+                                    
+                                    // Định dạng số tiền
+                                    let labelText = '';
+                                    if (value >= 1000000000) {
+                                        labelText = (value / 1000000000).toFixed(2) + ' tỷ';
+                                    } else if (value >= 1000000) {
+                                        labelText = (value / 1000000).toFixed(2) + ' tr';
+                                    } else if (value >= 1000) {
+                                        labelText = (value / 1000).toFixed(0) + ' k';
+                                    } else {
+                                        labelText = value.toLocaleString('vi-VN');
+                                    }
+                                    
+                                    // Vị trí để vẽ nhãn (trên đầu cột)
+                                    const x = bar.x;
+                                    const y = bar.y - 8; // 8px phía trên cột
+                                    
+                                    // Đo kích thước text
+                                    const textWidth = ctx.measureText(labelText).width;
+                                    const textHeight = 14;
+                                    
+                                    // Vẽ background trắng với viền để dễ đọc
+                                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                                    ctx.fillRect(x - textWidth/2 - 5, y - textHeight - 3, textWidth + 10, textHeight + 4);
+                                    
+                                    // Vẽ border cho background
+                                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                                    ctx.lineWidth = 1;
+                                    ctx.strokeRect(x - textWidth/2 - 5, y - textHeight - 3, textWidth + 10, textHeight + 4);
+                                    
+                                    // Vẽ nhãn
+                                    ctx.fillStyle = '#1e293b';
+                                    ctx.fillText(labelText, x, y);
+                                });
+                            });
+                            
+                            ctx.restore();
+                        }
+                    };
+                    
+                    const totalLoanAmountChart = new Chart(totalLoanAmountCtx, {
+                        type: 'bar',
+                        data: chartData,
+                        plugins: [drawLabelsPlugin],
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 30,
+                                    bottom: 15,
+                                    left: 10,
+                                    right: 10
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let value = context.parsed.y;
+                                            if (value >= 1000000000) {
+                                                return 'Tổng vốn vay: ' + (value / 1000000000).toFixed(2) + ' tỷ VNĐ';
+                                            } else if (value >= 1000000) {
+                                                return 'Tổng vốn vay: ' + (value / 1000000).toFixed(2) + ' triệu VNĐ';
+                                            } else if (value >= 1000) {
+                                                return 'Tổng vốn vay: ' + (value / 1000).toFixed(2) + ' nghìn VNĐ';
+                                            }
+                                            return 'Tổng vốn vay: ' + value.toLocaleString('vi-VN') + ' VNĐ';
+                                        }
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 0 // Tắt animation để nhãn hiển thị ngay
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: @suggestedMax,
+                                    afterBuildTicks: function(scale) {
+                                        // Tạo ticks từ danh sách đã tính toán
+                                        scale.ticks = yTicksValues.map(function(value) {
+                                            return { value: value };
+                                        });
+                                    },
+                                    ticks: {
+                                        callback: function(value) {
+                                            if (value >= 1000000000) {
+                                                return (value / 1000000000).toFixed(1) + ' tỷ';
+                                            } else if (value >= 1000000) {
+                                                return (value / 1000000).toFixed(0) + ' tr';
+                                            } else if (value >= 1000) {
+                                                return (value / 1000).toFixed(0) + ' k';
+                                            }
+                                            return value.toLocaleString('vi-VN');
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Số tiền (VNĐ)'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Tháng'
+                                    },
+                                    ticks: {
+                                        maxRotation: 0,
+                                        minRotation: 0,
+                                        padding: 5
+                                    },
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Đảm bảo nhãn được vẽ ngay sau khi chart được tạo
+                    setTimeout(function() {
+                        if (totalLoanAmountChart) {
+                            totalLoanAmountChart.draw();
+                        }
+                    }, 100);
+                    
+                    // Vẽ lại nhãn khi chart resize
+                    window.addEventListener('resize', function() {
+                        if (totalLoanAmountChart) {
+                            totalLoanAmountChart.update('none');
+                        }
+                    });
+                    </text>
+                }
+            }
         });
     </script>
 }
@@ -375,6 +709,11 @@
 
     canvas {
         border-radius: 8px;
+    }
+    
+    #totalLoanAmountChart {
+        height: 300px !important;
+        max-height: 300px;
     }
 
     .table th {
