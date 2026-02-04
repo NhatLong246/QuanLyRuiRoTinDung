@@ -95,16 +95,6 @@ namespace QuanLyRuiRoTinDung.Controllers
             }
         }
 
-        public IActionResult XayDungTieuChi()
-        {
-            if (!CheckAuthorization())
-            {
-                return RedirectToAction("Login", "Account");
-            }
-            ViewData["Title"] = "Xây dựng Tiêu chí Đánh giá Rủi ro";
-            return View();
-        }
-
         public IActionResult TheoDoiDanhMucTinDung()
         {
             if (!CheckAuthorization())
