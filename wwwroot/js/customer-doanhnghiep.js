@@ -1027,39 +1027,6 @@ $(document).ready(function() {
             }
         });
     }
-    
-    // Validate Tên công ty realtime
-    const tenCongTyInput = document.querySelector('input[name="TenCongTy"]');
-    if (tenCongTyInput) {
-        tenCongTyInput.addEventListener('input', function(e) {
-            const value = this.value.trim();
-            const errorSpan = this.parentElement.querySelector('.validation-error');
-            
-            if (value.length === 0) {
-                if (errorSpan) {
-                    errorSpan.textContent = 'Tên công ty là bắt buộc.';
-                    errorSpan.style.display = 'block';
-                }
-            } else {
-                if (errorSpan) {
-                    errorSpan.textContent = '';
-                    errorSpan.style.display = 'none';
-                }
-            }
-        });
-        
-        tenCongTyInput.addEventListener('blur', function() {
-            const value = this.value.trim();
-            const errorSpan = this.parentElement.querySelector('.validation-error');
-            
-            if (value.length === 0) {
-                if (errorSpan) {
-                    errorSpan.textContent = 'Tên công ty là bắt buộc.';
-                    errorSpan.style.display = 'block';
-                }
-            }
-        });
-    }
 
     // Validate ngày sinh người đại diện phải đủ 18 tuổi
     const ngaySinhNguoiDaiDien = document.getElementById('ngaySinhNguoiDaiDien');
@@ -1200,7 +1167,7 @@ $(document).ready(function() {
     // =============================================
     // CIC VALIDATION REALTIME - DOANH NGHIỆP
     // =============================================
-    const tenCongTyInput = document.querySelector('[name="TenCongTy"]');
+    const tenCongTyCicInput = document.querySelector('[name="TenCongTy"]');
     const cccdNguoiDaiDienInput = document.querySelector('[name="SoCccdNguoiDaiDienPhapLuat"]');
     let cicValidationTimeout = null;
 
@@ -1208,7 +1175,7 @@ $(document).ready(function() {
     function showCicWarning(fieldName, message) {
         let targetInput = null;
         if (fieldName === 'TenCongTy') {
-            targetInput = tenCongTyInput;
+            targetInput = tenCongTyCicInput;
         } else if (fieldName === 'SoCccdNguoiDaiDienPhapLuat') {
             targetInput = cccdNguoiDaiDienInput;
         } else if (fieldName === 'MaSoThue') {
@@ -1242,7 +1209,7 @@ $(document).ready(function() {
     function hideCicWarning(fieldName) {
         let targetInput = null;
         if (fieldName === 'TenCongTy') {
-            targetInput = tenCongTyInput;
+            targetInput = tenCongTyCicInput;
         } else if (fieldName === 'SoCccdNguoiDaiDienPhapLuat') {
             targetInput = cccdNguoiDaiDienInput;
         } else if (fieldName === 'MaSoThue') {
@@ -1267,7 +1234,7 @@ $(document).ready(function() {
     // Hàm kiểm tra CIC cho doanh nghiệp
     async function checkCicValidationDoanhNghiep() {
         const maSoThue = maSoThueHidden?.value || '';
-        const tenCongTy = tenCongTyInput?.value?.trim() || '';
+        const tenCongTy = tenCongTyCicInput?.value?.trim() || '';
         const soCccdNguoiDaiDien = cccdNguoiDaiDienInput?.value?.trim() || '';
 
         // Chỉ kiểm tra khi MST đủ 13 số
@@ -1300,7 +1267,7 @@ $(document).ready(function() {
     }
 
     // Gắn sự kiện cho các input
-    if (maSoThueInput && tenCongTyInput && cccdNguoiDaiDienInput) {
+    if (maSoThueInput && tenCongTyCicInput && cccdNguoiDaiDienInput) {
         const debouncedCheckCic = debounceCic(checkCicValidationDoanhNghiep, 500);
         
         // Khi MST thay đổi
@@ -1308,8 +1275,8 @@ $(document).ready(function() {
         maSoThueInput.addEventListener('blur', checkCicValidationDoanhNghiep);
         
         // Khi Tên công ty thay đổi
-        tenCongTyInput.addEventListener('input', debouncedCheckCic);
-        tenCongTyInput.addEventListener('blur', checkCicValidationDoanhNghiep);
+        tenCongTyCicInput.addEventListener('input', debouncedCheckCic);
+        tenCongTyCicInput.addEventListener('blur', checkCicValidationDoanhNghiep);
         
         // Khi CCCD người đại diện thay đổi
         cccdNguoiDaiDienInput.addEventListener('input', debouncedCheckCic);
