@@ -7,7 +7,7 @@ namespace QuanLyRuiRoTinDung.Services
 {
     public interface IRuiRoService
     {
-        Task<List<KhoanVayThemDinhViewModel>> GetKhoanVayCanThamDinhAsync(string? maKhoanVay = null, string? trangThai = null, string? mucDoRuiRo = null);
+        Task<List<KhoanVayThemDinhViewModel>> GetKhoanVayCanThamDinhAsync(string? maKhoanVay = null, string? trangThai = null, string? mucDoRuiRo = null, int? maNguoiDung = null);
         Task<KhoanVay?> GetKhoanVayDetailAsync(int maKhoanVay);
         Task<KhoanVayDetailViewModel?> GetKhoanVayFullDetailAsync(int maKhoanVay);
         Task<DanhGiaRuiRo?> GetDanhGiaRuiRoByKhoanVayAsync(int maKhoanVay);
@@ -21,6 +21,49 @@ namespace QuanLyRuiRoTinDung.Services
         Task<bool> LuuKetQuaThamDinhAsync(int maTaiSan, decimal giaTriThamChieu, decimal giaTriThamDinh, decimal tyLeThamDinh, string? ghiChu, int nguoiThamDinh, 
             string? soGiayTo, DateOnly? ngayCap, string? noiCap, string? chuSoHuu, string? diaChi, string? thanhPho, string? quan, string? tinhTrang, decimal? dienTich);
         Task<bool> UpdateTaiSanThamDinhAsync(int maLienKet, decimal? giaTriDinhGia, decimal? tyLeTheChap, DateOnly? ngayTheChap, string? ghiChu);
+        Task<ThongTinCicViewModel?> GetThongTinCicByKhoanVayAsync(int maKhoanVay);
+    }
+
+    public class ThongTinCicViewModel
+    {
+        public int MaCic { get; set; }
+        public string MaCicCode { get; set; } = null!;
+        public string LoaiKhachHang { get; set; } = null!;
+        public string? HoTen { get; set; }
+        public string? SoCmndCccd { get; set; }
+        public string? MaSoThue { get; set; }
+        
+        // Thông tin tín dụng
+        public int TongSoKhoanVayCic { get; set; }
+        public int SoKhoanVayDangVayCic { get; set; }
+        public int SoKhoanVayDaTraXongCic { get; set; }
+        public int SoKhoanVayQuaHanCic { get; set; }
+        public int SoKhoanVayNoXauCic { get; set; }
+        
+        // Thông tin dư nợ
+        public decimal TongDuNoCic { get; set; }
+        public decimal DuNoQuaHanCic { get; set; }
+        public decimal DuNoNoXauCic { get; set; }
+        public decimal TongGiaTriVayCic { get; set; }
+        
+        // Điểm tín dụng
+        public int? DiemTinDungCic { get; set; }
+        public string? XepHangTinDungCic { get; set; }
+        public string? MucDoRuiRo { get; set; }
+        public string? KhaNangTraNo { get; set; }
+        
+        // Lịch sử
+        public int SoLanQuaHanCic { get; set; }
+        public int SoLanNoXauCic { get; set; }
+        public int SoNgayQuaHanToiDaCic { get; set; }
+        public decimal TyLeTraNoDungHanCic { get; set; }
+        
+        // Đánh giá
+        public string? DanhGiaTongQuat { get; set; }
+        public string? KhuyenNghiChoVay { get; set; }
+        public string? LyDoKhuyenNghi { get; set; }
+        
+        public DateTime? NgayTraCuuCuoi { get; set; }
     }
 
     public class KhoanVayThemDinhViewModel
@@ -37,6 +80,7 @@ namespace QuanLyRuiRoTinDung.Services
         public string TrangThaiKhoanVay { get; set; } = null!;
         public string? TrangThaiDanhGia { get; set; }
         public DateTime? NgayDanhGia { get; set; }
+        public int? NguoiDanhGia { get; set; }
     }
 
     public class KhoanVayDetailViewModel
@@ -166,12 +210,12 @@ namespace QuanLyRuiRoTinDung.Services
             _logger = logger;
         }
 
-        public async Task<List<KhoanVayThemDinhViewModel>> GetKhoanVayCanThamDinhAsync(string? maKhoanVay = null, string? trangThai = null, string? mucDoRuiRo = null)
+        public async Task<List<KhoanVayThemDinhViewModel>> GetKhoanVayCanThamDinhAsync(string? maKhoanVay = null, string? trangThai = null, string? mucDoRuiRo = null, int? maNguoiDung = null)
         {
             try
             {
-                _logger.LogInformation("GetKhoanVayCanThamDinhAsync called with maKhoanVay={MaKhoanVay}, trangThai={TrangThai}, mucDoRuiRo={MucDoRuiRo}", 
-                    maKhoanVay, trangThai, mucDoRuiRo);
+                _logger.LogInformation("GetKhoanVayCanThamDinhAsync called with maKhoanVay={MaKhoanVay}, trangThai={TrangThai}, mucDoRuiRo={MucDoRuiRo}, maNguoiDung={MaNguoiDung}", 
+                    maKhoanVay, trangThai, mucDoRuiRo, maNguoiDung);
 
                 // Query các khoản vay đã được nộp hồ sơ (trạng thái "Đang xử lý", "Đang đánh giá", "Đã phê duyệt", "Từ chối")
                 var query = _context.KhoanVays
@@ -245,6 +289,18 @@ namespace QuanLyRuiRoTinDung.Services
                         }
                     }
 
+                    // Logic phân quyền hiển thị:
+                    // - Khoản vay chưa đánh giá: hiển thị cho tất cả nhân viên QLRR
+                    // - Khoản vay đã đánh giá: chỉ hiển thị cho người đã đánh giá
+                    if (maNguoiDung.HasValue && danhGia != null)
+                    {
+                        // Khoản vay đã có đánh giá, chỉ hiển thị cho người đánh giá
+                        if (danhGia.NguoiDanhGia != maNguoiDung.Value)
+                        {
+                            continue;
+                        }
+                    }
+
                     result.Add(new KhoanVayThemDinhViewModel
                     {
                         MaKhoanVay = khoanVay.MaKhoanVay,
@@ -258,7 +314,8 @@ namespace QuanLyRuiRoTinDung.Services
                         XepHangRuiRo = khoanVay.XepHangRuiRo ?? danhGia?.XepHangRuiRo,
                         TrangThaiKhoanVay = khoanVay.TrangThaiKhoanVay,
                         TrangThaiDanhGia = trangThaiDanhGia,
-                        NgayDanhGia = danhGia?.NgayDanhGia
+                        NgayDanhGia = danhGia?.NgayDanhGia,
+                        NguoiDanhGia = danhGia?.NguoiDanhGia
                     });
                 }
 
@@ -582,7 +639,7 @@ namespace QuanLyRuiRoTinDung.Services
                     {
                         query = query.Where(g => g.Quan != null && g.Quan.ToLower().Contains(keyword));
                     }
-                    else if (loaiTaiSan == "Xe cộ")
+                    else if (loaiTaiSan == "Xe")
                     {
                         query = query.Where(g => 
                             (g.HangXe != null && g.HangXe.ToLower().Contains(keyword)) ||
@@ -610,7 +667,7 @@ namespace QuanLyRuiRoTinDung.Services
                 {
                     query = query.Where(g => g.Quan == quan);
                 }
-                else if (loaiTaiSan == "Xe cộ")
+                else if (loaiTaiSan == "Xe")
                 {
                     if (!string.IsNullOrEmpty(hangXe))
                         query = query.Where(g => g.HangXe == hangXe);
@@ -782,6 +839,88 @@ namespace QuanLyRuiRoTinDung.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi lấy thông tin tài sản {MaTaiSan}", maTaiSan);
+                return null;
+            }
+        }
+
+        public async Task<ThongTinCicViewModel?> GetThongTinCicByKhoanVayAsync(int maKhoanVay)
+        {
+            try
+            {
+                // Lấy thông tin khoản vay để biết khách hàng
+                var khoanVay = await _context.KhoanVays.FindAsync(maKhoanVay);
+                if (khoanVay == null)
+                {
+                    _logger.LogWarning("Không tìm thấy khoản vay {MaKhoanVay}", maKhoanVay);
+                    return null;
+                }
+
+                ThongTinCic? cicInfo = null;
+
+                // Tìm thông tin CIC dựa trên loại khách hàng
+                if (khoanVay.LoaiKhachHang == "CaNhan")
+                {
+                    var khachHang = await _context.KhachHangCaNhans
+                        .FirstOrDefaultAsync(k => k.MaKhachHang == khoanVay.MaKhachHang);
+                    
+                    if (khachHang != null && !string.IsNullOrEmpty(khachHang.SoCmnd))
+                    {
+                        cicInfo = await _context.ThongTinCics
+                            .FirstOrDefaultAsync(c => c.SoCmndCccd == khachHang.SoCmnd && c.LoaiKhachHang == "CaNhan");
+                    }
+                }
+                else if (khoanVay.LoaiKhachHang == "DoanhNghiep")
+                {
+                    var khachHang = await _context.KhachHangDoanhNghieps
+                        .FirstOrDefaultAsync(k => k.MaKhachHang == khoanVay.MaKhachHang);
+                    
+                    if (khachHang != null && !string.IsNullOrEmpty(khachHang.MaSoThue))
+                    {
+                        cicInfo = await _context.ThongTinCics
+                            .FirstOrDefaultAsync(c => c.MaSoThue == khachHang.MaSoThue && c.LoaiKhachHang == "DoanhNghiep");
+                    }
+                }
+
+                if (cicInfo == null)
+                {
+                    _logger.LogInformation("Không tìm thấy thông tin CIC cho khoản vay {MaKhoanVay}", maKhoanVay);
+                    return null;
+                }
+
+                return new ThongTinCicViewModel
+                {
+                    MaCic = cicInfo.MaCic,
+                    MaCicCode = cicInfo.MaCicCode,
+                    LoaiKhachHang = cicInfo.LoaiKhachHang,
+                    HoTen = cicInfo.HoTen,
+                    SoCmndCccd = cicInfo.SoCmndCccd,
+                    MaSoThue = cicInfo.MaSoThue,
+                    TongSoKhoanVayCic = cicInfo.TongSoKhoanVayCic,
+                    SoKhoanVayDangVayCic = cicInfo.SoKhoanVayDangVayCic,
+                    SoKhoanVayDaTraXongCic = cicInfo.SoKhoanVayDaTraXongCic,
+                    SoKhoanVayQuaHanCic = cicInfo.SoKhoanVayQuaHanCic,
+                    SoKhoanVayNoXauCic = cicInfo.SoKhoanVayNoXauCic,
+                    TongDuNoCic = cicInfo.TongDuNoCic,
+                    DuNoQuaHanCic = cicInfo.DuNoQuaHanCic,
+                    DuNoNoXauCic = cicInfo.DuNoNoXauCic,
+                    TongGiaTriVayCic = cicInfo.TongGiaTriVayCic,
+                    DiemTinDungCic = cicInfo.DiemTinDungCic,
+                    XepHangTinDungCic = cicInfo.XepHangTinDungCic,
+                    MucDoRuiRo = cicInfo.MucDoRuiRo,
+                    KhaNangTraNo = cicInfo.KhaNangTraNo,
+                    SoLanQuaHanCic = cicInfo.SoLanQuaHanCic,
+                    SoLanNoXauCic = cicInfo.SoLanNoXauCic,
+                    SoNgayQuaHanToiDaCic = cicInfo.SoNgayQuaHanToiDaCic,
+                    TyLeTraNoDungHanCic = cicInfo.TyLeTraNoDungHanCic,
+                    DanhGiaTongQuat = cicInfo.DanhGiaTongQuat,
+                    KhuyenNghiChoVay = cicInfo.KhuyenNghiChoVay,
+                    LyDoKhuyenNghi = cicInfo.LyDoKhuyenNghi,
+                    NgayTraCuuCuoi = cicInfo.NgayTraCuuCuoi
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy thông tin CIC cho khoản vay {MaKhoanVay}", maKhoanVay);
                 return null;
             }
         }

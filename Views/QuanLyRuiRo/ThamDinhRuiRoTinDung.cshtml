@@ -70,12 +70,6 @@
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Danh sách Thẩm định</h3>
-            <button class="btn btn-primary btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5V19M5 12H19"/>
-                </svg>
-                Thẩm định mới
-            </button>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -269,10 +263,27 @@
 
                 <!-- Form đánh giá -->
                 <div class="card mb-3">
-                    <div class="card-header">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 class="card-title">Đánh giá Rủi ro</h3>
+                        <button type="button" class="btn btn-info btn-sm" onclick="xemThongTinCIC()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 16v-4M12 8h.01"/>
+                            </svg>
+                            Xem CIC
+                        </button>
                     </div>
                     <div class="card-body">
+                        <!-- Thông tin CIC (ẩn mặc định) -->
+                        <div id="cicInfoSection" class="mb-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <h5 style="margin-bottom: 10px;">📊 Thông tin CIC (Trung tâm Thông tin Tín dụng)</h5>
+                                <div id="cicInfoContent">
+                                    <!-- Nội dung CIC sẽ được load từ JS -->
+                                </div>
+                            </div>
+                        </div>
+                        
                         <form id="formDanhGia">
                             <input type="hidden" id="assessMaKhoanVay" />
                             
@@ -690,6 +701,49 @@
                 opacity: 1;
             }
         }
+        
+        /* CIC Info Styles */
+        #cicInfoSection .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        #cicInfoSection .rating-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-weight: 600;
+        }
+        
+        #cicInfoSection .code-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #dbeafe;
+            color: #1e40af;
+            font-family: monospace;
+            font-weight: 600;
+        }
+        
+        .col-md-6, .col-12 {
+            padding: 0 10px;
+        }
+        
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -10px;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
     </style>
 }
 
@@ -852,6 +906,10 @@
 
         function editAssessment(maKhoanVay) {
             console.log('Bắt đầu tải dữ liệu cho khoản vay:', maKhoanVay);
+            
+            // Reset thông tin CIC
+            window.currentCicInfo = null;
+            $('#cicInfoSection').hide();
             
             // Hiển thị modal
             $('#assessmentModal').fadeIn(300);
@@ -1222,6 +1280,7 @@
                 
                 const loaiTaiSan = taiSanData.data.tenLoaiTaiSan || '';
                 const isDat = loaiTaiSan.toLowerCase().includes('đất') || loaiTaiSan.toLowerCase().includes('dat');
+                const isXe = loaiTaiSan.toLowerCase().includes('xe') || loaiTaiSan.toLowerCase().includes('xecop') || loaiTaiSan.toLowerCase().includes('xe cộ');
                 
                 // Hiển thị modal thẩm định
                 const modalHtml = `
@@ -1244,6 +1303,7 @@
                                         <label>Loại tài sản</label>
                                         <input type="text" id="thamDinhLoaiTaiSan" class="form-control" value="${loaiTaiSan}" readonly style="background-color: #f0f0f0;" />
                                         <input type="hidden" id="thamDinhIsDat" value="${isDat}" />
+                                        <input type="hidden" id="thamDinhIsXe" value="${isXe}" />
                                         <small class="form-text text-muted">Loại tài sản được lấy từ hồ sơ trong database</small>
                                     </div>
 
@@ -1262,23 +1322,23 @@
                                         </div>
                                     </div>
 
-                                    <div id="optionsXe" style="display: none;">
+                                    <div id="optionsXe" style="display: ${isXe ? 'block' : 'none'};">
                                         <div class="form-row">
                                             <div class="form-group">
-                                                <label>Hãng xe</label>
-                                                <select id="thamDinhHangXe" class="form-control" onchange="loadDongXeOptions()">
+                                                <label>Hãng xe *</label>
+                                                <select id="thamDinhHangXe" class="form-control" onchange="loadDongXeOptions()" ${isXe ? 'required' : ''}>
                                                     <option value="">-- Chọn hãng --</option>
                                                 </select>
                                             </div>
                                             <div class="form-group">
-                                                <label>Dòng xe</label>
-                                                <select id="thamDinhDongXe" class="form-control">
+                                                <label>Dòng xe *</label>
+                                                <select id="thamDinhDongXe" class="form-control" ${isXe ? 'required' : ''}>
                                                     <option value="">-- Chọn dòng --</option>
                                                 </select>
                                             </div>
                                             <div class="form-group">
-                                                <label>Năm sản xuất</label>
-                                                <input type="number" id="thamDinhNamSanXuat" class="form-control" min="1990" max="2025" />
+                                                <label>Năm sản xuất *</label>
+                                                <input type="number" id="thamDinhNamSanXuat" class="form-control" min="1990" max="2026" value="${taiSanData.data.namSanXuat || ''}" ${isXe ? 'required' : ''} />
                                             </div>
                                         </div>
                                     </div>
@@ -1299,15 +1359,15 @@
                                     <div class="form-row">
                                         <div class="form-group">
                                             <label>Số giấy tờ *</label>
-                                            <input type="text" id="thamDinhSoGiayTo" class="form-control" placeholder="Nhập số giấy tờ..." />
+                                            <input type="text" id="thamDinhSoGiayTo" class="form-control" placeholder="Nhập số giấy tờ..." value="${taiSanData.data.soGiayTo || ''}" />
                                         </div>
                                         <div class="form-group">
                                             <label>Ngày cấp</label>
-                                            <input type="date" id="thamDinhNgayCap" class="form-control" />
+                                            <input type="date" id="thamDinhNgayCap" class="form-control" value="${taiSanData.data.ngayCap || ''}" />
                                         </div>
                                         <div class="form-group">
                                             <label>Nơi cấp</label>
-                                            <input type="text" id="thamDinhNoiCap" class="form-control" placeholder="Nhập nơi cấp..." />
+                                            <input type="text" id="thamDinhNoiCap" class="form-control" placeholder="Nhập nơi cấp..." value="${taiSanData.data.noiCap || ''}" />
                                         </div>
                                     </div>
                                     <div class="form-row">
@@ -1317,13 +1377,13 @@
                                         </div>
                                         ${!isDat ? `
                                         <div class="form-group" id="divTinhTrang">
-                                            <label>Tình trạng</label>
-                                            <select id="thamDinhTinhTrang" class="form-control">
+                                            <label>Tình trạng ${isXe ? '*' : ''}</label>
+                                            <select id="thamDinhTinhTrang" class="form-control" ${isXe ? 'required' : ''}>
                                                 <option value="">-- Chọn tình trạng --</option>
-                                                <option value="Mới">Mới</option>
-                                                <option value="Đã qua sử dụng">Đã qua sử dụng</option>
-                                                <option value="Cũ">Cũ</option>
-                                                <option value="Hư hỏng">Hư hỏng</option>
+                                                <option value="Mới" ${taiSanData.data.tinhTrang === 'Mới' ? 'selected' : ''}>Mới</option>
+                                                <option value="Đã qua sử dụng" ${taiSanData.data.tinhTrang === 'Đã qua sử dụng' ? 'selected' : ''}>Đã qua sử dụng</option>
+                                                <option value="Cũ" ${taiSanData.data.tinhTrang === 'Cũ' ? 'selected' : ''}>Cũ</option>
+                                                <option value="Hư hỏng" ${taiSanData.data.tinhTrang === 'Hư hỏng' ? 'selected' : ''}>Hư hỏng</option>
                                             </select>
                                         </div>
                                         ` : ''}
@@ -1364,13 +1424,12 @@ $('body').append(modalHtml);
                 // Load danh sách dựa trên loại tài sản
                 if (isDat) {
                     await loadQuanOptions();
-                } else if (loaiTaiSan.toLowerCase().includes('xe')) {
+                } else if (isXe) {
                     await loadHangXeOptions();
                 }
-                
             } catch (error) {
-                console.error('Lỗi khi mở modal thẩm định:', error);
-                alert('Có lỗi xảy ra khi mở form thẩm định!');
+                console.error('Lỗi khi thẩm định tài sản:', error);
+                alert('Có lỗi xảy ra khi mở form thẩm định: ' + error.message);
             }
         }
 
@@ -1393,7 +1452,7 @@ $('body').append(modalHtml);
 
         async function loadHangXeOptions() {
             try {
-                const response = await fetch('/QuanLyRuiRo/GetGiaTriThamChieu?loaiTaiSan=Xe cộ');
+                const response = await fetch('/QuanLyRuiRo/GetGiaTriThamChieu?loaiTaiSan=Xe');
                 const result = await response.json();
                 
                 if (result.success && result.data) {
@@ -1413,7 +1472,7 @@ $('body').append(modalHtml);
             if (!hangXe) return;
             
             try {
-                const response = await fetch(`/QuanLyRuiRo/GetGiaTriThamChieu?loaiTaiSan=Xe cộ&keyword=${hangXe}`);
+                const response = await fetch(`/QuanLyRuiRo/GetGiaTriThamChieu?loaiTaiSan=Xe&keyword=${hangXe}`);
                 const result = await response.json();
                 
                 if (result.success && result.data) {
@@ -1515,6 +1574,7 @@ $('body').append(modalHtml);
             const thamChieu = $('#formThamDinh').data('thamChieu');
             const giaTriKhaiBao = parseFloat($('#thamDinhGiaTriKhaiBao').val()) || 0;
             const isDat = $('#thamDinhIsDat').val() === 'true';
+            const isXe = $('#thamDinhIsXe').val() === 'true';
             
             if (!thamChieu) {
                 alert('Vui lòng tra cứu giá tham chiếu trước!');
@@ -1536,6 +1596,20 @@ $('body').append(modalHtml);
                 const dienTich = parseFloat($('#thamDinhDienTich').val()) || 1;
                 giaTriThamChieuTotal = thamChieu.giaTriThamChieu * dienTich;
                 giaTriThamDinh = giaTriThamChieuTotal * (thamChieu.tyLeThamDinh / 100);
+            } else if (isXe) {
+                // Kiểm tra thông tin xe bắt buộc
+                const hangXe = $('#thamDinhHangXe').val();
+                const dongXe = $('#thamDinhDongXe').val();
+                const namSanXuat = $('#thamDinhNamSanXuat').val();
+                const tinhTrang = $('#thamDinhTinhTrang').val();
+                
+                if (!hangXe || !dongXe || !namSanXuat || !tinhTrang) {
+                    alert('Vui lòng điền đầy đủ thông tin xe: Hãng xe, Dòng xe, Năm sản xuất, Tình trạng!');
+                    return;
+                }
+                
+                giaTriThamChieuTotal = thamChieu.giaTriThamChieu;
+                giaTriThamDinh = giaTriThamChieuTotal * (thamChieu.tyLeThamDinh / 100);
             } else {
                 giaTriThamChieuTotal = thamChieu.giaTriThamChieu;
                 giaTriThamDinh = thamChieu.giaTriThamChieu * (thamChieu.tyLeThamDinh / 100);
@@ -1547,11 +1621,12 @@ $('body').append(modalHtml);
                 const quan = $('#thamDinhQuan').val();
                 const dienTich = $('#thamDinhDienTich').val();
                 ghiChu += `Quận: ${quan}, Diện tích: ${dienTich}m². `;
-            } else if (loaiTaiSan === 'Xe cộ') {
+            } else if (isXe) {
                 const hangXe = $('#thamDinhHangXe').val();
                 const dongXe = $('#thamDinhDongXe').val();
                 const namSX = $('#thamDinhNamSanXuat').val();
-                ghiChu += `${hangXe} ${dongXe} ${namSX}. `;
+                const tinhTrang = $('#thamDinhTinhTrang').val();
+                ghiChu += `${hangXe} ${dongXe} năm ${namSX}, tình trạng: ${tinhTrang}. `;
             }
             ghiChu += `Giá tham chiếu: ${formatCurrency(giaTriThamChieuTotal)}. Giá trị định giá: ${formatCurrency(giaTriThamDinh)} (${thamChieu.tyLeThamDinh}%).`;
 
@@ -1656,127 +1731,248 @@ $('body').append(modalHtml);
             try {
                 // Lấy thông tin khoản vay
                 const soTienVay = parseFloat($('#detailSoTienVay').text().replace(/[^\d]/g, '')) || 0;
+                const maKhoanVay = parseInt($('#assessMaKhoanVay').val());
+                
+                // Lấy thông tin thu nhập từ server
+                let thuNhap = 0;
+                try {
+                    const response = await fetch(`/QuanLyRuiRo/GetKhoanVayFullDetail?maKhoanVay=${maKhoanVay}`);
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        thuNhap = result.data.khachHangCaNhan?.thuNhapHangThang || 
+                                 result.data.khachHangDoanhNghiep?.doanhThuNam / 12 || 0;
+                    }
+                } catch (err) {
+                    console.warn('Không lấy được thông tin thu nhập:', err);
+                }
+                
+                // Lấy thông tin CIC (nếu có)
+                let cicInfo = window.currentCicInfo || null;
+                if (!cicInfo) {
+                    try {
+                        const cicResponse = await fetch(`/QuanLyRuiRo/GetThongTinCic?maKhoanVay=${maKhoanVay}`);
+                        const cicResult = await cicResponse.json();
+                        if (cicResult.success && cicResult.data) {
+                            cicInfo = cicResult.data;
+                            window.currentCicInfo = cicInfo;
+                        }
+                    } catch (err) {
+                        console.warn('Không lấy được thông tin CIC:', err);
+                    }
+                }
                 
                 // Tính LTV (Loan-to-Value)
                 const ltv = soTienVay > 0 && giaTriTaiSanThamDinh > 0 
                     ? (soTienVay / giaTriTaiSanThamDinh) * 100 
                     : 0;
 
-                // Thuật toán tính điểm rủi ro (0-100)
+                // ===== THUẬT TOÁN TÍNH ĐIỂM RỦI RO CẢI TIẾN (0-100) =====
+                // Bao gồm: CIC (40đ), LTV (30đ), Giá trị tài sản (20đ), Thu nhập (10đ)
+                
                 let tongDiem = 0;
                 let mucDoRuiRo = '';
                 let xepHang = '';
                 let kienNghi = '';
 
-                // 1. Đánh giá LTV - Chỉ số quan trọng nhất (50 điểm)
+                // 1. Đánh giá LTV - Chỉ số quan trọng (30 điểm)
                 let diemLTV = 0;
-                if (ltv < 50) {
-                    diemLTV = 10; // Rủi ro thấp - Tài sản đảm bảo rất tốt
-                } else if (ltv < 70) {
-                    diemLTV = 25; // Rủi ro trung bình - Tài sản đảm bảo đầy đủ
-                } else if (ltv < 80) {
-                    diemLTV = 40; // Rủi ro cao - Tỷ lệ tài sản đảm bảo thấp
-                } else if (ltv < 100) {
-                    diemLTV = 50; // Rủi ro rất cao - Tài sản đảm bảo không đủ
+                if (ltv <= 30) {
+                    diemLTV = 0; // Xuất sắc
+                } else if (ltv <= 50) {
+                    diemLTV = 5; // Rất tốt
+                } else if (ltv <= 70) {
+                    diemLTV = 10; // Tốt (chuẩn ngân hàng)
+                } else if (ltv <= 80) {
+                    diemLTV = 18; // Chấp nhận được
+                } else if (ltv <= 100) {
+                    diemLTV = 25; // Cao
                 } else {
-                    diemLTV = 50; // Rủi ro cực cao - Số tiền vay vượt giá trị tài sản
+                    diemLTV = 30; // Rất cao - vượt giá trị tài sản
                 }
 
-                // 2. Đánh giá giá trị tài sản (25 điểm)
-                let diemGiaTriTaiSan = 0;
-                if (giaTriTaiSanThamDinh > 5000000000) { // > 5 tỷ
-                    diemGiaTriTaiSan = 0; // Tài sản giá trị cao, rủi ro thấp
-                } else if (giaTriTaiSanThamDinh > 2000000000) { // > 2 tỷ
-                    diemGiaTriTaiSan = 5;
-                } else if (giaTriTaiSanThamDinh > 1000000000) { // > 1 tỷ
-                    diemGiaTriTaiSan = 10;
-                } else if (giaTriTaiSanThamDinh > 500000000) { // > 500tr
-                    diemGiaTriTaiSan = 15;
-                } else {
-                    diemGiaTriTaiSan = 25; // Tài sản giá trị thấp, rủi ro cao
-                }
-
-                // 3. Đánh giá thu nhập (25 điểm) - Giả sử có thông tin thu nhập
-                let diemThuNhap = 0;
-                const thuNhap = parseFloat($('#detailThuNhap').text().replace(/[^\d]/g, '')) || 0;
-                if (thuNhap > 0) {
-                    const tyLeThuNhapVay = (soTienVay / (thuNhap * 12)) * 100; // % so với thu nhập năm
-                    if (tyLeThuNhapVay < 100) {
-                        diemThuNhap = 0; // Thu nhập rất tốt
-                    } else if (tyLeThuNhapVay < 200) {
-                        diemThuNhap = 5; // Thu nhập tốt
-                    } else if (tyLeThuNhapVay < 300) {
-                        diemThuNhap = 10;
-                    } else if (tyLeThuNhapVay < 500) {
-                        diemThuNhap = 15;
-                    } else {
-                        diemThuNhap = 25; // Thu nhập thấp so với vay
+                // 2. Đánh giá CIC - Yếu tố quan trọng nhất (40 điểm)
+                let diemCIC = 20; // Mặc định nếu không có CIC
+                let cicNhanXet = '';
+                
+                if (cicInfo) {
+                    const diemTinDungCIC = cicInfo.diemTinDungCic || 0;
+                    const soLanNoXau = cicInfo.soLanNoXauCic || 0;
+                    const soKhoanVayNoXau = cicInfo.soKhoanVayNoXauCic || 0;
+                    const soLanQuaHan = cicInfo.soLanQuaHanCic || 0;
+                    const tyLeTraNoDungHan = cicInfo.tyLeTraNoDungHanCic || 0;
+                    const khuyenNghiCIC = cicInfo.khuyenNghiChoVay || '';
+                    
+                    // Điểm CIC (0-1000) -> Chuyển đổi thành điểm rủi ro
+                    // Điểm CIC cao = rủi ro thấp, Điểm CIC thấp = rủi ro cao
+                    if (diemTinDungCIC >= 800) {
+                        diemCIC = 0; // Xuất sắc
+                        cicNhanXet = 'Điểm CIC xuất sắc (≥800)';
+                    } else if (diemTinDungCIC >= 700) {
+                        diemCIC = 6; // Rất tốt
+                        cicNhanXet = 'Điểm CIC rất tốt (700-799)';
+                    } else if (diemTinDungCIC >= 600) {
+                        diemCIC = 12; // Tốt
+                        cicNhanXet = 'Điểm CIC tốt (600-699)';
+                    } else if (diemTinDungCIC >= 500) {
+                        diemCIC = 20; // Trung bình
+                        cicNhanXet = 'Điểm CIC trung bình (500-599)';
+                    } else if (diemTinDungCIC >= 400) {
+                        diemCIC = 28; // Yếu
+                        cicNhanXet = 'Điểm CIC yếu (400-499)';
+                    } else if (diemTinDungCIC > 0) {
+                        diemCIC = 35; // Kém
+                        cicNhanXet = 'Điểm CIC kém (<400)';
+                    }
+                    
+                    // Cộng thêm điểm rủi ro nếu có nợ xấu
+                    if (soKhoanVayNoXau > 0 || soLanNoXau > 0) {
+                        diemCIC = Math.min(40, diemCIC + 12); // Cộng thêm 12 điểm rủi ro
+                        cicNhanXet += ' - ⚠️ CÓ NỢ XẤU';
+                    }
+                    
+                    // Điều chỉnh theo khuyến nghị từ CIC
+                    if (khuyenNghiCIC === 'KhongChoVay') {
+                        diemCIC = 40; // Tối đa
+                        cicNhanXet += ' - CIC KHUYẾN NGHỊ KHÔNG CHO VAY';
+                    } else if (khuyenNghiCIC === 'CanThanTrong') {
+                        diemCIC = Math.max(25, diemCIC);
+                    }
+                    
+                    // Điều chỉnh theo tỷ lệ trả nợ đúng hạn
+                    if (tyLeTraNoDungHan < 70) {
+                        diemCIC = Math.min(40, diemCIC + 6);
+                    } else if (tyLeTraNoDungHan >= 95) {
+                        diemCIC = Math.max(0, diemCIC - 4);
                     }
                 } else {
-                    diemThuNhap = 15; // Không có thông tin thu nhập
+                    cicNhanXet = 'Không có thông tin CIC - Cần xác minh thêm';
+                }
+
+                // 3. Đánh giá thu nhập DTI (10 điểm)
+                let diemThuNhap = 5; // Mặc định
+                let dti = 0;
+                if (thuNhap > 0) {
+                    const kyHanVay = parseInt($('#detailKyHan').text()) || 12;
+                    const traHangThang = soTienVay / kyHanVay;
+                    dti = (traHangThang / thuNhap) * 100;
+                    
+                    if (dti <= 30) {
+                        diemThuNhap = 0; // Xuất sắc
+                    } else if (dti <= 40) {
+                        diemThuNhap = 2; // Tốt
+                    } else if (dti <= 50) {
+                        diemThuNhap = 4; // Chấp nhận
+                    } else if (dti <= 60) {
+                        diemThuNhap = 6; // Căng thẳng
+                    } else if (dti <= 80) {
+                        diemThuNhap = 8; // Cao
+                    } else {
+                        diemThuNhap = 10; // Rất cao
+                    }
+                }
+
+                // 4. Đánh giá giá trị tài sản (20 điểm)
+                let diemGiaTriTaiSan = 10; // Mặc định
+                if (giaTriTaiSanThamDinh > 5000000000) {
+                    diemGiaTriTaiSan = 0; // > 5 tỷ
+                } else if (giaTriTaiSanThamDinh > 2000000000) {
+                    diemGiaTriTaiSan = 4; // > 2 tỷ
+                } else if (giaTriTaiSanThamDinh > 1000000000) {
+                    diemGiaTriTaiSan = 8; // > 1 tỷ
+                } else if (giaTriTaiSanThamDinh > 500000000) {
+                    diemGiaTriTaiSan = 14; // > 500tr
+                } else {
+                    diemGiaTriTaiSan = 20; // <= 500tr
                 }
 
                 // Tổng điểm rủi ro
-                tongDiem = diemLTV + diemGiaTriTaiSan + diemThuNhap;
+                tongDiem = diemLTV + diemCIC + diemThuNhap + diemGiaTriTaiSan;
 
-                // Xác định mức độ rủi ro
-                if (tongDiem < 25) {
+                // Xác định mức độ rủi ro và xếp hạng
+                if (tongDiem < 20) {
                     mucDoRuiRo = 'Thấp';
                     xepHang = 'AAA';
                     kienNghi = 'Chấp thuận';
-                } else if (tongDiem < 40) {
+                } else if (tongDiem < 30) {
                     mucDoRuiRo = 'Thấp';
                     xepHang = 'AA';
                     kienNghi = 'Chấp thuận';
-                } else if (tongDiem < 50) {
+                } else if (tongDiem < 40) {
                     mucDoRuiRo = 'Trung bình';
                     xepHang = 'A';
                     kienNghi = 'Chấp thuận';
-                } else if (tongDiem < 60) {
+                } else if (tongDiem < 50) {
                     mucDoRuiRo = 'Trung bình';
                     xepHang = 'BBB';
                     kienNghi = 'Cân nhắc';
-                } else if (tongDiem < 70) {
+                } else if (tongDiem < 60) {
                     mucDoRuiRo = 'Cao';
                     xepHang = 'BB';
                     kienNghi = 'Cân nhắc';
-                } else if (tongDiem < 80) {
+                } else if (tongDiem < 70) {
                     mucDoRuiRo = 'Cao';
                     xepHang = 'B';
                     kienNghi = 'Từ chối';
-                } else {
+                } else if (tongDiem < 85) {
                     mucDoRuiRo = 'Rất cao';
                     xepHang = 'C';
                     kienNghi = 'Từ chối';
-                }
-
-                // Tạo nhận xét chi tiết
-                let nhanXet = `Kết quả thẩm định rủi ro tự động:\n\n`;
-                nhanXet += `📊 Chỉ số LTV (Loan-to-Value): ${ltv.toFixed(2)}% `;
-                if (ltv < 50) {
-                    nhanXet += `(Rất tốt - Tài sản đảm bảo vượt trội)\n`;
-                } else if (ltv < 70) {
-                    nhanXet += `(Tốt - Tài sản đảm bảo đầy đủ)\n`;
-                } else if (ltv < 80) {
-                    nhanXet += `(Cảnh báo - Tỷ lệ tài sản đảm bảo thấp)\n`;
-                } else if (ltv < 100) {
-                    nhanXet += `(Nguy hiểm - Tài sản đảm bảo không đủ)\n`;
                 } else {
-                    nhanXet += `(Rất nguy hiểm - Số tiền vay vượt giá trị tài sản)\n`;
+                    mucDoRuiRo = 'Rất cao';
+                    xepHang = 'D';
+                    kienNghi = 'Từ chối';
                 }
 
-                nhanXet += `\n💰 Giá trị tài sản định giá (Thẩm định): ${formatCurrency(giaTriTaiSanThamDinh)}\n`;
-                nhanXet += `💸 Số tiền vay: ${formatCurrency(soTienVay)}\n`;
+                // Nếu CIC khuyến nghị không cho vay - bắt buộc từ chối
+                if (cicInfo && cicInfo.khuyenNghiChoVay === 'KhongChoVay') {
+                    kienNghi = 'Từ chối';
+                    if (tongDiem < 60) {
+                        tongDiem = 60;
+                        mucDoRuiRo = 'Cao';
+                        xepHang = 'B';
+                    }
+                }
+
+                // Tạo nhận xét chi tiết (rút gọn để tránh vượt quá 1000 ký tự)
+                let nhanXet = `KẾT QUẢ THẨM ĐỊNH RỦI RO\n`;
+                nhanXet += `========================\n\n`;
                 
-                if (ltv > 80) {
-                    nhanXet += `\n⚠️ CẢNH BÁO: Tỷ lệ LTV cao (${ltv.toFixed(2)}%), tài sản đảm bảo không đủ để bù đắp rủi ro. Khuyến nghị từ chối hoặc yêu cầu bổ sung tài sản đảm bảo.\n`;
+                // Phần CIC (rút gọn)
+                nhanXet += `THÔNG TIN CIC:\n`;
+                if (cicInfo) {
+                    nhanXet += `- Điểm: ${cicInfo.diemTinDungCic || 'N/A'}/1000 | Xếp hạng: ${cicInfo.xepHangTinDungCic || 'N/A'}\n`;
+                    nhanXet += `- Khuyến nghị: ${cicInfo.khuyenNghiChoVay === 'ChoVay' ? 'Cho vay' : 
+                                                   cicInfo.khuyenNghiChoVay === 'KhongChoVay' ? 'KHÔNG CHO VAY' : 
+                                                   'Cần thận trọng'}\n`;
+                    if (cicInfo.soKhoanVayNoXauCic > 0) {
+                        nhanXet += `- CẢNH BÁO: Có ${cicInfo.soKhoanVayNoXauCic} khoản nợ xấu!\n`;
+                    }
+                } else {
+                    nhanXet += `- Không có thông tin CIC\n`;
                 }
-
-                nhanXet += `\n📈 Phân tích chi tiết:\n`;
-                nhanXet += `- Điểm LTV: ${diemLTV}/50\n`;
-                nhanXet += `- Điểm giá trị tài sản: ${diemGiaTriTaiSan}/25\n`;
-                nhanXet += `- Điểm thu nhập: ${diemThuNhap}/25\n`;
-                nhanXet += `\n✅ Kết luận: ${kienNghi} khoản vay với điều kiện theo dõi sát sao.`;
+                
+                nhanXet += `\nCHỈ SỐ TÀI CHÍNH:\n`;
+                nhanXet += `- LTV: ${ltv.toFixed(1)}% ${ltv <= 70 ? '(OK)' : ltv <= 80 ? '(Chấp nhận)' : '(VƯỢT NGƯỠNG)'}\n`;
+                nhanXet += `- Giá trị TS: ${formatCurrency(giaTriTaiSanThamDinh)}\n`;
+                nhanXet += `- Số tiền vay: ${formatCurrency(soTienVay)}\n`;
+                
+                if (thuNhap > 0) {
+                    nhanXet += `- Thu nhập/tháng: ${formatCurrency(thuNhap)}\n`;
+                    nhanXet += `- DTI: ${dti.toFixed(1)}% ${dti <= 40 ? '(Tốt)' : dti <= 50 ? '(OK)' : '(Cao)'}\n`;
+                }
+                
+                nhanXet += `\nĐIỂM RỦI RO:\n`;
+                nhanXet += `CIC:${diemCIC}/40 | LTV:${diemLTV}/30 | TS:${diemGiaTriTaiSan}/20 | TN:${diemThuNhap}/10\n`;
+                nhanXet += `TỔNG: ${tongDiem}/100\n`;
+                
+                nhanXet += `\nKẾT LUẬN: ${mucDoRuiRo} - ${xepHang} - ${kienNghi.toUpperCase()}`;
+                
+                if (cicInfo && cicInfo.soKhoanVayNoXauCic > 0) {
+                    nhanXet += `\n⚠️ Khách hàng có NỢ XẤU!`;
+                }
+                if (ltv > 100) {
+                    nhanXet += `\n🚫 Số tiền vay VƯỢT giá trị tài sản!`;
+                }
 
                 // Điền vào form
                 $('#assessTongDiem').val(tongDiem.toFixed(1));
@@ -1785,12 +1981,17 @@ $('body').append(modalHtml);
                 $('#assessKienNghi').val(kienNghi);
                 $('#assessNhanXet').val(nhanXet);
 
-                console.log('Đã tính toán và điền đề xuất đánh giá rủi ro:', {
+                console.log('Đã tính toán và điền đề xuất đánh giá rủi ro (có CIC):', {
                     tongDiem: tongDiem,
+                    diemLTV: diemLTV,
+                    diemCIC: diemCIC,
+                    diemThuNhap: diemThuNhap,
+                    diemGiaTriTaiSan: diemGiaTriTaiSan,
                     ltv: ltv,
                     mucDoRuiRo: mucDoRuiRo,
                     xepHang: xepHang,
-                    kienNghi: kienNghi
+                    kienNghi: kienNghi,
+                    cicInfo: cicInfo ? 'Có' : 'Không'
                 });
 
             } catch (error) {
@@ -1960,34 +2161,221 @@ $('body').append(modalHtml);
         }
 
         function saveAssessment(trangThai) {
+            const tongDiemStr = $('#assessTongDiem').val();
+            const tongDiem = tongDiemStr ? parseFloat(tongDiemStr.replace(',', '.')) : null;
+            
+            // Lấy nhận xét và cắt ngắn nếu quá dài (giới hạn 1000 ký tự trong database)
+            let nhanXet = $('#assessNhanXet').val() || null;
+            if (nhanXet && nhanXet.length > 990) {
+                nhanXet = nhanXet.substring(0, 990) + '...';
+            }
+            
             const data = {
                 maKhoanVay: parseInt($('#assessMaKhoanVay').val()),
-                tongDiem: parseFloat($('#assessTongDiem').val()) || null,
+                tongDiem: tongDiem,
                 mucDoRuiRo: $('#assessMucDoRuiRo').val() || null,
                 xepHangRuiRo: $('#assessXepHang').val() || null,
                 kienNghi: $('#assessKienNghi').val() || null,
-                nhanXet: $('#assessNhanXet').val() || null,
+                nhanXet: nhanXet,
                 trangThai: trangThai
             };
 
-            $.ajax({
-                url: '@Url.Action("SaveDanhGiaRuiRo", "QuanLyRuiRo")',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: function(response) {
-                    if (response.success) {
-                        alert(response.message);
-                        closeAssessmentModal();
-                        loadKhoanVayData(); // Reload danh sách
-                    } else {
-                        alert('Lỗi: ' + response.message);
-                    }
+            console.log('Dữ liệu gửi đi:', data);
+
+            // Sử dụng fetch thay vì jQuery AJAX để tránh lỗi HTTP2
+            fetch('@Url.Action("SaveDanhGiaRuiRo", "QuanLyRuiRo")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
-                error: function(xhr, status, error) {
-                    alert('Lỗi khi lưu đánh giá: ' + error);
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
                 }
+                return response.json();
+            })
+            .then(response => {
+                console.log('Response từ server:', response);
+                if (response.success) {
+                    showNotification(response.message || 'Lưu đánh giá thành công!', 'success');
+                    closeAssessmentModal();
+                    loadKhoanVayData(); // Reload danh sách
+                } else {
+                    alert('Lỗi: ' + (response.message || 'Không thể lưu đánh giá'));
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                alert('Lỗi khi lưu đánh giá: ' + error.message);
             });
+        }
+
+        // Hàm xem thông tin CIC
+        async function xemThongTinCIC() {
+            const maKhoanVay = $('#assessMaKhoanVay').val();
+            if (!maKhoanVay) {
+                alert('Không xác định được khoản vay!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/QuanLyRuiRo/GetThongTinCic?maKhoanVay=${maKhoanVay}`);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    displayCicInfo(result.data);
+                    $('#cicInfoSection').slideDown();
+                } else {
+                    $('#cicInfoContent').html(`
+                        <div class="text-warning">
+                            <strong>⚠️ Không tìm thấy thông tin CIC</strong>
+                            <p class="mb-0 mt-2">${result.message || 'Khách hàng chưa có lịch sử tín dụng trong hệ thống CIC.'}</p>
+                        </div>
+                    `);
+                    $('#cicInfoSection').slideDown();
+                }
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin CIC:', error);
+                alert('Có lỗi xảy ra khi lấy thông tin CIC: ' + error.message);
+            }
+        }
+
+        function displayCicInfo(cic) {
+            // Lưu thông tin CIC vào biến toàn cục để sử dụng trong tính toán
+            window.currentCicInfo = cic;
+            
+            const diemTinDung = cic.diemTinDungCic || 'N/A';
+            const xepHang = cic.xepHangTinDungCic || 'N/A';
+            const mucDoRuiRo = cic.mucDoRuiRo || 'N/A';
+            const khaNangTraNo = cic.khaNangTraNo || 'N/A';
+            const khuyenNghi = cic.khuyenNghiChoVay || 'N/A';
+            
+            // Xác định màu sắc dựa trên mức độ rủi ro
+            let riskColor = 'text-success';
+            if (cic.mucDoRuiRo === 'Cao' || cic.mucDoRuiRo === 'Rất cao') {
+                riskColor = 'text-danger';
+            } else if (cic.mucDoRuiRo === 'Trung bình') {
+                riskColor = 'text-warning';
+            }
+
+            let html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tr>
+                                <th width="50%">Mã CIC:</th>
+                                <td><span class="code-badge">${cic.maCicCode}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Họ tên:</th>
+                                <td>${cic.hoTen || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                                <th>Điểm tín dụng CIC:</th>
+                                <td><strong class="${riskColor}" style="font-size: 1.2em;">${diemTinDung}</strong>/1000</td>
+                            </tr>
+                            <tr>
+                                <th>Xếp hạng tín dụng:</th>
+                                <td><span class="rating-badge">${xepHang}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Mức độ rủi ro:</th>
+                                <td><span class="${riskColor}">${mucDoRuiRo}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Khả năng trả nợ:</th>
+                                <td>${khaNangTraNo}</td>
+                            </tr>
+                            <tr>
+                                <th>Khuyến nghị cho vay:</th>
+                                <td><strong class="${khuyenNghi === 'ChoVay' ? 'text-success' : khuyenNghi === 'KhongChoVay' ? 'text-danger' : 'text-warning'}">${
+                                    khuyenNghi === 'ChoVay' ? '✅ Cho vay' : 
+                                    khuyenNghi === 'KhongChoVay' ? '❌ Không cho vay' : 
+                                    '⚠️ Cần thận trọng'
+                                }</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tr>
+                                <th width="50%">Tổng số khoản vay:</th>
+                                <td>${cic.tongSoKhoanVayCic}</td>
+                            </tr>
+                            <tr>
+                                <th>Khoản vay đang vay:</th>
+                                <td>${cic.soKhoanVayDangVayCic}</td>
+                            </tr>
+                            <tr>
+                                <th>Khoản vay đã trả xong:</th>
+                                <td>${cic.soKhoanVayDaTraXongCic}</td>
+                            </tr>
+                            <tr>
+                                <th>Khoản vay quá hạn:</th>
+                                <td class="${cic.soKhoanVayQuaHanCic > 0 ? 'text-danger' : ''}">${cic.soKhoanVayQuaHanCic}</td>
+                            </tr>
+                            <tr>
+                                <th>Khoản vay nợ xấu:</th>
+                                <td class="${cic.soKhoanVayNoXauCic > 0 ? 'text-danger font-weight-bold' : ''}">${cic.soKhoanVayNoXauCic}</td>
+                            </tr>
+                            <tr>
+                                <th>Tổng dư nợ hiện tại:</th>
+                                <td>${formatCurrency(cic.tongDuNoCic)}</td>
+                            </tr>
+                            <tr>
+                                <th>Dư nợ nợ xấu:</th>
+                                <td class="${cic.duNoNoXauCic > 0 ? 'text-danger' : ''}">${formatCurrency(cic.duNoNoXauCic)}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tr>
+                                <th width="25%">Số lần quá hạn:</th>
+                                <td width="25%" class="${cic.soLanQuaHanCic > 0 ? 'text-warning' : ''}">${cic.soLanQuaHanCic} lần</td>
+                                <th width="25%">Số lần nợ xấu:</th>
+                                <td width="25%" class="${cic.soLanNoXauCic > 0 ? 'text-danger' : ''}">${cic.soLanNoXauCic} lần</td>
+                            </tr>
+                            <tr>
+                                <th>Số ngày quá hạn tối đa:</th>
+                                <td class="${cic.soNgayQuaHanToiDaCic > 30 ? 'text-danger' : ''}">${cic.soNgayQuaHanToiDaCic} ngày</td>
+                                <th>Tỷ lệ trả nợ đúng hạn:</th>
+                                <td class="${cic.tyLeTraNoDungHanCic >= 90 ? 'text-success' : cic.tyLeTraNoDungHanCic >= 70 ? 'text-warning' : 'text-danger'}">${cic.tyLeTraNoDungHanCic}%</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                ${cic.danhGiaTongQuat ? `
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <div class="alert alert-secondary mb-0 py-2">
+                            <strong>Đánh giá tổng quan:</strong> ${cic.danhGiaTongQuat}
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                ${cic.lyDoKhuyenNghi ? `
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <div class="alert ${khuyenNghi === 'ChoVay' ? 'alert-success' : khuyenNghi === 'KhongChoVay' ? 'alert-danger' : 'alert-warning'} mb-0 py-2">
+                            <strong>Lý do khuyến nghị:</strong> ${cic.lyDoKhuyenNghi}
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                <div class="row mt-2">
+                    <div class="col-12 text-right">
+                        <small class="text-muted">Ngày tra cứu cuối: ${cic.ngayTraCuuCuoi ? new Date(cic.ngayTraCuuCuoi).toLocaleDateString('vi-VN') : 'N/A'}</small>
+                    </div>
+                </div>
+            `;
+            
+            $('#cicInfoContent').html(html);
         }
 
         // Xử lý submit form

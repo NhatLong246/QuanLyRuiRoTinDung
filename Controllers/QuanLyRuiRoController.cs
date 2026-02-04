@@ -111,7 +111,15 @@ namespace QuanLyRuiRoTinDung.Controllers
         {
             try
             {
-                var data = await _ruiRoService.GetKhoanVayCanThamDinhAsync(maKhoanVay, trangThai, mucDoRuiRo);
+                // Lấy mã người dùng hiện tại từ session
+                var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+                int? maNguoiDung = null;
+                if (!string.IsNullOrEmpty(maNguoiDungStr) && int.TryParse(maNguoiDungStr, out var parsedId))
+                {
+                    maNguoiDung = parsedId;
+                }
+
+                var data = await _ruiRoService.GetKhoanVayCanThamDinhAsync(maKhoanVay, trangThai, mucDoRuiRo, maNguoiDung);
                 return Json(new { success = true, data });
             }
             catch (Exception ex)
@@ -190,6 +198,13 @@ namespace QuanLyRuiRoTinDung.Controllers
                     return Json(new { success = false, message = "Phiên làm việc hết hạn" });
                 }
 
+                // Cắt ngắn các trường nếu vượt quá giới hạn database
+                var nhanXet = request.NhanXet;
+                if (!string.IsNullOrEmpty(nhanXet) && nhanXet.Length > 1000)
+                {
+                    nhanXet = nhanXet.Substring(0, 997) + "...";
+                }
+
                 var danhGia = new Models.Entities.DanhGiaRuiRo
                 {
                     MaKhoanVay = request.MaKhoanVay,
@@ -197,7 +212,7 @@ namespace QuanLyRuiRoTinDung.Controllers
                     MucDoRuiRo = request.MucDoRuiRo,
                     XepHangRuiRo = request.XepHangRuiRo,
                     KienNghi = request.KienNghi,
-                    NhanXet = request.NhanXet,
+                    NhanXet = nhanXet,
                     TrangThai = request.TrangThai
                 };
 
@@ -332,6 +347,31 @@ namespace QuanLyRuiRoTinDung.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetThongTinCic(int maKhoanVay)
+        {
+            try
+            {
+                var maNguoiDung = HttpContext.Session.GetString("MaNguoiDung");
+                if (string.IsNullOrEmpty(maNguoiDung))
+                {
+                    return Json(new { success = false, message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại." });
+                }
+
+                var cicInfo = await _ruiRoService.GetThongTinCicByKhoanVayAsync(maKhoanVay);
+                if (cicInfo == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy thông tin CIC cho khách hàng này." });
+                }
+
+                return Json(new { success = true, data = cicInfo });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
             }
         }
     }
