@@ -1206,11 +1206,22 @@
             try {
                 // Lấy thông tin tài sản từ DOM
                 const taiSanItem = $(`.tai-san-item[data-ma-tai-san="${maTaiSan}"]`);
-                const loaiTaiSan = taiSanItem.find('.value').eq(0).text().trim();
                 
                 // Lấy giá trị định giá ban đầu (giá trị khai báo)
                 const giaTriDinhGiaStr = taiSanItem.find('[data-field="giaTriDinhGia"]').text().trim();
                 const giaTriKhaiBao = parseFloat(giaTriDinhGiaStr.replace(/[^0-9]/g, '')) || 0;
+                
+                // Lấy thông tin tài sản từ server
+                const taiSanResponse = await fetch(`/QuanLyRuiRo/GetTaiSanDetail?maTaiSan=${maTaiSan}`);
+                const taiSanData = await taiSanResponse.json();
+                
+                if (!taiSanData.success) {
+                    alert('Không thể lấy thông tin tài sản!');
+                    return;
+                }
+                
+                const loaiTaiSan = taiSanData.data.tenLoaiTaiSan || '';
+                const isDat = loaiTaiSan.toLowerCase().includes('đất') || loaiTaiSan.toLowerCase().includes('dat');
                 
                 // Hiển thị modal thẩm định
                 const modalHtml = `
@@ -1231,17 +1242,12 @@
                                     
                                     <div class="form-group">
                                         <label>Loại tài sản</label>
-                                        <select id="thamDinhLoaiTaiSan" class="form-control" onchange="loadLoaiTaiSanOptions()">
-                                            <option value="">-- Chọn loại --</option>
-                                            <option value="Đất">Đất</option>
-                                            <option value="Xe cộ">Xe cộ</option>
-                                            <option value="Vàng">Vàng</option>
-                                            <option value="Bất động sản">Bất động sản</option>
-                                            <option value="Khác">Khác</option>
-                                        </select>
+                                        <input type="text" id="thamDinhLoaiTaiSan" class="form-control" value="${loaiTaiSan}" readonly style="background-color: #f0f0f0;" />
+                                        <input type="hidden" id="thamDinhIsDat" value="${isDat}" />
+                                        <small class="form-text text-muted">Loại tài sản được lấy từ hồ sơ trong database</small>
                                     </div>
 
-                                    <div id="optionsDat" style="display: none;">
+                                    <div id="optionsDat" style="display: ${isDat ? 'block' : 'none'};">
                                         <div class="form-row">
                                             <div class="form-group">
                                                 <label>Quận/Huyện</label>
@@ -1250,8 +1256,8 @@
                                                 </select>
                                             </div>
                                             <div class="form-group">
-                                                <label>Diện tích (m²)</label>
-                                                <input type="number" id="thamDinhDienTich" class="form-control" step="0.01" />
+                                                <label>Diện tích (m²) *</label>
+                                                <input type="number" id="thamDinhDienTich" class="form-control" step="0.01" value="${taiSanData.data.dienTich || ''}" ${isDat ? 'required' : ''} />
                                             </div>
                                         </div>
                                     </div>
@@ -1307,9 +1313,10 @@
                                     <div class="form-row">
                                         <div class="form-group">
                                             <label>Chủ sở hữu *</label>
-                                            <input type="text" id="thamDinhChuSoHuu" class="form-control" placeholder="Nhập tên chủ sở hữu..." />
+                                            <input type="text" id="thamDinhChuSoHuu" class="form-control" placeholder="Nhập tên chủ sở hữu..." value="${taiSanData.data.chuSoHuu || ''}" />
                                         </div>
-                                        <div class="form-group">
+                                        ${!isDat ? `
+                                        <div class="form-group" id="divTinhTrang">
                                             <label>Tình trạng</label>
                                             <select id="thamDinhTinhTrang" class="form-control">
                                                 <option value="">-- Chọn tình trạng --</option>
@@ -1319,21 +1326,26 @@
                                                 <option value="Hư hỏng">Hư hỏng</option>
                                             </select>
                                         </div>
+                                        ` : ''}
                                     </div>
+                                    ${isDat ? `
                                     <div class="form-group">
                                         <label>Địa chỉ *</label>
-                                        <input type="text" id="thamDinhDiaChi" class="form-control" placeholder="Nhập địa chỉ chi tiết..." />
+                                        <input type="text" id="thamDinhDiaChi" class="form-control" placeholder="Nhập địa chỉ chi tiết..." value="${taiSanData.data.diaChi || ''}" required />
                                     </div>
+                                    ` : ''}
+                                    ${isDat ? `
                                     <div class="form-row">
                                         <div class="form-group">
                                             <label>Thành phố/Tỉnh</label>
-                                            <input type="text" id="thamDinhThanhPho" class="form-control" placeholder="Nhập thành phố..." value="Hồ Chí Minh" />
+                                            <input type="text" id="thamDinhThanhPho" class="form-control" placeholder="Nhập thành phố..." value="${taiSanData.data.thanhPho || 'Hồ Chí Minh'}" />
                                         </div>
                                         <div class="form-group">
                                             <label>Quận/Huyện</label>
-                                            <input type="text" id="thamDinhQuanHuyen" class="form-control" placeholder="Nhập quận/huyện..." />
+                                            <input type="text" id="thamDinhQuanHuyen" class="form-control" placeholder="Nhập quận/huyện..." value="${taiSanData.data.quan || ''}" />
                                         </div>
                                     </div>
+                                    ` : ''}
 
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" onclick="closeThamDinhModal()">Hủy</button>
@@ -1346,13 +1358,15 @@
                     </div>
                 `;
                 
-                $('body').append(modalHtml);
+$('body').append(modalHtml);
                 $('#thamDinhModal').fadeIn(300);
                 
-                // Load danh sách quận cho đất
-                await loadQuanOptions();
-                // Load danh sách hãng xe
-                await loadHangXeOptions();
+                // Load danh sách dựa trên loại tài sản
+                if (isDat) {
+                    await loadQuanOptions();
+                } else if (loaiTaiSan.toLowerCase().includes('xe')) {
+                    await loadHangXeOptions();
+                }
                 
             } catch (error) {
                 console.error('Lỗi khi mở modal thẩm định:', error);
@@ -1415,30 +1429,22 @@
             }
         }
 
-        function loadLoaiTaiSanOptions() {
-            const loaiTaiSan = $('#thamDinhLoaiTaiSan').val();
-            $('#optionsDat, #optionsXe').hide();
-            
-            if (loaiTaiSan === 'Đất') {
-                $('#optionsDat').show();
-            } else if (loaiTaiSan === 'Xe cộ') {
-                $('#optionsXe').show();
-            }
-        }
+        // Hàm đã được xóa vì loại tài sản lấy từ database và hiển thị động
 
         async function traCuuGiaThamChieu() {
-            const loaiTaiSan = $('#thamDinhLoaiTaiSan').val();
+            const loaiTaiSan = $('#thamDinhLoaiTaiSan').val().trim();
+            const isDat = $('#thamDinhIsDat').val() === 'true';
             if (!loaiTaiSan) {
-                alert('Vui lòng chọn loại tài sản!');
+                alert('Không xác định được loại tài sản!');
                 return;
             }
 
             try {
                 let requestData = { loaiTaiSan: loaiTaiSan };
                 
-                if (loaiTaiSan === 'Đất') {
+                if (isDat) {
                     requestData.quan = $('#thamDinhQuan').val();
-                } else if (loaiTaiSan === 'Xe cộ') {
+                } else if (loaiTaiSan.toLowerCase().includes('xe')) {
                     requestData.hangXe = $('#thamDinhHangXe').val();
                     requestData.dongXe = $('#thamDinhDongXe').val();
                     requestData.namSanXuat = parseInt($('#thamDinhNamSanXuat').val()) || null;
@@ -1457,7 +1463,7 @@
                     const data = result.data;
                     let html = '<table class="table table-sm table-bordered"><tbody>';
                     
-                    if (loaiTaiSan === 'Đất') {
+                    if (isDat) {
                         const dienTich = parseFloat($('#thamDinhDienTich').val()) || 1;
                         const giaTriThamChieu = data.giaTriThamChieu * dienTich;
                         const giaTriThamDinh = giaTriThamChieu * (data.tyLeThamDinh / 100);
@@ -1470,7 +1476,7 @@
                             <tr><th>Tỷ lệ thẩm định:</th><td>${data.tyLeThamDinh}%</td></tr>
                             <tr class="table-success"><th>Giá trị thẩm định:</th><td class="text-success"><strong>${formatCurrency(giaTriThamDinh)}</strong></td></tr>
                         `;
-                    } else if (loaiTaiSan === 'Xe cộ') {
+                    } else if (loaiTaiSan.toLowerCase().includes('xe')) {
                         const giaTriThamDinh = data.giaTriThamChieu * (data.tyLeThamDinh / 100);
                         
                         html += `
@@ -1508,6 +1514,7 @@
             const maLienKet = $('#thamDinhMaLienKet').val();
             const thamChieu = $('#formThamDinh').data('thamChieu');
             const giaTriKhaiBao = parseFloat($('#thamDinhGiaTriKhaiBao').val()) || 0;
+            const isDat = $('#thamDinhIsDat').val() === 'true';
             
             if (!thamChieu) {
                 alert('Vui lòng tra cứu giá tham chiếu trước!');
@@ -1523,8 +1530,9 @@
             let giaTriThamChieuTotal = 0;
             let giaTriThamDinh = 0;
             const loaiTaiSan = $('#thamDinhLoaiTaiSan').val();
+            let dienTich = null;
             
-            if (loaiTaiSan === 'Đất') {
+            if (isDat) {
                 const dienTich = parseFloat($('#thamDinhDienTich').val()) || 1;
                 giaTriThamChieuTotal = thamChieu.giaTriThamChieu * dienTich;
                 giaTriThamDinh = giaTriThamChieuTotal * (thamChieu.tyLeThamDinh / 100);
@@ -1535,7 +1543,7 @@
 
             // Ghi chú thẩm định (không cần tính chênh lệch với giá khai báo)
             let ghiChu = `Loại tài sản: ${loaiTaiSan}. `;
-            if (loaiTaiSan === 'Đất') {
+            if (isDat) {
                 const quan = $('#thamDinhQuan').val();
                 const dienTich = $('#thamDinhDienTich').val();
                 ghiChu += `Quận: ${quan}, Diện tích: ${dienTich}m². `;
@@ -1550,10 +1558,15 @@
             // Validate các trường bắt buộc
             const soGiayTo = $('#thamDinhSoGiayTo').val();
             const chuSoHuu = $('#thamDinhChuSoHuu').val();
-            const diaChi = $('#thamDinhDiaChi').val();
+            const diaChi = isDat ? $('#thamDinhDiaChi').val() : null;
             
-            if (!soGiayTo || !chuSoHuu || !diaChi) {
-                alert('Vui lòng điền đầy đủ thông tin bắt buộc: Số giấy tờ, Chủ sở hữu, Địa chỉ!');
+            if (!soGiayTo || !chuSoHuu) {
+                alert('Vui lòng điền đầy đủ thông tin bắt buộc: Số giấy tờ, Chủ sở hữu!');
+                return;
+            }
+            
+            if (isDat && !diaChi) {
+                alert('Vui lòng nhập địa chỉ cho loại tài sản đất!');
                 return;
             }
 
@@ -1573,9 +1586,10 @@
                         noiCap: $('#thamDinhNoiCap').val() || null,
                         chuSoHuu: chuSoHuu,
                         diaChi: diaChi,
-                        thanhPho: $('#thamDinhThanhPho').val() || null,
-                        quan: $('#thamDinhQuanHuyen').val() || null,
-                        tinhTrang: $('#thamDinhTinhTrang').val() || null
+                        thanhPho: isDat ? $('#thamDinhThanhPho').val() : null,
+                        quan: isDat ? $('#thamDinhQuanHuyen').val() : null,
+                        tinhTrang: !isDat ? ($('#thamDinhTinhTrang').val() || null) : null,
+                        dienTich: dienTich
                     })
                 });
 

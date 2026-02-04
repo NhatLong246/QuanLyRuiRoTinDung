@@ -17,8 +17,9 @@ namespace QuanLyRuiRoTinDung.Services
         Task<List<GiaTriTaiSanThamChieu>> GetGiaTriThamChieuAsync(string loaiTaiSan, string? keyword = null);
         Task<GiaTriTaiSanThamChieu?> TimGiaTriThamChieuAsync(string loaiTaiSan, string? quan = null, string? hangXe = null, string? dongXe = null, int? namSanXuat = null);
         Task<List<HoSoVayFileDinhKem>> GetFileDinhKemByKhoanVayAsync(int maKhoanVay);
+        Task<object?> GetTaiSanDetailAsync(int maTaiSan);
         Task<bool> LuuKetQuaThamDinhAsync(int maTaiSan, decimal giaTriThamChieu, decimal giaTriThamDinh, decimal tyLeThamDinh, string? ghiChu, int nguoiThamDinh, 
-            string? soGiayTo, DateOnly? ngayCap, string? noiCap, string? chuSoHuu, string? diaChi, string? thanhPho, string? quan, string? tinhTrang);
+            string? soGiayTo, DateOnly? ngayCap, string? noiCap, string? chuSoHuu, string? diaChi, string? thanhPho, string? quan, string? tinhTrang, decimal? dienTich);
         Task<bool> UpdateTaiSanThamDinhAsync(int maLienKet, decimal? giaTriDinhGia, decimal? tyLeTheChap, DateOnly? ngayTheChap, string? ghiChu);
     }
 
@@ -656,7 +657,7 @@ namespace QuanLyRuiRoTinDung.Services
         }
 
         public async Task<bool> LuuKetQuaThamDinhAsync(int maTaiSan, decimal giaTriThamChieu, decimal giaTriThamDinh, decimal tyLeThamDinh, string? ghiChu, int nguoiThamDinh,
-            string? soGiayTo, DateOnly? ngayCap, string? noiCap, string? chuSoHuu, string? diaChi, string? thanhPho, string? quan, string? tinhTrang)
+            string? soGiayTo, DateOnly? ngayCap, string? noiCap, string? chuSoHuu, string? diaChi, string? thanhPho, string? quan, string? tinhTrang, decimal? dienTich)
         {
             try
             {
@@ -684,6 +685,7 @@ namespace QuanLyRuiRoTinDung.Services
                 if (!string.IsNullOrEmpty(thanhPho)) taiSan.ThanhPho = thanhPho;
                 if (!string.IsNullOrEmpty(quan)) taiSan.Quan = quan;
                 if (!string.IsNullOrEmpty(tinhTrang)) taiSan.TinhTrang = tinhTrang;
+                if (dienTich.HasValue && dienTich.Value > 0) taiSan.DienTich = dienTich;
 
                 // Lưu lịch sử định giá
                 var lichSu = new LichSuDinhGiaTaiSan
@@ -744,6 +746,43 @@ namespace QuanLyRuiRoTinDung.Services
             {
                 _logger.LogError(ex, "Lỗi khi cập nhật thông tin thẩm định liên kết {MaLienKet}", maLienKet);
                 return false;
+            }
+        }
+
+        public async Task<object?> GetTaiSanDetailAsync(int maTaiSan)
+        {
+            try
+            {
+                var taiSan = await _context.TaiSanDamBaos
+                    .Include(t => t.MaLoaiTaiSanNavigation)
+                    .FirstOrDefaultAsync(t => t.MaTaiSan == maTaiSan);
+
+                if (taiSan == null)
+                {
+                    _logger.LogWarning("Không tìm thấy tài sản {MaTaiSan}", maTaiSan);
+                    return null;
+                }
+
+                return new
+                {
+                    maTaiSan = taiSan.MaTaiSan,
+                    tenGoi = taiSan.TenGoi,
+                    maLoaiTaiSan = taiSan.MaLoaiTaiSan,
+                    tenLoaiTaiSan = taiSan.MaLoaiTaiSanNavigation?.TenLoaiTaiSan,
+                    soGiayTo = taiSan.SoGiayTo,
+                    chuSoHuu = taiSan.ChuSoHuu,
+                    diaChi = taiSan.DiaChi,
+                    thanhPho = taiSan.ThanhPho,
+                    quan = taiSan.Quan,
+                    dienTich = taiSan.DienTich,
+                    tinhTrang = taiSan.TinhTrang,
+                    giaTriDinhGia = taiSan.GiaTriDinhGia
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy thông tin tài sản {MaTaiSan}", maTaiSan);
+                return null;
             }
         }
     }

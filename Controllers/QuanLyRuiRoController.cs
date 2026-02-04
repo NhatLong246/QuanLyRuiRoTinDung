@@ -283,7 +283,8 @@ namespace QuanLyRuiRoTinDung.Controllers
                     request.DiaChi,
                     request.ThanhPho,
                     request.Quan,
-                    request.TinhTrang
+                    request.TinhTrang,
+                    request.DienTich
                 );
 
                 return Json(new { success = result, message = result ? "Đã lưu kết quả thẩm định" : "Không thể lưu kết quả" });
@@ -308,6 +309,25 @@ namespace QuanLyRuiRoTinDung.Controllers
                 );
 
                 return Json(new { success = result, message = result ? "Đã cập nhật thông tin tài sản" : "Không thể cập nhật" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTaiSanDetail(int maTaiSan)
+        {
+            try
+            {
+                var taiSan = await _ruiRoService.GetTaiSanDetailAsync(maTaiSan);
+                if (taiSan == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy tài sản" });
+                }
+                
+                return Json(new { success = true, data = taiSan });
             }
             catch (Exception ex)
             {
@@ -351,6 +371,7 @@ namespace QuanLyRuiRoTinDung.Controllers
         public string? ThanhPho { get; set; }
         public string? Quan { get; set; }
         public string? TinhTrang { get; set; }
+        public decimal? DienTich { get; set; }
     }
 
     public class UpdateTaiSanThamDinhRequest
