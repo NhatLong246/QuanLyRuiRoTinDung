@@ -51,9 +51,68 @@
                         </li>
                     </ul>
                     <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">Đăng nhập</a>
-                        </li>
+                        @{
+                            var maNguoiDung = Context.Session.GetString("MaNguoiDung");
+                            var hoTen = Context.Session.GetString("HoTen") ?? "Người dùng";
+                            var tenVaiTro = Context.Session.GetString("TenVaiTro") ?? "";
+                        }
+                        @if (!string.IsNullOrEmpty(maNguoiDung))
+                        {
+                            <!-- User Profile Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle user-profile-link" href="#" id="userProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar-circle me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div class="user-info-text">
+                                            <div class="user-name">@hoTen</div>
+                                            <div class="user-role">@tenVaiTro</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end user-dropdown-menu" aria-labelledby="userProfileDropdown">
+                                    <li>
+                                        <div class="dropdown-item-text">
+                                            <div class="fw-bold">@hoTen</div>
+                                            <small class="text-muted">@tenVaiTro</small>
+                                        </div>
+                                    </li>
+                                    @if (tenVaiTro != null && tenVaiTro.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="@Url.Action("TaoTaiKhoanNhanVien", "Account")">
+                                                <i class="fas fa-user-plus me-2"></i>Tạo tài khoản nhân viên
+                                            </a>
+                                        </li>
+                                    }
+                                    @if (tenVaiTro != null && tenVaiTro.Equals("LanhDao", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="@Url.Action("QuanLyNhanVien", "LanhDao")">
+                                                <i class="fas fa-users me-2"></i>Quản lý nhân viên
+                                            </a>
+                                        </li>
+                                    }
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                            <button type="submit" class="dropdown-item logout-btn">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>

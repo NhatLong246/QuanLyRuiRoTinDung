@@ -597,6 +597,25 @@ namespace QuanLyRuiRoTinDung.Controllers
                 ? Math.Round((decimal)approvedThisMonth / loansThisMonth * 100, 2)
                 : 0;
 
+            // Tính tỷ lệ nợ xấu
+            var totalLoans = await _context.KhoanVays.CountAsync();
+            var badDebtLoans = await _context.TheoDoiNoXaus
+                .Select(n => n.MaKhoanVay)
+                .Distinct()
+                .CountAsync();
+            
+            // Đếm thêm các khoản vay có MaPhanLoaiNo >= 3 nhưng chưa có trong TheoDoiNoXau
+            var badDebtFromClassification = await _context.KhoanVays
+                .Where(k => k.MaPhanLoaiNo.HasValue && 
+                            k.MaPhanLoaiNo >= 3 && 
+                            !_context.TheoDoiNoXaus.Any(t => t.MaKhoanVay == k.MaKhoanVay))
+                .CountAsync();
+            
+            var totalBadDebt = badDebtLoans + badDebtFromClassification;
+            var badDebtRatio = totalLoans > 0 
+                ? Math.Round((decimal)totalBadDebt / totalLoans * 100, 2)
+                : 0;
+
             var averageLoanAmount = await _context.KhoanVays
                 .Where(k => k.NgayNopHoSo.HasValue && k.NgayNopHoSo.Value >= lastYear)
                 .AverageAsync(k => (decimal?)k.SoTienVay) ?? 0;
@@ -616,7 +635,7 @@ namespace QuanLyRuiRoTinDung.Controllers
             var totalCompleted = await _context.KhoanVays
                 .CountAsync(k => k.TrangThaiKhoanVay == "Đã thanh toán");
             
-            var totalLoans = await _context.KhoanVays.CountAsync();
+            // Sử dụng lại biến totalLoans đã khai báo ở trên
             var onTimeCompletionRate = totalLoans > 0 
                 ? Math.Round((decimal)totalCompleted / totalLoans * 100, 2) 
                 : 0;
@@ -639,6 +658,7 @@ namespace QuanLyRuiRoTinDung.Controllers
                 ApprovedThisMonth = approvedThisMonth,
                 RejectedThisMonth = rejectedThisMonth,
                 ApprovalRate = approvalRate,
+                BadDebtRatio = badDebtRatio,
                 AverageLoanAmount = (long)averageLoanAmount,
                 AvgProcessingDays = avgProcessingDays,
                 OnTimeCompletionRate = onTimeCompletionRate,
@@ -926,6 +946,185 @@ namespace QuanLyRuiRoTinDung.Controllers
             // TODO: Implement based on your authentication method
             // For now, return a default value
             return 1;
+        }
+
+        // ============================================
+        // QUẢN LÝ NHÂN VIÊN - PHÂN VAI TRÒ VÀ PHÒNG BAN
+        // ============================================
+
+        // Danh sách nhân viên với filter đã phân/chưa phân vai trò
+        public async Task<IActionResult> QuanLyNhanVien(string search = "", string filter = "all")
+        {
+            var query = _context.NguoiDungs
+                .Include(u => u.MaVaiTroNavigation)
+                .AsQueryable();
+
+            // Loại bỏ Admin và Lãnh đạo khỏi danh sách
+            var adminRole = await _context.VaiTros
+                .FirstOrDefaultAsync(v => v.TenVaiTro == "Admin" && v.TrangThaiHoatDong == true);
+            var lanhDaoRole = await _context.VaiTros
+                .FirstOrDefaultAsync(v => v.TenVaiTro == "LanhDao" && v.TrangThaiHoatDong == true);
+
+            if (adminRole != null)
+            {
+                query = query.Where(u => u.MaVaiTro != adminRole.MaVaiTro);
+            }
+            if (lanhDaoRole != null)
+            {
+                query = query.Where(u => u.MaVaiTro != lanhDaoRole.MaVaiTro);
+            }
+
+            // Tìm kiếm
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(u => 
+                    u.TenDangNhap.Contains(search) ||
+                    u.HoTen.Contains(search) ||
+                    (u.Email != null && u.Email.Contains(search)));
+            }
+
+            // Lọc theo trạng thái phân vai trò
+            if (filter == "assigned")
+            {
+                // Đã phân vai trò và phòng ban
+                query = query.Where(u => u.MaVaiTro > 0 && u.MaPhongBan.HasValue);
+            }
+            else if (filter == "unassigned")
+            {
+                // Chưa phân vai trò hoặc phòng ban
+                query = query.Where(u => u.MaVaiTro == 0 || !u.MaPhongBan.HasValue);
+            }
+            // "all" - hiển thị tất cả
+
+            var nhanViens = await query
+                .OrderByDescending(u => u.NgayTao)
+                .ToListAsync();
+
+            // Load thông tin phòng ban cho các nhân viên
+            var phongBanIds = nhanViens
+                .Where(u => u.MaPhongBan.HasValue)
+                .Select(u => u.MaPhongBan.Value)
+                .Distinct()
+                .ToList();
+
+            var phongBans = await _context.PhongBans
+                .Where(p => phongBanIds.Contains(p.MaPhongBan))
+                .ToDictionaryAsync(p => p.MaPhongBan, p => p.TenPhongBan);
+
+            ViewBag.PhongBans = phongBans;
+            ViewBag.VaiTros = await _context.VaiTros
+                .Where(v => v.TrangThaiHoatDong == true 
+                    && v.TenVaiTro != "Admin" 
+                    && v.TenVaiTro != "LanhDao")
+                .OrderBy(v => v.TenVaiTro)
+                .ToListAsync();
+
+            ViewBag.AllPhongBans = await _context.PhongBans
+                .Where(p => p.TrangThaiHoatDong == true)
+                .OrderBy(p => p.TenPhongBan)
+                .ToListAsync();
+
+            // Tạo mapping giữa vai trò và phòng ban để tự động chọn
+            var roleDepartmentMapping = new Dictionary<string, string>();
+            var allPhongBans = await _context.PhongBans
+                .Where(p => p.TrangThaiHoatDong == true)
+                .ToListAsync();
+            
+            foreach (var pb in allPhongBans)
+            {
+                if (pb.TenPhongBan.Contains("Tín dụng", StringComparison.OrdinalIgnoreCase) || 
+                    pb.TenPhongBan.Contains("TinDung", StringComparison.OrdinalIgnoreCase))
+                {
+                    roleDepartmentMapping["NhanVienTinDung"] = pb.MaPhongBan.ToString();
+                }
+                else if (pb.TenPhongBan.Contains("Rủi ro", StringComparison.OrdinalIgnoreCase) || 
+                         pb.TenPhongBan.Contains("RuiRo", StringComparison.OrdinalIgnoreCase) ||
+                         pb.TenPhongBan.Contains("Quản lý Rủi ro", StringComparison.OrdinalIgnoreCase))
+                {
+                    roleDepartmentMapping["QuanLyRuiRo"] = pb.MaPhongBan.ToString();
+                }
+            }
+            ViewBag.RoleDepartmentMapping = roleDepartmentMapping;
+
+            ViewBag.Search = search;
+            ViewBag.Filter = filter;
+
+            // Set user info for layout
+            ViewBag.HoTen = HttpContext.Session.GetString("HoTen") ?? "Lãnh đạo";
+            ViewBag.TenVaiTro = HttpContext.Session.GetString("TenVaiTro") ?? "LanhDao";
+
+            return View(nhanViens);
+        }
+
+        // Cập nhật vai trò và phòng ban cho nhân viên
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CapNhatVaiTroPhongBan(int maNguoiDung, int maVaiTro, int? maPhongBan)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return Json(new { success = false, message = "Vui lòng đăng nhập để tiếp tục." });
+            }
+
+            var nguoiDung = await _context.NguoiDungs.FindAsync(maNguoiDung);
+            if (nguoiDung == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy nhân viên." });
+            }
+
+            // Kiểm tra vai trò hợp lệ
+            var vaiTro = await _context.VaiTros
+                .FirstOrDefaultAsync(v => v.MaVaiTro == maVaiTro && v.TrangThaiHoatDong == true);
+            
+            if (vaiTro == null)
+            {
+                return Json(new { success = false, message = "Vai trò không hợp lệ." });
+            }
+
+            // Kiểm tra phòng ban nếu có
+            if (maPhongBan.HasValue)
+            {
+                var phongBan = await _context.PhongBans
+                    .FirstOrDefaultAsync(p => p.MaPhongBan == maPhongBan.Value && p.TrangThaiHoatDong == true);
+                
+                if (phongBan == null)
+                {
+                    return Json(new { success = false, message = "Phòng ban không hợp lệ." });
+                }
+            }
+
+            // Cập nhật thông tin
+            nguoiDung.MaVaiTro = maVaiTro;
+            nguoiDung.MaPhongBan = maPhongBan;
+            nguoiDung.NgayCapNhat = DateTime.Now;
+            
+            if (int.TryParse(maNguoiDungStr, out int nguoiCapNhat))
+            {
+                nguoiDung.NguoiCapNhat = nguoiCapNhat;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Lãnh đạo {MaNguoiDung} đã cập nhật vai trò/phòng ban cho nhân viên {MaNhanVien}", 
+                maNguoiDungStr, maNguoiDung);
+
+            // Lấy thông tin vai trò và phòng ban để trả về
+            var tenVaiTro = vaiTro.TenVaiTro;
+            string tenPhongBan = "";
+            if (maPhongBan.HasValue)
+            {
+                var phongBan = await _context.PhongBans.FindAsync(maPhongBan.Value);
+                tenPhongBan = phongBan?.TenPhongBan ?? "";
+            }
+
+            return Json(new 
+            { 
+                success = true, 
+                message = "Cập nhật vai trò và phòng ban thành công!",
+                tenVaiTro = tenVaiTro,
+                tenPhongBan = tenPhongBan
+            });
         }
     }
 }

@@ -1,0 +1,459 @@
+@model QuanLyRuiRoTinDung.Models.CreateEmployeeAccountViewModel
+
+@{
+    ViewData["Title"] = "Tạo tài khoản nhân viên";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2 d-flex align-items-center">
+                <i class="fas fa-user-plus me-2"></i>
+                Tạo tài khoản nhân viên
+            </h1>
+            <p class="text-muted">Tạo tài khoản mới cho nhân viên trong hệ thống</p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-cog me-2"></i>Thông tin tài khoản
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="TaoTaiKhoanNhanVien" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <h6 class="mb-3 text-primary">
+                            <i class="fas fa-info-circle me-2"></i>Thông tin đăng nhập
+                        </h6>
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label asp-for="TenDangNhap" class="form-label">
+                                    <i class="fas fa-user me-1"></i>@Html.DisplayNameFor(m => m.TenDangNhap) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="TenDangNhap" class="form-control form-control-lg" placeholder="Nhập tên đăng nhập" />
+                                <span asp-validation-for="TenDangNhap" class="text-danger"></span>
+                                <small class="form-text text-muted">Tên đăng nhập phải là duy nhất</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="MatKhau" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>@Html.DisplayNameFor(m => m.MatKhau) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="MatKhau" class="form-control form-control-lg" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" />
+                                <span asp-validation-for="MatKhau" class="text-danger"></span>
+                                <small class="form-text text-muted">Tối thiểu 6 ký tự</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="XacNhanMatKhau" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>@Html.DisplayNameFor(m => m.XacNhanMatKhau) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="XacNhanMatKhau" class="form-control form-control-lg" placeholder="Nhập lại mật khẩu" />
+                                <span asp-validation-for="XacNhanMatKhau" class="text-danger"></span>
+                                <small class="form-text text-muted">Xác nhận mật khẩu</small>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="mb-3 text-primary">
+                            <i class="fas fa-user-circle me-2"></i>Thông tin cá nhân
+                        </h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="HoTen" class="form-label">
+                                    <i class="fas fa-id-card me-1"></i>@Html.DisplayNameFor(m => m.HoTen) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="HoTen" class="form-control form-control-lg" placeholder="Nhập họ tên đầy đủ" />
+                                <span asp-validation-for="HoTen" class="text-danger"></span>
+                                <small class="form-text text-muted">Họ và tên đầy đủ của nhân viên</small>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>@Html.DisplayNameFor(m => m.Email)
+                                </label>
+                                <input asp-for="Email" type="email" class="form-control form-control-lg" placeholder="email@example.com" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                                <small class="form-text text-muted">Email liên hệ</small>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="SoDienThoai" class="form-label">
+                                    <i class="fas fa-phone me-1"></i>@Html.DisplayNameFor(m => m.SoDienThoai)
+                                </label>
+                                <input asp-for="SoDienThoai" class="form-control form-control-lg" placeholder="0123456789" />
+                                <span asp-validation-for="SoDienThoai" class="text-danger"></span>
+                                <small class="form-text text-muted">Số điện thoại</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                            <a href="@Url.Action("Index", "LanhDao")" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại
+                            </a>
+                            <button type="button" class="btn btn-primary btn-lg px-5" id="btnSubmitForm">
+                                <i class="fas fa-user-plus me-2"></i>Tạo tài khoản
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác nhận Tạo tài khoản -->
+<div class="modal fade" id="confirmCreateModal" tabindex="-1" aria-labelledby="confirmCreateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmCreateModalLabel">
+                    <i class="fas fa-question-circle me-2"></i>Xác nhận Tạo tài khoản
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Bạn có chắc chắn muốn tạo tài khoản nhân viên này không?
+                </div>
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="fas fa-user me-2"></i>Thông tin tài khoản sẽ được tạo
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Tên đăng nhập:</small>
+                                <p class="mb-0"><strong id="confirmTenDangNhap">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Họ tên:</small>
+                                <p class="mb-0"><strong id="confirmHoTen">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Email:</small>
+                                <p class="mb-0"><strong id="confirmEmail">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Số điện thoại:</small>
+                                <p class="mb-0"><strong id="confirmSoDienThoai">-</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Hủy
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmCreateBtn">
+                    <i class="fas fa-check me-2"></i>Xác nhận Tạo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thông báo Thành công -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="successModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>Tạo tài khoản thành công
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-success mb-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Tài khoản nhân viên đã được tạo thành công!
+                </div>
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="fas fa-user-check me-2"></i>Thông tin tài khoản đã tạo
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Tên đăng nhập:</small>
+                                <p class="mb-0"><strong id="successTenDangNhap">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Họ tên:</small>
+                                <p class="mb-0"><strong id="successHoTen">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Email:</small>
+                                <p class="mb-0"><strong id="successEmail">-</strong></p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted">Số điện thoại:</small>
+                                <p class="mb-0"><strong id="successSoDienThoai">-</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal" id="btnCloseSuccess">
+                    <i class="fas fa-check me-2"></i>Đóng
+                </button>
+                <a href="@Url.Action("TaoTaiKhoanNhanVien", "Account")" class="btn btn-outline-primary">
+                    <i class="fas fa-plus me-2"></i>Tạo tài khoản khác
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tìm form bằng cách tìm form chứa nút submit
+            var submitBtn = document.getElementById('btnSubmitForm');
+            var form = submitBtn ? submitBtn.closest('form') : document.querySelector('form');
+            
+            console.log('Form found:', form);
+            console.log('Submit button found:', submitBtn);
+            
+            var confirmModalEl = document.getElementById('confirmCreateModal');
+            var successModalEl = document.getElementById('successModal');
+            
+            console.log('Confirm modal element:', confirmModalEl);
+            console.log('Success modal element:', successModalEl);
+            
+            var confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+            var successModal = successModalEl ? new bootstrap.Modal(successModalEl) : null;
+            
+            // Mapping giữa vai trò và phòng ban từ server
+            var roleDepartmentMapping = @Html.Raw(Json.Serialize(ViewBag.RoleDepartmentMapping ?? new Dictionary<string, string>()));
+            
+            // Mapping vai trò và phòng ban để hiển thị tên
+            var roleIdToNameMap = {};
+            var roleIdToDisplayNameMap = {};
+            var departmentIdToNameMap = {};
+            
+            @if (ViewBag.VaiTros != null)
+            {
+                foreach (var vt in (List<QuanLyRuiRoTinDung.Models.Entities.VaiTro>)ViewBag.VaiTros)
+                {
+                    <text>
+                    roleIdToNameMap['@vt.MaVaiTro'] = '@vt.TenVaiTro';
+                    roleIdToDisplayNameMap['@vt.MaVaiTro'] = '@Html.Raw(vt.TenVaiTro)';
+                    </text>
+                }
+            }
+            
+            @if (ViewBag.PhongBans != null)
+            {
+                foreach (var pb in (List<QuanLyRuiRoTinDung.Models.Entities.PhongBan>)ViewBag.PhongBans)
+                {
+                    <text>
+                    departmentIdToNameMap['@pb.MaPhongBan'] = '@Html.Raw(pb.TenPhongBan)';
+                    </text>
+                }
+            }
+            
+            // Xử lý khi click nút "Tạo tài khoản"
+            if (submitBtn && form) {
+                submitBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('Submit button clicked');
+                    
+                    // Validate form trước
+                    if (!form.checkValidity()) {
+                        console.log('Form validation failed');
+                        form.reportValidity();
+                        return;
+                    }
+                    
+                    console.log('Form validation passed');
+                    
+                    // Lấy thông tin từ form
+                    var tenDangNhap = document.getElementById('TenDangNhap')?.value || '';
+                    var hoTen = document.getElementById('HoTen')?.value || '';
+                    var email = document.getElementById('Email')?.value || '-';
+                    var soDienThoai = document.getElementById('SoDienThoai')?.value || '';
+                    
+                    console.log('Form data:', {
+                        tenDangNhap: tenDangNhap,
+                        hoTen: hoTen,
+                        email: email,
+                        soDienThoai: soDienThoai
+                    });
+                    
+                    // Điền thông tin vào modal xác nhận
+                    var confirmTenDangNhap = document.getElementById('confirmTenDangNhap');
+                    var confirmHoTen = document.getElementById('confirmHoTen');
+                    var confirmEmail = document.getElementById('confirmEmail');
+                    var confirmSoDienThoai = document.getElementById('confirmSoDienThoai');
+                    
+                    if (confirmTenDangNhap) confirmTenDangNhap.textContent = tenDangNhap || '-';
+                    if (confirmHoTen) confirmHoTen.textContent = hoTen || '-';
+                    if (confirmEmail) confirmEmail.textContent = email || '-';
+                    if (confirmSoDienThoai) confirmSoDienThoai.textContent = soDienThoai || '-';
+                    
+                    // Hiển thị modal xác nhận
+                    if (confirmModal) {
+                        console.log('Showing confirm modal');
+                        confirmModal.show();
+                    } else {
+                        console.error('Confirm modal not initialized');
+                        alert('Không thể hiển thị modal xác nhận. Vui lòng thử lại.');
+                    }
+                });
+            } else {
+                console.error('Submit button or form not found');
+                if (!submitBtn) console.error('Submit button not found');
+                if (!form) console.error('Form not found');
+            }
+            
+            // Xử lý khi xác nhận trong modal
+            var confirmCreateBtn = document.getElementById('confirmCreateBtn');
+            if (confirmCreateBtn) {
+                confirmCreateBtn.addEventListener('click', function() {
+                    // Đóng modal xác nhận
+                    confirmModal.hide();
+                    
+                    // Submit form
+                    form.submit();
+                });
+            }
+            
+            // Kiểm tra nếu có thông báo thành công từ server
+            @if (TempData["Success"] != null && TempData["Success"].ToString() == "true")
+            {
+                <text>
+                // Lấy thông tin từ TempData
+                var tenDangNhap = '@Html.Raw(TempData["CreatedTenDangNhap"] ?? "")';
+                var hoTen = '@Html.Raw(TempData["CreatedHoTen"] ?? "")';
+                var email = '@Html.Raw(TempData["CreatedEmail"] ?? "")' || '-';
+                var soDienThoai = '@Html.Raw(TempData["CreatedSoDienThoai"] ?? "")' || '-';
+                
+                // Điền thông tin vào modal thành công
+                if (document.getElementById('successTenDangNhap')) {
+                    document.getElementById('successTenDangNhap').textContent = tenDangNhap || '-';
+                }
+                if (document.getElementById('successHoTen')) {
+                    document.getElementById('successHoTen').textContent = hoTen || '-';
+                }
+                if (document.getElementById('successEmail')) {
+                    document.getElementById('successEmail').textContent = email || '-';
+                }
+                if (document.getElementById('successSoDienThoai')) {
+                    document.getElementById('successSoDienThoai').textContent = soDienThoai || '-';
+                }
+                
+                // Hiển thị modal thành công sau khi DOM đã load
+                setTimeout(function() {
+                    if (successModal) {
+                        successModal.show();
+                    }
+                }, 300);
+                </text>
+            }
+        });
+    </script>
+}
+
+<style>
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header.bg-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control-lg, .form-select-lg {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    hr {
+        border-color: #e2e8f0;
+        opacity: 0.5;
+    }
+
+    h6.text-primary {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-secondary {
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+    }
+
+    .text-danger {
+        font-size: 0.875rem;
+    }
+</style>
+

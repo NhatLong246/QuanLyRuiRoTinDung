@@ -293,13 +293,15 @@
 </div>
 
 <script>
+    // Tạo object global để lưu trữ form và decision (có thể truy cập từ partial view)
+    window.loanDecisionData = {
+        pendingForm: null,
+        pendingDecision: null
+    };
+    
     document.addEventListener('DOMContentLoaded', function() {
         const loanDetailModal = document.getElementById('loanDetailModal');
         const loanDetailContent = document.getElementById('loanDetailContent');
-        
-        // Lưu trữ form và decision type để submit sau khi xác nhận
-        let pendingForm = null;
-        let pendingDecision = null;
         
         // Hàm lấy thông tin khoản vay từ modal content
         function getLoanInfo(form) {
@@ -423,17 +425,43 @@
                 rejectReasonSection.style.display = 'block';
             }
             
-            // Lưu form và decision để submit sau khi xác nhận
-            pendingForm = form;
-            pendingDecision = decision;
+            // Lưu form và decision để submit sau khi xác nhận (sử dụng object global)
+            window.loanDecisionData.pendingForm = form;
+            window.loanDecisionData.pendingDecision = decision;
             
             // Hiển thị modal
             confirmModal.show();
         }
         
-        // Xử lý khi xác nhận trong modal
-        document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
-            if (pendingForm && pendingDecision) {
+        // Xử lý khi xác nhận trong modal - Sử dụng event delegation
+        const confirmModalEl = document.getElementById('confirmDecisionModal');
+        if (confirmModalEl) {
+            // Sử dụng event delegation để đảm bảo event listener luôn hoạt động
+            confirmModalEl.addEventListener('click', function(e) {
+                const confirmSubmitBtn = e.target.closest('#confirmSubmitBtn');
+                if (!confirmSubmitBtn) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Nút xác nhận được click');
+                const pendingForm = window.loanDecisionData.pendingForm;
+                const pendingDecision = window.loanDecisionData.pendingDecision;
+                console.log('pendingForm:', pendingForm);
+                console.log('pendingDecision:', pendingDecision);
+                
+                if (!pendingForm) {
+                    console.error('Không tìm thấy form để submit!');
+                    alert('Lỗi: Không tìm thấy form để xử lý. Vui lòng thử lại.');
+                    return false;
+                }
+                
+                if (!pendingDecision) {
+                    console.error('Không có quyết định được lưu!');
+                    alert('Lỗi: Không có quyết định được lưu. Vui lòng thử lại.');
+                    return false;
+                }
+                
                 // Nếu là từ chối, kiểm tra lại lý do từ chối
                 if (pendingDecision === 'reject') {
                     const formId = pendingForm.id;
@@ -443,7 +471,9 @@
                     if (!notes || !notes.value.trim()) {
                         // Đóng modal xác nhận và focus vào trường nhập lý do
                         const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDecisionModal'));
-                        confirmModal.hide();
+                        if (confirmModal) {
+                            confirmModal.hide();
+                        }
                         
                         // Mở lại modal chi tiết và focus vào trường nhập lý do
                         setTimeout(() => {
@@ -482,13 +512,49 @@
                 decisionInput.value = pendingDecision;
                 pendingForm.appendChild(decisionInput);
                 
+                // Nếu là từ chối, thêm lý do từ chối vào form
+                if (pendingDecision === 'reject') {
+                    const formId = pendingForm.id;
+                    const notesId = 'notes_' + formId.replace('decisionForm_', '');
+                    const notes = document.getElementById(notesId);
+                    if (notes && notes.value.trim()) {
+                        const oldNotes = pendingForm.querySelector('input[name="notes"]');
+                        if (oldNotes) {
+                            oldNotes.remove();
+                        }
+                        
+                        const notesInput = document.createElement('input');
+                        notesInput.type = 'hidden';
+                        notesInput.name = 'notes';
+                        notesInput.value = notes.value.trim();
+                        pendingForm.appendChild(notesInput);
+                    }
+                }
+                
                 // Đóng modal và submit form
                 const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDecisionModal'));
-                confirmModal.hide();
+                if (confirmModal) {
+                    confirmModal.hide();
+                }
                 
-                pendingForm.submit();
-            }
-        });
+                console.log('Đang submit form:', pendingForm.id);
+                console.log('Decision:', pendingDecision);
+                
+                // Reset data sau khi submit
+                window.loanDecisionData.pendingForm = null;
+                window.loanDecisionData.pendingDecision = null;
+                
+                // Submit form
+                try {
+                    pendingForm.submit();
+                } catch (error) {
+                    console.error('Lỗi khi submit form:', error);
+                    alert('Lỗi khi gửi yêu cầu. Vui lòng thử lại.');
+                }
+            });
+        } else {
+            console.error('Không tìm thấy modal confirmDecisionModal!');
+        }
         
         // Hàm xử lý click cho các nút quyết định
         function handleDecisionButtonClick(e) {
@@ -593,15 +659,39 @@
         let currentLoanId = null;
         
         function loadLoanDetail(loanId) {
+            console.log('loadLoanDetail called with loanId:', loanId);
+            
+            // Hiển thị loading indicator
+            if (loanDetailContent) {
+                loanDetailContent.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Đang tải thông tin...</p>
+                    </div>
+                `;
+            }
+            
             // Load chi tiết khoản vay
-            fetch('@Url.Action("ChiTietKhoanVay", "LanhDao")?id=' + loanId + '&partial=true')
+            const url = '@Url.Action("ChiTietKhoanVay", "LanhDao")?id=' + loanId + '&partial=true';
+            console.log('Fetching URL:', url);
+            
+            fetch(url)
                 .then(response => {
+                    console.log('Response status:', response.status, response.statusText);
                     if (!response.ok) {
-                        throw new Error('Không thể tải thông tin');
+                        throw new Error('Không thể tải thông tin. Status: ' + response.status);
                     }
                     return response.text();
                 })
                 .then(html => {
+                    console.log('Received HTML length:', html.length);
+                    if (!loanDetailContent) {
+                        console.error('loanDetailContent không tồn tại!');
+                        return;
+                    }
+                    
                     loanDetailContent.innerHTML = html;
                     savedLoanContent = html; // Lưu nội dung đã load
                     currentLoanId = loanId; // Lưu ID khoản vay hiện tại
@@ -634,21 +724,32 @@
                     }, 100);
                 })
                 .catch(error => {
+                    console.error('Error loading loan detail:', error);
+                    if (loanDetailContent) {
                     loanDetailContent.innerHTML = `
                         <div class="alert alert-danger">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             Lỗi khi tải thông tin: ${error.message}
+                                <br><small>Vui lòng thử lại hoặc liên hệ quản trị viên.</small>
                         </div>
                     `;
+                    }
                 });
         }
         
         loanDetailModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
+            // Lấy button từ relatedTarget hoặc từ element được click
+            let button = event.relatedTarget;
+            
+            // Nếu relatedTarget là icon hoặc phần tử con, tìm button cha
+            if (button && !button.hasAttribute('data-loan-id')) {
+                button = button.closest('[data-loan-id]');
+            }
             
             // Nếu có button và có data-loan-id, load nội dung mới
             if (button && button.hasAttribute('data-loan-id')) {
                 const loanId = button.getAttribute('data-loan-id');
+                console.log('Loading loan detail for ID:', loanId);
                 loadLoanDetail(loanId);
             } 
             // Nếu không có button (modal được mở lại sau khi đóng modal khác)
@@ -698,14 +799,14 @@
                 // Chỉ reset nếu modal chi tiết không còn hiển thị
                 const modalInstance = bootstrap.Modal.getInstance(loanDetailModal);
                 if (!modalInstance || !modalInstance._isShown) {
-                    loanDetailContent.innerHTML = `
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Đang tải...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Đang tải thông tin...</p>
-                        </div>
-                    `;
+            loanDetailContent.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Đang tải thông tin...</p>
+                </div>
+            `;
                     savedLoanContent = null;
                     currentLoanId = null;
                 }
@@ -714,14 +815,14 @@
         });
         
         // Đảm bảo khi modal xác nhận đóng (hủy), không làm ảnh hưởng đến modal chi tiết
-        const confirmModalEl = document.getElementById('confirmDecisionModal');
-        if (confirmModalEl) {
-            confirmModalEl.addEventListener('hide.bs.modal', function() {
+        const confirmModalElForEvents = document.getElementById('confirmDecisionModal');
+        if (confirmModalElForEvents) {
+            confirmModalElForEvents.addEventListener('hide.bs.modal', function() {
                 // Đảm bảo khi modal xác nhận đóng, không reset modal chi tiết
                 isLoanDetailModalClosing = false;
             });
             
-            confirmModalEl.addEventListener('hidden.bs.modal', function() {
+            confirmModalElForEvents.addEventListener('hidden.bs.modal', function() {
                 // Khi modal xác nhận đóng, đảm bảo modal chi tiết vẫn giữ nguyên nội dung
                 // Không làm gì cả, để modal chi tiết giữ nguyên trạng thái
                 isLoanDetailModalClosing = false;

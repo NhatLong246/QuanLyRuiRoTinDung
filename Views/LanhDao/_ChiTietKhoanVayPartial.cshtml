@@ -572,11 +572,16 @@
     (function() {
         const formId = 'decisionForm_@Model.MaKhoanVay';
         const loanCode = '@Model.MaKhoanVayCode';
-        const modalId = 'confirmDecisionModal_@Model.MaKhoanVay';
+        // Sử dụng modal chung từ file chính
+        const modalId = 'confirmDecisionModal';
         
-        // Lưu trữ form và decision type để submit sau khi xác nhận
-        let pendingForm = null;
-        let pendingDecision = null;
+        // Đảm bảo object global tồn tại
+        if (!window.loanDecisionData) {
+            window.loanDecisionData = {
+                pendingForm: null,
+                pendingDecision: null
+            };
+        }
         
         // Hàm lấy thông tin khoản vay
         function getLoanInfo() {
@@ -590,30 +595,35 @@
             };
         }
         
-        // Hàm hiển thị modal xác nhận
+        // Hàm hiển thị modal xác nhận - sử dụng modal chung từ file chính
         function showConfirmModal(decision, loanInfo) {
             const confirmModalEl = document.getElementById(modalId);
             if (!confirmModalEl) {
-                console.error('Modal xác nhận không tồn tại!');
+                console.error('Modal xác nhận không tồn tại!', modalId);
                 return;
             }
             
             const confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
-            const confirmHeader = document.getElementById('confirmModalHeader_@Model.MaKhoanVay');
-            const confirmMessage = document.getElementById('confirmMessage_@Model.MaKhoanVay');
-            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn_@Model.MaKhoanVay');
-            const rejectReasonSection = document.getElementById('rejectReasonSection_@Model.MaKhoanVay');
-            const confirmAlert = document.getElementById('confirmAlert_@Model.MaKhoanVay');
+            const confirmHeader = document.getElementById('confirmModalHeader');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+            const rejectReasonSection = document.getElementById('rejectReasonSection');
+            const confirmAlert = document.getElementById('confirmAlert');
+            
+            if (!confirmHeader || !confirmMessage || !confirmSubmitBtn || !confirmAlert) {
+                console.error('Không tìm thấy các phần tử trong modal xác nhận!');
+                return;
+            }
             
             // Điền thông tin khoản vay
-            document.getElementById('confirmLoanCode_@Model.MaKhoanVay').textContent = loanInfo.loanCode || '-';
-            document.getElementById('confirmCustomerId_@Model.MaKhoanVay').textContent = loanInfo.customerId || '-';
-            document.getElementById('confirmCustomerType_@Model.MaKhoanVay').textContent = loanInfo.customerType || '-';
-            document.getElementById('confirmLoanAmount_@Model.MaKhoanVay').textContent = loanInfo.loanAmount || '-';
-            document.getElementById('confirmLoanPurpose_@Model.MaKhoanVay').textContent = loanInfo.loanPurpose || '-';
+            document.getElementById('confirmLoanCode').textContent = loanInfo.loanCode || '-';
+            document.getElementById('confirmCustomerId').textContent = loanInfo.customerId || '-';
+            document.getElementById('confirmCustomerType').textContent = loanInfo.customerType || '-';
+            document.getElementById('confirmLoanAmount').textContent = loanInfo.loanAmount || '-';
+            document.getElementById('confirmLoanPurpose').textContent = loanInfo.loanPurpose || '-';
             
             // Hiển thị mức độ rủi ro với badge màu
-            const riskLevelEl = document.getElementById('confirmRiskLevel_@Model.MaKhoanVay');
+            const riskLevelEl = document.getElementById('confirmRiskLevel');
             const riskLevel = loanInfo.riskLevel || '-';
             if (riskLevel !== '-' && riskLevel !== 'N/A' && riskLevel.length > 0) {
                 let badgeClass = 'bg-secondary';
@@ -625,9 +635,6 @@
                 riskLevelEl.innerHTML = '<span class="badge bg-secondary">-</span>';
             }
             
-            const rejectReasonTextarea = document.getElementById('rejectReasonTextarea_@Model.MaKhoanVay');
-            const rejectReasonError = document.getElementById('rejectReasonError_@Model.MaKhoanVay');
-            
             if (decision === 'approve') {
                 // Chấp nhận
                 confirmHeader.className = 'modal-header bg-success text-white';
@@ -635,40 +642,36 @@
                 confirmAlert.className = 'alert alert-info mb-3';
                 confirmSubmitBtn.className = 'btn btn-success';
                 confirmSubmitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Xác nhận Chấp nhận';
-                rejectReasonSection.style.display = 'none';
-                // Xóa lỗi validation nếu có
-                if (rejectReasonTextarea) {
-                    rejectReasonTextarea.classList.remove('is-invalid');
-                    rejectReasonTextarea.value = '';
-                }
-                if (rejectReasonError) {
-                    rejectReasonError.classList.add('d-none');
+                if (rejectReasonSection) {
+                    rejectReasonSection.style.display = 'none';
                 }
             } else {
-                // Từ chối - luôn hiển thị modal với textarea để nhập lý do
+                // Từ chối
+                const form = document.getElementById(formId);
+                const notesId = 'notes_' + formId.replace('decisionForm_', '');
+                const notes = document.getElementById(notesId);
+                const rejectReason = notes ? notes.value.trim() : '';
+                
                 confirmHeader.className = 'modal-header bg-danger text-white';
                 confirmMessage.textContent = 'Bạn có chắc chắn muốn TỪ CHỐI khoản vay này không?';
                 confirmAlert.className = 'alert alert-danger mb-3';
                 confirmSubmitBtn.className = 'btn btn-danger';
                 confirmSubmitBtn.innerHTML = '<i class="fas fa-times me-2"></i>Xác nhận Từ chối';
-                rejectReasonSection.style.display = 'block';
-                
-                // Xóa lỗi validation và focus vào textarea
-                if (rejectReasonTextarea) {
-                    rejectReasonTextarea.classList.remove('is-invalid');
-                    rejectReasonTextarea.value = '';
-                    // Focus vào textarea sau khi modal hiển thị
-                    setTimeout(() => {
-                        rejectReasonTextarea.focus();
-                    }, 300);
-                }
-                if (rejectReasonError) {
-                    rejectReasonError.classList.add('d-none');
+                if (rejectReasonSection) {
+                    const confirmRejectReason = document.getElementById('confirmRejectReason');
+                    if (confirmRejectReason) {
+                        confirmRejectReason.textContent = rejectReason || 'Không có lý do';
+                    }
+                    rejectReasonSection.style.display = 'block';
                 }
             }
             
-            // Lưu decision để submit sau khi xác nhận
-            pendingDecision = decision;
+            // Lưu form và decision vào object global
+            const form = document.getElementById(formId);
+            if (form) {
+                window.loanDecisionData.pendingForm = form;
+                window.loanDecisionData.pendingDecision = decision;
+            }
             
             // Hiển thị modal
             confirmModal.show();
@@ -694,7 +697,6 @@
                     e.preventDefault();
                     e.stopPropagation();
                     
-                    pendingForm = form;
                     const loanInfo = getLoanInfo();
                     showConfirmModal('approve', loanInfo);
                 });
@@ -709,86 +711,13 @@
                     e.preventDefault();
                     e.stopPropagation();
                     
-                    pendingForm = form;
                     const loanInfo = getLoanInfo();
                     showConfirmModal('reject', loanInfo);
                 });
             }
             
-            // Xử lý khi xác nhận trong modal
-            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn_@Model.MaKhoanVay');
-            if (confirmSubmitBtn) {
-                // Xóa event listener cũ nếu có
-                const newConfirmBtn = confirmSubmitBtn.cloneNode(true);
-                confirmSubmitBtn.parentNode.replaceChild(newConfirmBtn, confirmSubmitBtn);
-                
-                newConfirmBtn.addEventListener('click', function() {
-                    if (pendingForm && pendingDecision) {
-                        // Nếu là từ chối, kiểm tra lý do từ chối trong modal
-                        if (pendingDecision === 'reject') {
-                            const rejectReasonTextarea = document.getElementById('rejectReasonTextarea_@Model.MaKhoanVay');
-                            const rejectReasonError = document.getElementById('rejectReasonError_@Model.MaKhoanVay');
-                            
-                            if (!rejectReasonTextarea || !rejectReasonTextarea.value.trim()) {
-                                // Hiển thị lỗi validation trên textarea trong modal
-                                if (rejectReasonTextarea) {
-                                    rejectReasonTextarea.classList.add('is-invalid');
-                                    rejectReasonTextarea.focus();
-                                }
-                                if (rejectReasonError) {
-                                    rejectReasonError.classList.remove('d-none');
-                                }
-                                return false;
-                            }
-                            
-                            // Xóa lỗi validation nếu đã nhập
-                            if (rejectReasonTextarea) {
-                                rejectReasonTextarea.classList.remove('is-invalid');
-                            }
-                            if (rejectReasonError) {
-                                rejectReasonError.classList.add('d-none');
-                            }
-                        }
-                        
-                        // Xóa input decision và notes cũ nếu có
-                        const oldDecision = pendingForm.querySelector('input[name="decision"]');
-                        if (oldDecision) {
-                            oldDecision.remove();
-                        }
-                        const oldNotes = pendingForm.querySelector('input[name="notes"]');
-                        if (oldNotes) {
-                            oldNotes.remove();
-                        }
-                        
-                        // Tạo input hidden cho decision
-                        const decisionInput = document.createElement('input');
-                        decisionInput.type = 'hidden';
-                        decisionInput.name = 'decision';
-                        decisionInput.value = pendingDecision;
-                        pendingForm.appendChild(decisionInput);
-                        
-                        // Nếu là từ chối, thêm lý do từ chối vào form
-                        if (pendingDecision === 'reject') {
-                            const rejectReasonTextarea = document.getElementById('rejectReasonTextarea_@Model.MaKhoanVay');
-                            if (rejectReasonTextarea && rejectReasonTextarea.value.trim()) {
-                                const notesInput = document.createElement('input');
-                                notesInput.type = 'hidden';
-                                notesInput.name = 'notes';
-                                notesInput.value = rejectReasonTextarea.value.trim();
-                                pendingForm.appendChild(notesInput);
-                            }
-                        }
-                        
-                        // Đóng modal và submit form
-                        const confirmModal = bootstrap.Modal.getInstance(document.getElementById(modalId));
-                        if (confirmModal) {
-                            confirmModal.hide();
-                        }
-                        
-                        pendingForm.submit();
-                    }
-                });
-            }
+            // Không cần xử lý nút xác nhận ở đây nữa vì đã được xử lý trong file chính
+            // Event listener trong file chính sẽ tự động xử lý khi nút được click
         }
         
         // Chạy ngay lập tức

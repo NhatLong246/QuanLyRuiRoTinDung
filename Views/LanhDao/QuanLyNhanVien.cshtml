@@ -1,0 +1,489 @@
+@model List<QuanLyRuiRoTinDung.Models.Entities.NguoiDung>
+
+@{
+    ViewData["Title"] = "Quản lý Nhân viên";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2 d-flex align-items-center">
+                <i class="fas fa-users me-2"></i>
+                Quản lý Nhân viên
+            </h1>
+            <p class="text-muted">Xem và phân vai trò, phòng ban cho nhân viên</p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filter và Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            @Html.AntiForgeryToken()
+            <form method="get" action="@Url.Action("QuanLyNhanVien")" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Tìm kiếm</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="@ViewBag.Search" placeholder="Tên đăng nhập, họ tên, email...">
+                </div>
+                <div class="col-md-4">
+                    <label for="filter" class="form-label">Lọc theo trạng thái</label>
+                    <select class="form-select" id="filter" name="filter">
+                        <option value="all" selected="@(ViewBag.Filter?.ToString() == "all")">Tất cả</option>
+                        <option value="assigned" selected="@(ViewBag.Filter?.ToString() == "assigned")">Đã phân vai trò & phòng ban</option>
+                        <option value="unassigned" selected="@(ViewBag.Filter?.ToString() == "unassigned")">Chưa phân vai trò/phòng ban</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-2"></i>Tìm kiếm
+                    </button>
+                    <a href="@Url.Action("QuanLyNhanVien")" class="btn btn-secondary">
+                        <i class="fas fa-redo me-2"></i>Làm mới
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Thống kê nhanh -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-primary font-weight-bold text-uppercase mb-1 small">Tổng nhân viên</div>
+                            <div class="h3 mb-0">@Model.Count</div>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-users fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-success font-weight-bold text-uppercase mb-1 small">Đã phân vai trò</div>
+                            <div class="h3 mb-0">@Model.Count(u => u.MaVaiTro > 0 && u.MaPhongBan.HasValue)</div>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-warning font-weight-bold text-uppercase mb-1 small">Chưa phân vai trò</div>
+                            <div class="h3 mb-0">@Model.Count(u => u.MaVaiTro == 0 || !u.MaPhongBan.HasValue)</div>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách nhân viên -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list me-2"></i>Danh sách nhân viên
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 data-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>STT</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
+                            <th>Số điện thoại</th>
+                            <th>Vai trò</th>
+                            <th>Phòng ban</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            int stt = 1;
+                            @foreach (var nv in Model)
+                            {
+                                var tenVaiTro = nv.MaVaiTroNavigation?.TenVaiTro ?? "Chưa phân";
+                                var tenPhongBan = "";
+                                if (nv.MaPhongBan.HasValue && ViewBag.PhongBans != null)
+                                {
+                                    var phongBans = ViewBag.PhongBans as Dictionary<int, string>;
+                                    phongBans?.TryGetValue(nv.MaPhongBan.Value, out tenPhongBan);
+                                }
+                                if (string.IsNullOrEmpty(tenPhongBan))
+                                {
+                                    tenPhongBan = "Chưa phân";
+                                }
+
+                                var isAssigned = nv.MaVaiTro > 0 && nv.MaPhongBan.HasValue;
+                                
+                                <tr class="@(!isAssigned ? "table-warning" : "")">
+                                    <td>@stt</td>
+                                    <td>
+                                        <strong>@nv.HoTen</strong>
+                                    </td>
+                                    <td>@(nv.Email ?? "-")</td>
+                                    <td>@(nv.SoDienThoai ?? "-")</td>
+                                    <td>
+                                        @if (isAssigned)
+                                        {
+                                            <span class="badge bg-success">@tenVaiTro</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">@tenVaiTro</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (isAssigned)
+                                        {
+                                            <span class="badge bg-info">@tenPhongBan</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">@tenPhongBan</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (nv.TrangThaiHoatDong == true)
+                                        {
+                                            <span class="badge bg-success">Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Đã khóa</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-primary" 
+                                                onclick="openAssignModal(@nv.MaNguoiDung, '@nv.TenDangNhap', '@nv.HoTen', @nv.MaVaiTro, @(nv.MaPhongBan?.ToString() ?? "null"))"
+                                                title="Phân vai trò">
+                                            <i class="fas fa-user-tag me-1"></i>Phân vai trò
+                                        </button>
+                                    </td>
+                                </tr>
+                                stt++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Không có nhân viên nào</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Phân vai trò và Phòng ban -->
+<div class="modal fade" id="assignRoleModal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="assignRoleModalLabel">
+                    <i class="fas fa-user-tag me-2"></i>Phân vai trò và Phòng ban
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong id="assignEmployeeName"></strong>
+                </div>
+                <form id="assignRoleForm">
+                    <input type="hidden" id="assignMaNguoiDung" />
+                    <div class="mb-3">
+                        <label for="assignMaVaiTro" class="form-label">
+                            <i class="fas fa-user-tag me-1"></i>Vai trò <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="assignMaVaiTro" required>
+                            <option value="">-- Chọn vai trò --</option>
+                            @if (ViewBag.VaiTros != null)
+                            {
+                                @foreach (var vt in (List<QuanLyRuiRoTinDung.Models.Entities.VaiTro>)ViewBag.VaiTros)
+                                {
+                                    <option value="@vt.MaVaiTro">@vt.TenVaiTro</option>
+                                }
+                            }
+                        </select>
+                        <small class="form-text text-muted">Vai trò của nhân viên trong hệ thống</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignMaPhongBan" class="form-label">
+                            <i class="fas fa-building me-1"></i>Phòng ban
+                        </label>
+                        <select class="form-select" id="assignMaPhongBan">
+                            <option value="">-- Chọn phòng ban (tùy chọn) --</option>
+                            @if (ViewBag.AllPhongBans != null)
+                            {
+                                @foreach (var pb in (List<QuanLyRuiRoTinDung.Models.Entities.PhongBan>)ViewBag.AllPhongBans)
+                                {
+                                    <option value="@pb.MaPhongBan">@pb.TenPhongBan</option>
+                                }
+                            }
+                        </select>
+                        <small class="form-text text-muted">Phòng ban mà nhân viên thuộc về</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Hủy
+                </button>
+                <button type="button" class="btn btn-primary" id="btnConfirmAssign">
+                    <i class="fas fa-check me-2"></i>Xác nhận
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Alert -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="alertModalHeader">
+                <h5 class="modal-title" id="alertModalLabel">Thông báo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="alertModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let assignModal;
+        let alertModal;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            assignModal = new bootstrap.Modal(document.getElementById('assignRoleModal'));
+            alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+
+            // Mapping giữa vai trò và phòng ban từ server
+            var roleDepartmentMapping = @Html.Raw(Json.Serialize(ViewBag.RoleDepartmentMapping ?? new Dictionary<string, string>()));
+            
+            // Mapping vai trò ID và tên vai trò
+            var roleIdToNameMap = {};
+            @if (ViewBag.VaiTros != null)
+            {
+                @foreach (var vt in (List<QuanLyRuiRoTinDung.Models.Entities.VaiTro>)ViewBag.VaiTros)
+                {
+                    <text>
+                    roleIdToNameMap['@vt.MaVaiTro'] = '@vt.TenVaiTro';
+                    </text>
+                }
+            }
+
+            // Xử lý tự động chọn phòng ban khi chọn vai trò
+            var roleSelect = document.getElementById('assignMaVaiTro');
+            var departmentSelect = document.getElementById('assignMaPhongBan');
+            
+            if (roleSelect && departmentSelect) {
+                roleSelect.addEventListener('change', function() {
+                    var selectedRoleId = this.value;
+                    
+                    if (!selectedRoleId) {
+                        departmentSelect.value = '';
+                        return;
+                    }
+                    
+                    var roleName = roleIdToNameMap[selectedRoleId];
+                    
+                    if (roleDepartmentMapping && roleName) {
+                        var departmentId = null;
+                        
+                        if (roleName === 'NhanVienTinDung') {
+                            departmentId = roleDepartmentMapping['NhanVienTinDung'];
+                        }
+                        else if (roleName === 'QuanLyRuiRo') {
+                            departmentId = roleDepartmentMapping['QuanLyRuiRo'];
+                        }
+                        
+                        if (departmentId) {
+                            departmentSelect.value = departmentId;
+                        } else {
+                            departmentSelect.value = '';
+                        }
+                    }
+                });
+            }
+
+            // Xử lý khi click nút xác nhận phân vai trò
+            document.getElementById('btnConfirmAssign').addEventListener('click', function() {
+                const maNguoiDung = document.getElementById('assignMaNguoiDung').value;
+                const maVaiTro = document.getElementById('assignMaVaiTro').value;
+                const maPhongBan = document.getElementById('assignMaPhongBan').value;
+
+                if (!maVaiTro) {
+                    showAlert('Vui lòng chọn vai trò!', 'warning');
+                    return;
+                }
+
+                // Gọi API để cập nhật
+                const formData = new FormData();
+                formData.append('maNguoiDung', maNguoiDung);
+                formData.append('maVaiTro', maVaiTro);
+                if (maPhongBan) {
+                    formData.append('maPhongBan', maPhongBan);
+                }
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
+
+                fetch('@Url.Action("CapNhatVaiTroPhongBan", "LanhDao")', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        assignModal.hide();
+                        showAlert(data.message, 'success');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showAlert(data.message || 'Có lỗi xảy ra khi cập nhật!', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Có lỗi xảy ra khi cập nhật!', 'error');
+                });
+            });
+        });
+
+        function openAssignModal(maNguoiDung, tenDangNhap, hoTen, maVaiTro, maPhongBan) {
+            document.getElementById('assignMaNguoiDung').value = maNguoiDung;
+            document.getElementById('assignEmployeeName').textContent = `${hoTen} (${tenDangNhap})`;
+            
+            var roleSelect = document.getElementById('assignMaVaiTro');
+            var departmentSelect = document.getElementById('assignMaPhongBan');
+            
+            // Set giá trị vai trò
+            roleSelect.value = maVaiTro || '';
+            
+            // Nếu có vai trò và chưa có phòng ban, tự động chọn phòng ban
+            if (maVaiTro && !maPhongBan) {
+                var roleName = roleIdToNameMap[maVaiTro];
+                if (roleDepartmentMapping && roleName) {
+                    var departmentId = null;
+                    if (roleName === 'NhanVienTinDung') {
+                        departmentId = roleDepartmentMapping['NhanVienTinDung'];
+                    }
+                    else if (roleName === 'QuanLyRuiRo') {
+                        departmentId = roleDepartmentMapping['QuanLyRuiRo'];
+                    }
+                    if (departmentId) {
+                        departmentSelect.value = departmentId;
+                    }
+                }
+            } else {
+                // Nếu đã có phòng ban, giữ nguyên
+                departmentSelect.value = maPhongBan || '';
+            }
+            
+            assignModal.show();
+        }
+
+        function showAlert(message, type = 'info') {
+            var headerClass = 'bg-primary';
+            var title = 'Thông báo';
+            
+            if (type === 'success') {
+                headerClass = 'bg-success';
+                title = 'Thành công';
+            } else if (type === 'error' || type === 'danger') {
+                headerClass = 'bg-danger';
+                title = 'Lỗi';
+            } else if (type === 'warning') {
+                headerClass = 'bg-warning';
+                title = 'Cảnh báo';
+            }
+            
+            document.getElementById('alertModalHeader').className = 'modal-header ' + headerClass + ' text-white';
+            document.getElementById('alertModalLabel').textContent = title;
+            document.getElementById('alertModalMessage').textContent = message;
+            alertModal.show();
+        }
+    </script>
+
+    <style>
+        .border-left-primary {
+            border-left: 4px solid #3b82f6;
+        }
+        .border-left-success {
+            border-left: 4px solid #10b981;
+        }
+        .border-left-warning {
+            border-left: 4px solid #f59e0b;
+        }
+        .table-warning {
+            background-color: #fff3cd;
+        }
+        .data-table th {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .data-table td {
+            vertical-align: middle;
+        }
+        .data-table .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+}
+
