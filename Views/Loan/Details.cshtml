@@ -1,0 +1,1265 @@
+@model QuanLyRuiRoTinDung.Models.Entities.KhoanVay
+@{
+    ViewData["Title"] = "Chi tiết hồ sơ vay";
+    Layout = "_DashboardLayout";
+    
+    var loan = Model;
+    var tenKhachHang = ViewBag.TenKhachHang as string ?? "";
+    var customerType = ViewBag.CustomerType as string ?? "";
+    var anhDaiDien = ViewBag.AnhDaiDien as string;
+    var maKhachHangCode = ViewBag.MaKhachHangCode as string ?? "";
+    var soDienThoai = ViewBag.SoDienThoai as string ?? "";
+    var email = ViewBag.Email as string ?? "";
+    var diaChi = ViewBag.DiaChi as string ?? "";
+    var cicInfo = ViewBag.CicInfo as QuanLyRuiRoTinDung.Models.Entities.ThongTinCic;
+    var files = ViewBag.Files as List<QuanLyRuiRoTinDung.Models.Entities.HoSoVayFileDinhKem> ?? new();
+    var isMyLoan = ViewBag.IsMyLoan as bool? ?? false;
+    
+    string GetStatusClass(string trangThai) => trangThai switch
+    {
+        "Nháp" => "status-draft",
+        "Chờ duyệt" => "status-pending",
+        "Đang xử lý" => "status-processing",
+        "Đã phê duyệt" => "status-approved",
+        "Đang vay" => "status-active",
+        "Từ chối" => "status-rejected",
+        "Đã thanh toán" => "status-completed",
+        _ => "status-default"
+    };
+    
+    string GetStatusIcon(string trangThai) => trangThai switch
+    {
+        "Nháp" => "📝",
+        "Chờ duyệt" => "⏳",
+        "Đang xử lý" => "⚙️",
+        "Đã phê duyệt" => "✅",
+        "Đang vay" => "💰",
+        "Từ chối" => "❌",
+        "Đã thanh toán" => "🏆",
+        _ => "📄"
+    };
+
+    string GetRiskClass(string? mucDoRuiRo) => mucDoRuiRo switch
+    {
+        "Thấp" => "risk-low",
+        "Trung bình" => "risk-medium",
+        "Cao" => "risk-high",
+        "Rất cao" => "risk-very-high",
+        _ => "risk-none"
+    };
+}
+
+<div class="loan-details-page">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-left">
+            <a href="@Url.Action("Index", "Loan")" class="btn-back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div class="header-content">
+                <div class="loan-code-header">
+                    <h1 class="page-title">@loan.MaKhoanVayCode</h1>
+                    <span class="status-badge @GetStatusClass(loan.TrangThaiKhoanVay)">
+                        @GetStatusIcon(loan.TrangThaiKhoanVay) @loan.TrangThaiKhoanVay
+                    </span>
+                    @if (isMyLoan)
+                    {
+                        <span class="my-loan-tag">
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                            </svg>
+                            Hồ sơ của tôi
+                        </span>
+                    }
+                </div>
+                <p class="page-subtitle">Chi tiết hồ sơ vay • Tạo ngày @(loan.NgayTao?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            @if (loan.TrangThaiKhoanVay == "Nháp" && isMyLoan)
+            {
+                <a href="@Url.Action("Edit", "Loan", new { loanId = loan.MaKhoanVay })" class="btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"></path>
+                        <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z"></path>
+                    </svg>
+                    Chỉnh sửa
+                </a>
+            }
+            <button onclick="window.print()" class="btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                In hồ sơ
+            </button>
+        </div>
+    </div>
+
+    <div class="details-grid">
+        <!-- Left Column -->
+        <div class="details-column">
+            <!-- Customer Info Card -->
+            <div class="detail-card customer-card">
+                <div class="card-header">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        Thông tin khách hàng
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="customer-header">
+                        <div class="customer-avatar large">
+                            @if (!string.IsNullOrEmpty(anhDaiDien))
+                            {
+                                <img src="~/@anhDaiDien" alt="Avatar" />
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    @if (customerType == "CaNhan")
+                                    {
+                                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    }
+                                    else
+                                    {
+                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                        <path d="M16 7V5C16 3.9 15.1 3 14 3H10C8.9 3 8 3.9 8 5V7"></path>
+                                    }
+                                </svg>
+                            }
+                        </div>
+                        <div class="customer-main-info">
+                            <span class="customer-name">@tenKhachHang</span>
+                            <span class="customer-type-badge @(customerType == "CaNhan" ? "type-personal" : "type-business")">
+                                @(customerType == "CaNhan" ? "👤 Khách hàng cá nhân" : "🏢 Khách hàng doanh nghiệp")
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-list">
+                        <div class="info-item">
+                            <span class="info-label">Mã KH:</span>
+                            <span class="info-value">@maKhachHangCode</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(soDienThoai))
+                        {
+                            <div class="info-item">
+                                <span class="info-label">Điện thoại:</span>
+                                <span class="info-value">
+                                    <a href="tel:@soDienThoai">@soDienThoai</a>
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(email))
+                        {
+                            <div class="info-item">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value">
+                                    <a href="mailto:@email">@email</a>
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(diaChi))
+                        {
+                            <div class="info-item">
+                                <span class="info-label">Địa chỉ:</span>
+                                <span class="info-value">@diaChi</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- CIC Info Card -->
+            @if (cicInfo != null)
+            {
+                <div class="detail-card cic-card">
+                    <div class="card-header">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            Thông tin tín dụng (CIC)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="cic-score-display">
+                            <div class="score-circle @(cicInfo.DiemTinDungCic >= 700 ? "score-good" : cicInfo.DiemTinDungCic >= 500 ? "score-medium" : "score-low")">
+                                <span class="score-value">@(cicInfo.DiemTinDungCic?.ToString() ?? "N/A")</span>
+                                <span class="score-label">Điểm CIC</span>
+                            </div>
+                            <div class="score-details">
+                                <div class="score-item">
+                                    <span class="label">Xếp hạng:</span>
+                                    <span class="value badge-rank">@(cicInfo.XepHangTinDungCic ?? "N/A")</span>
+                                </div>
+                                <div class="score-item">
+                                    <span class="label">Nợ xấu:</span>
+                                    <span class="value @(cicInfo.SoKhoanVayNoXauCic > 0 ? "text-danger" : "text-success")">
+                                        @(cicInfo.SoKhoanVayNoXauCic > 0 ? "Có" : "Không")
+                                    </span>
+                                </div>
+                                <div class="score-item">
+                                    <span class="label">Tổng dư nợ:</span>
+                                    <span class="value">@cicInfo.TongDuNoCic.ToString("N0") VNĐ</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Collateral Card -->
+            @if (loan.CoTaiSanDamBao == true && loan.KhoanVayTaiSans?.Any() == true)
+            {
+                <div class="detail-card collateral-card">
+                    <div class="card-header">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            Tài sản đảm bảo (@loan.KhoanVayTaiSans.Count)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="collateral-list">
+                            @foreach (var taiSan in loan.KhoanVayTaiSans)
+                            {
+                                <div class="collateral-item">
+                                    <div class="collateral-icon">
+                                        @if (taiSan.MaTaiSanNavigation?.MaLoaiTaiSanNavigation?.TenLoaiTaiSan == "Đất")
+                                        {
+                                            <span>🏠</span>
+                                        }
+                                        else if (taiSan.MaTaiSanNavigation?.MaLoaiTaiSanNavigation?.TenLoaiTaiSan == "Xe")
+                                        {
+                                            <span>🚗</span>
+                                        }
+                                        else
+                                        {
+                                            <span>📦</span>
+                                        }
+                                    </div>
+                                    <div class="collateral-details">
+                                        <span class="collateral-name">
+                                            @(taiSan.TenTaiSanKhac ?? taiSan.MaTaiSanNavigation?.TenGoi ?? "Tài sản")
+                                        </span>
+                                        <span class="collateral-value">
+                                            Giá trị: @(taiSan.GiaTriDinhGiaTaiThoiDiemVay?.ToString("N0") ?? "N/A") VNĐ
+                                        </span>
+                                        @if (taiSan.TyLeTheChap.HasValue)
+                                        {
+                                            <span class="collateral-rate">Tỷ lệ thế chấp: @taiSan.TyLeTheChap%</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Right Column -->
+        <div class="details-column">
+            <!-- Loan Info Card -->
+            <div class="detail-card loan-info-card">
+                <div class="card-header">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        Thông tin khoản vay
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="loan-amount-display">
+                        <span class="amount-label">Số tiền vay</span>
+                        <span class="amount-value">@loan.SoTienVay.ToString("N0") <small>VNĐ</small></span>
+                    </div>
+                    
+                    <div class="loan-details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Loại khoản vay</span>
+                            <span class="detail-value">@(loan.MaLoaiVayNavigation?.TenLoaiVay ?? "N/A")</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Lãi suất</span>
+                            <span class="detail-value highlight">@loan.LaiSuat%/năm</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Kỳ hạn vay</span>
+                            <span class="detail-value">@loan.KyHanVay tháng</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Hình thức trả nợ</span>
+                            <span class="detail-value">@(loan.HinhThucTraNo ?? "N/A")</span>
+                        </div>
+                        @if (loan.SoTienTraHangThang.HasValue)
+                        {
+                            <div class="detail-item">
+                                <span class="detail-label">Trả hàng tháng</span>
+                                <span class="detail-value">@loan.SoTienTraHangThang.Value.ToString("N0") VNĐ</span>
+                            </div>
+                        }
+                        <div class="detail-item full-width">
+                            <span class="detail-label">Mục đích vay</span>
+                            <span class="detail-value">@(loan.MucDichVay ?? "Không có")</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Có tài sản đảm bảo</span>
+                            <span class="detail-value @(loan.CoTaiSanDamBao == true ? "text-success" : "")">
+                                @(loan.CoTaiSanDamBao == true ? "✅ Có" : "❌ Không")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Assessment Card -->
+            @if (!string.IsNullOrEmpty(loan.MucDoRuiRo))
+            {
+                <div class="detail-card risk-card">
+                    <div class="card-header">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            Đánh giá rủi ro
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="risk-display">
+                            <div class="risk-level @GetRiskClass(loan.MucDoRuiRo)">
+                                <span class="risk-value">@loan.MucDoRuiRo</span>
+                            </div>
+                            @if (loan.DiemRuiRo.HasValue)
+                            {
+                                <div class="risk-score">
+                                    <span class="score-label">Điểm rủi ro:</span>
+                                    <span class="score-value">@loan.DiemRuiRo.Value</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(loan.XepHangRuiRo))
+                            {
+                                <div class="risk-rank">
+                                    <span class="rank-label">Xếp hạng:</span>
+                                    <span class="rank-value">@loan.XepHangRuiRo</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Timeline Card -->
+            <div class="detail-card timeline-card">
+                <div class="card-header">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Lịch sử hồ sơ
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        @if (loan.NgayTao.HasValue)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-title">Tạo hồ sơ</span>
+                                    <span class="timeline-date">@loan.NgayTao.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (loan.NgayNopHoSo.HasValue)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-title">Nộp hồ sơ</span>
+                                    <span class="timeline-date">@loan.NgayNopHoSo.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (loan.NgayPheDuyet.HasValue)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-marker approved"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-title">Phê duyệt</span>
+                                    <span class="timeline-date">@loan.NgayPheDuyet.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (loan.NgayGiaiNgan.HasValue)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-marker active"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-title">Giải ngân</span>
+                                    <span class="timeline-date">@loan.NgayGiaiNgan.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files Card -->
+            @if (files.Any())
+            {
+                <div class="detail-card files-card">
+                    <div class="card-header">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"></path>
+                                <path d="M14 2V8H20"></path>
+                            </svg>
+                            Hồ sơ đính kèm (@files.Count)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="files-list">
+                            @foreach (var file in files)
+                            {
+                                var fileTypeLabel = file.LoaiFile switch
+                                {
+                                    "PhapLy" => "📋 Pháp lý",
+                                    "TaiChinh" => "💰 Tài chính",
+                                    "TaiSanDamBao" => "🏠 Tài sản đảm bảo",
+                                    _ => "📄 Khác"
+                                };
+                                
+                                <div class="file-item">
+                                    <div class="file-icon">
+                                        @{
+                                            var ext = System.IO.Path.GetExtension(file.TenFile ?? "").ToLower();
+                                        }
+                                        @if (ext == ".pdf")
+                                        {
+                                            <span class="icon-pdf">PDF</span>
+                                        }
+                                        else if (ext == ".jpg" || ext == ".jpeg" || ext == ".png")
+                                        {
+                                            <span class="icon-image">IMG</span>
+                                        }
+                                        else if (ext == ".docx" || ext == ".doc")
+                                        {
+                                            <span class="icon-doc">DOC</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="icon-file">FILE</span>
+                                        }
+                                    </div>
+                                    <div class="file-details">
+                                        <span class="file-name">@file.TenFile</span>
+                                        <span class="file-meta">@fileTypeLabel</span>
+                                    </div>
+                                    <a href="~/@file.DuongDan" target="_blank" class="file-action" title="Tải xuống">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Notes Card -->
+            @if (!string.IsNullOrEmpty(loan.GhiChu) || !string.IsNullOrEmpty(loan.GhiChuNhanVien) || !string.IsNullOrEmpty(loan.LyDoTuChoi))
+            {
+                <div class="detail-card notes-card">
+                    <div class="card-header">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"></path>
+                                <path d="M14 2V8H20"></path>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                            </svg>
+                            Ghi chú
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(loan.GhiChu))
+                        {
+                            <div class="note-item">
+                                <span class="note-label">Ghi chú hồ sơ:</span>
+                                <p class="note-content">@loan.GhiChu</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(loan.GhiChuNhanVien))
+                        {
+                            <div class="note-item">
+                                <span class="note-label">Ghi chú nhân viên:</span>
+                                <p class="note-content">@loan.GhiChuNhanVien</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(loan.LyDoTuChoi))
+                        {
+                            <div class="note-item rejected">
+                                <span class="note-label">Lý do từ chối:</span>
+                                <p class="note-content">@loan.LyDoTuChoi</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+/* ==================== VARIABLES ==================== */
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #3b82f6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #06b6d4;
+    
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+
+/* ==================== PAGE LAYOUT ==================== */
+.loan-details-page {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-back {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    color: var(--gray-600);
+    transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
+    color: var(--gray-800);
+}
+
+.btn-back svg {
+    width: 20px;
+    height: 20px;
+}
+
+.loan-code-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0;
+    font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.my-loan-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #d97706;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--gray-500);
+    margin: 4px 0 0 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+}
+
+.btn-secondary:hover {
+    background: var(--gray-50);
+}
+
+.btn-primary svg, .btn-secondary svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ==================== STATUS BADGES ==================== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-draft { background: var(--gray-100); color: var(--gray-600); }
+.status-pending { background: #fef3c7; color: #d97706; }
+.status-processing { background: #cffafe; color: #0891b2; }
+.status-approved { background: #d1fae5; color: #059669; }
+.status-active { background: #ede9fe; color: #7c3aed; }
+.status-rejected { background: #fee2e2; color: #dc2626; }
+.status-completed { background: #d1fae5; color: #047857; }
+.status-default { background: var(--gray-100); color: var(--gray-600); }
+
+/* ==================== GRID LAYOUT ==================== */
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.details-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ==================== CARDS ==================== */
+.detail-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--gray-50), white);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.card-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.card-header h3 svg {
+    width: 20px;
+    height: 20px;
+    color: var(--primary);
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* ==================== CUSTOMER CARD ==================== */
+.customer-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--gray-200);
+}
+
+.customer-avatar.large {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--gray-100);
+    border: 3px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.customer-avatar.large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.customer-avatar.large svg {
+    width: 32px;
+    height: 32px;
+    color: var(--gray-400);
+}
+
+.customer-main-info {
+    flex: 1;
+}
+
+.customer-name {
+    display: block;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 6px;
+}
+
+.customer-type-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.type-personal { background: #dbeafe; color: #2563eb; }
+.type-business { background: #fef3c7; color: #d97706; }
+
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.info-label {
+    font-size: 13px;
+    color: var(--gray-500);
+    min-width: 100px;
+}
+
+.info-value {
+    font-size: 14px;
+    color: var(--gray-800);
+    text-align: right;
+    word-break: break-word;
+}
+
+.info-value a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.info-value a:hover {
+    text-decoration: underline;
+}
+
+/* ==================== CIC CARD ==================== */
+.cic-score-display {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.score-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+}
+
+.score-circle.score-good { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+.score-circle.score-medium { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+.score-circle.score-low { background: linear-gradient(135deg, #fee2e2, #fecaca); }
+
+.score-circle .score-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.score-circle .score-label {
+    font-size: 11px;
+    color: var(--gray-500);
+}
+
+.score-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.score-item .label {
+    font-size: 13px;
+    color: var(--gray-500);
+}
+
+.score-item .value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.badge-rank {
+    background: var(--primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.text-success { color: var(--success) !important; }
+.text-danger { color: var(--danger) !important; }
+
+/* ==================== LOAN INFO CARD ==================== */
+.loan-amount-display {
+    text-align: center;
+    padding: 24px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+}
+
+.amount-label {
+    display: block;
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 4px;
+}
+
+.amount-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+}
+
+.amount-value small {
+    font-size: 16px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.loan-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.detail-item {
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+}
+
+.detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-item .detail-label {
+    display: block;
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+}
+
+.detail-item .detail-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.detail-item .detail-value.highlight {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* ==================== RISK CARD ==================== */
+.risk-display {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.risk-level {
+    padding: 16px 24px;
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.risk-level .risk-value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.risk-low { background: #d1fae5; color: #059669; }
+.risk-medium { background: #fef3c7; color: #d97706; }
+.risk-high { background: #fed7aa; color: #ea580c; }
+.risk-very-high { background: #fee2e2; color: #dc2626; }
+.risk-none { background: var(--gray-100); color: var(--gray-500); }
+
+.risk-score, .risk-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.risk-score .score-label, .risk-rank .rank-label {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.risk-score .score-value, .risk-rank .rank-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+/* ==================== TIMELINE ==================== */
+.timeline {
+    position: relative;
+    padding-left: 24px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--gray-200);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -24px;
+    top: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--gray-300);
+}
+
+.timeline-marker.approved { border-color: var(--success); background: var(--success); }
+.timeline-marker.active { border-color: var(--primary); background: var(--primary); }
+
+.timeline-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.timeline-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.timeline-date {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+/* ==================== COLLATERAL ==================== */
+.collateral-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.collateral-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+}
+
+.collateral-icon {
+    font-size: 24px;
+}
+
+.collateral-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.collateral-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.collateral-value, .collateral-rate {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+/* ==================== FILES ==================== */
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.file-item:hover {
+    background: var(--gray-100);
+}
+
+.file-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.icon-pdf { background: #fee2e2; color: #dc2626; }
+.icon-image { background: #dbeafe; color: #2563eb; }
+.icon-doc { background: #d1fae5; color: #059669; }
+.icon-file { background: var(--gray-200); color: var(--gray-600); }
+
+.file-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-meta {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.file-action {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: var(--radius-sm);
+    color: var(--gray-500);
+    transition: all 0.2s ease;
+}
+
+.file-action:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.file-action svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ==================== NOTES ==================== */
+.note-item {
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+}
+
+.note-item:last-child {
+    margin-bottom: 0;
+}
+
+.note-item.rejected {
+    background: #fee2e2;
+}
+
+.note-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: 8px;
+}
+
+.note-item.rejected .note-label {
+    color: var(--danger);
+}
+
+.note-content {
+    margin: 0;
+    font-size: 14px;
+    color: var(--gray-700);
+    line-height: 1.6;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@@media (max-width: 1024px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .loan-code-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .cic-score-display {
+        flex-direction: column;
+    }
+    
+    .loan-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .risk-display {
+        flex-direction: column;
+    }
+}
+
+/* ==================== PRINT STYLES ==================== */
+@@media print {
+    .page-header .btn-back,
+    .header-actions {
+        display: none !important;
+    }
+    
+    .detail-card {
+        break-inside: avoid;
+        border: 1px solid #ddd;
+    }
+}
+</style>

@@ -218,6 +218,8 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    max-width: calc(100vw - var(--sidebar-width));
+    overflow-x: hidden;
 }
 
 /* ============================================
@@ -402,6 +404,9 @@ body {
     flex: 1;
     padding: 40px;
     overflow-y: auto;
+    overflow-x: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* ============================================

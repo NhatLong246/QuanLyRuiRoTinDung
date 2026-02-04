@@ -1,0 +1,1078 @@
+@model QuanLyRuiRoTinDung.Models.Entities.KhachHangDoanhNghiep
+@{
+    ViewData["Title"] = "Cập nhật khách hàng doanh nghiệp";
+    Layout = "_DashboardLayout";
+}
+
+<div class="form-container">
+    <div class="form-header">
+        <div class="header-top">
+            <a href="@Url.Action("DetailsDoanhNghiep", "Customer", new { id = Model.MaKhachHang })" class="back-button" title="Quay lại">
+                <img src="~/asset/image/icons8-back-arrow-80.png" alt="Quay lại" />
+            </a>
+            <div class="header-content">
+                <h1 class="form-title">Cập nhật khách hàng doanh nghiệp</h1>
+                <p class="form-subtitle">Chỉnh sửa thông tin doanh nghiệp</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success success-notification">
+            <div class="success-icon">✓</div>
+            <div class="success-message">
+                <strong>Thành công!</strong>
+                <p>@TempData["SuccessMessage"]</p>
+            </div>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger error-notification">
+            <div class="error-icon">✕</div>
+            <div class="error-message">
+                <strong>Lỗi!</strong>
+                <p>@TempData["ErrorMessage"]</p>
+            </div>
+        </div>
+    }
+
+    <form asp-action="EditDoanhNghiep" method="post" enctype="multipart/form-data" class="customer-form" id="editDoanhNghiepForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="MaKhachHang" />
+        <input type="hidden" asp-for="MaKhachHangCode" />
+        <input type="hidden" asp-for="MaSoThue" />
+        <input type="hidden" asp-for="SoGiayPhepKinhDoanh" />
+        <input type="hidden" asp-for="NgayCapGiayPhep" />
+        <input type="hidden" asp-for="NgayDangKy" />
+        <input type="hidden" asp-for="NguoiTao" />
+        <input type="hidden" asp-for="NgayTao" />
+        <input type="hidden" asp-for="TrangThaiHoatDong" />
+        <input type="hidden" asp-for="DiemTinDung" />
+        <input type="hidden" asp-for="XepHangTinDung" />
+        
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger validation-summary"></div>
+        }
+
+        <!-- 1. Thông tin định danh (không thể sửa) -->
+        <div class="form-section readonly-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Thông tin định danh (không thể sửa)
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Mã khách hàng</label>
+                    <div class="readonly-value">@Model.MaKhachHangCode</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mã số thuế</label>
+                    <div class="readonly-value">@Model.MaSoThue</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ngày đăng ký thành lập</label>
+                    <div class="readonly-value">@(Model.NgayDangKy?.ToString("dd/MM/yyyy") ?? "-")</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tên giấy phép kinh doanh</label>
+                    <div class="readonly-value">@(Model.SoGiayPhepKinhDoanh ?? "-")</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ngày cấp giấy phép</label>
+                    <div class="readonly-value">@(Model.NgayCapGiayPhep?.ToString("dd/MM/yyyy") ?? "-")</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Thông tin doanh nghiệp -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+                Thông tin doanh nghiệp
+            </h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label asp-for="TenCongTy" class="form-label">Tên công ty <span class="required">*</span></label>
+                    <input asp-for="TenCongTy" class="form-control" required />
+                    <span asp-validation-for="TenCongTy" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group full-width">
+                    <label asp-for="LinhVucKinhDoanh" class="form-label">Lĩnh vực kinh doanh</label>
+                    <input asp-for="LinhVucKinhDoanh" class="form-control" />
+                    <span asp-validation-for="LinhVucKinhDoanh" class="text-danger validation-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Thông tin người đại diện pháp luật -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Thông tin người đại diện pháp luật
+            </h3>
+            
+            <div class="validation-notice">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>Thông tin người đại diện sẽ được kiểm tra với dữ liệu CIC và khách hàng cá nhân để đảm bảo tính đồng bộ.</span>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-label">Số CCCD người đại diện <span class="required">*</span></label>
+                    <input asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-control" id="cccdNguoiDaiDien" maxlength="12" pattern="\d{12}" placeholder="Nhập 12 chữ số" required />
+                    <span asp-validation-for="SoCccdNguoiDaiDienPhapLuat" class="text-danger validation-error"></span>
+                    <div id="cccdValidationLabel" class="validation-label" style="display:none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NguoiDaiDienPhapLuat" class="form-label">Họ tên người đại diện <span class="required">*</span></label>
+                    <input asp-for="NguoiDaiDienPhapLuat" class="form-control" id="nguoiDaiDien" required />
+                    <span asp-validation-for="NguoiDaiDienPhapLuat" class="text-danger validation-error"></span>
+                    <div id="hoTenValidationLabel" class="validation-label" style="display:none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NgaySinh" class="form-label">Ngày sinh người đại diện</label>
+                    <input asp-for="NgaySinh" type="date" class="form-control" id="ngaySinhNguoiDaiDien" max="@DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="NgaySinh" class="text-danger validation-error"></span>
+                    <div id="ngaySinhValidationLabel" class="validation-label" style="display:none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="GioiTinh" class="form-label">Giới tính người đại diện</label>
+                    <select asp-for="GioiTinh" class="form-control" id="gioiTinhNguoiDaiDien">
+                        <option value="">-- Chọn --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                    <span asp-validation-for="GioiTinh" class="text-danger validation-error"></span>
+                    <div id="gioiTinhValidationLabel" class="validation-label" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Thông báo tham chiếu từ hệ thống -->
+            <div id="referenceInfo" class="reference-info" style="display:none;">
+                <h4>Thông tin tham chiếu từ hệ thống:</h4>
+                <div class="reference-grid">
+                    <div class="reference-item">
+                        <span class="ref-label">Họ tên:</span>
+                        <span class="ref-value" id="refHoTen">-</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="ref-label">Ngày sinh:</span>
+                        <span class="ref-value" id="refNgaySinh">-</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="ref-label">Giới tính:</span>
+                        <span class="ref-value" id="refGioiTinh">-</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="ref-label">Nguồn:</span>
+                        <span class="ref-value" id="refSource">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Thông tin liên hệ -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                Thông tin liên hệ
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label asp-for="SoDienThoai" class="form-label">Số điện thoại</label>
+                    <input asp-for="SoDienThoai" class="form-control" id="soDienThoai" maxlength="10" pattern="\d{10}" placeholder="Nhập 10 chữ số" />
+                    <span asp-validation-for="SoDienThoai" class="text-danger validation-error"></span>
+                    <div id="phoneValidationLabel" class="validation-label warning" style="display:none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <input asp-for="Email" type="email" class="form-control" id="emailInput" />
+                    <span asp-validation-for="Email" class="text-danger validation-error"></span>
+                    <div id="emailValidationLabel" class="validation-label warning" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Địa chỉ -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                Địa chỉ
+            </h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label asp-for="DiaChi" class="form-label">Địa chỉ trụ sở chính</label>
+                    <input asp-for="DiaChi" class="form-control" />
+                    <span asp-validation-for="DiaChi" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ThanhPho" class="form-label">Thành phố/Tỉnh</label>
+                    <input asp-for="ThanhPho" class="form-control" />
+                    <span asp-validation-for="ThanhPho" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Quan" class="form-label">Quận/Huyện</label>
+                    <input asp-for="Quan" class="form-control" />
+                    <span asp-validation-for="Quan" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Phuong" class="form-label">Phường/Xã</label>
+                    <input asp-for="Phuong" class="form-control" />
+                    <span asp-validation-for="Phuong" class="text-danger validation-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Thông tin kinh doanh & tài chính -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                Thông tin kinh doanh & tài chính
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label asp-for="SoLuongNhanVien" class="form-label">Số lượng nhân viên</label>
+                    <input asp-for="SoLuongNhanVien" type="number" class="form-control" min="0" step="1" />
+                    <span asp-validation-for="SoLuongNhanVien" class="text-danger validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="DoanhThuHangNam" class="form-label">Doanh thu hàng năm (VNĐ)</label>
+                    <input type="text" class="form-control money-input" id="doanhThuInput" placeholder="Nhập số tiền" 
+                           value="@(Model.DoanhThuHangNam?.ToString("N0").Replace(",", "."))" />
+                    <small class="form-text text-muted">VD: 1.000.000.000</small>
+                    <input type="hidden" asp-for="DoanhThuHangNam" id="doanhThuHidden" />
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="TongTaiSan" class="form-label">Tổng tài sản (VNĐ)</label>
+                    <input type="text" class="form-control money-input" id="tongTaiSanInput" placeholder="Nhập số tiền" 
+                           value="@(Model.TongTaiSan?.ToString("N0").Replace(",", "."))" />
+                    <small class="form-text text-muted">VD: 5.000.000.000</small>
+                    <input type="hidden" asp-for="TongTaiSan" id="tongTaiSanHidden" />
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="VonDieuLe" class="form-label">Vốn điều lệ (VNĐ)</label>
+                    <input type="text" class="form-control money-input" id="vonDieuLeInput" placeholder="Nhập số tiền" 
+                           value="@(Model.VonDieuLe?.ToString("N0").Replace(",", "."))" />
+                    <small class="form-text text-muted">VD: 2.000.000.000</small>
+                    <input type="hidden" asp-for="VonDieuLe" id="vonDieuLeHidden" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Tài liệu và ảnh -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Tài liệu và ảnh
+            </h3>
+            <div class="form-grid file-grid">
+                <div class="form-group">
+                    <label class="form-label">Ảnh giấy phép kinh doanh</label>
+                    <input type="file" name="anhGiayPhepKinhDoanhFiles" accept="image/*,.pdf" class="form-control" multiple />
+                    <small class="form-text text-muted">Để trống nếu không thay đổi</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhGiayPhepKinhDoanh))
+                    {
+                        <div class="image-preview multi-preview">
+                            @foreach (var file in Model.AnhGiayPhepKinhDoanh.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <img src="@file" alt="Giấy phép KD" />
+                            }
+                            <span class="preview-label">Hiện tại</span>
+                        </div>
+                    }
+                    <input type="hidden" name="existingAnhGiayPhepKinhDoanh" value="@Model.AnhGiayPhepKinhDoanh" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh báo cáo tài chính</label>
+                    <input type="file" name="anhBaoCaoTaichinhFiles" accept="image/*,.pdf" class="form-control" multiple />
+                    <small class="form-text text-muted">Để trống nếu không thay đổi</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhBaoCaoTaichinh))
+                    {
+                        <div class="image-preview multi-preview">
+                            @foreach (var file in Model.AnhBaoCaoTaichinh.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <img src="@file" alt="Báo cáo TC" />
+                            }
+                            <span class="preview-label">Hiện tại</span>
+                        </div>
+                    }
+                    <input type="hidden" name="existingAnhBaoCaoTaichinh" value="@Model.AnhBaoCaoTaichinh" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh giấy tờ khác</label>
+                    <input type="file" name="anhGiayToLienQuanKhacFiles" accept="image/*,.pdf" class="form-control" multiple />
+                    <small class="form-text text-muted">Để trống nếu không thay đổi</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhGiayToLienQuanKhac))
+                    {
+                        <div class="image-preview multi-preview">
+                            @foreach (var file in Model.AnhGiayToLienQuanKhac.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <img src="@file" alt="Giấy tờ khác" />
+                            }
+                            <span class="preview-label">Hiện tại</span>
+                        </div>
+                    }
+                    <input type="hidden" name="existingAnhGiayToLienQuanKhac" value="@Model.AnhGiayToLienQuanKhac" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">CCCD mặt trước (người đại diện)</label>
+                    <input type="file" name="cccdTruocFile" accept="image/*,.pdf" class="form-control" />
+                    <small class="form-text text-muted">Để trống nếu không thay đổi</small>
+                    @if (!string.IsNullOrEmpty(Model.CccdTruoc))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.CccdTruoc" alt="CCCD trước" />
+                            <span class="preview-label">Hiện tại</span>
+                        </div>
+                    }
+                    <input type="hidden" name="existingCccdTruoc" value="@Model.CccdTruoc" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">CCCD mặt sau (người đại diện)</label>
+                    <input type="file" name="cccdSauFile" accept="image/*,.pdf" class="form-control" />
+                    <small class="form-text text-muted">Để trống nếu không thay đổi</small>
+                    @if (!string.IsNullOrEmpty(Model.CccdSau))
+                    {
+                        <div class="image-preview">
+                            <img src="@Model.CccdSau" alt="CCCD sau" />
+                            <span class="preview-label">Hiện tại</span>
+                        </div>
+                    }
+                    <input type="hidden" name="existingCccdSau" value="@Model.CccdSau" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ảnh người đại diện</label>
+                    <input type="file" name="anhNguoiDaiDienFile" accept="image/*" class="form-control" />
+                    <small class="form-text text-muted">Để trống nếu không thay đổi</small>
+                    @if (!string.IsNullOrEmpty(Model.AnhNguoiDaiDien))
+                    {
+                        <div class="image-preview avatar-preview">
+                            <img src="@Model.AnhNguoiDaiDien" alt="Người đại diện" />
+                            <span class="preview-label">Hiện tại</span>
+                        </div>
+                    }
+                    <input type="hidden" name="existingAnhNguoiDaiDien" value="@Model.AnhNguoiDaiDien" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="@Url.Action("DetailsDoanhNghiep", "Customer", new { id = Model.MaKhachHang })" class="btn btn-secondary">Hủy</a>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;margin-right:6px;">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $(document).ready(function() {
+            const currentCustomerId = @Model.MaKhachHang;
+            const crossCheckUrl = '@Url.Action("CrossCheckWithCIC", "Customer")';
+            const checkPhoneUrl = '@Url.Action("CheckPhoneExists", "Customer")';
+            const checkEmailUrl = '@Url.Action("CheckEmailExists", "Customer")';
+            
+            let validationTimeout = null;
+            let hasValidationErrors = false;
+
+            // ==========================================
+            // VALIDATION NGƯỜI ĐẠI DIỆN PHÁP LUẬT
+            // ==========================================
+            
+            const cccdInput = document.getElementById('cccdNguoiDaiDien');
+            const nguoiDaiDienInput = document.getElementById('nguoiDaiDien');
+            const ngaySinhInput = document.getElementById('ngaySinhNguoiDaiDien');
+            const gioiTinhInput = document.getElementById('gioiTinhNguoiDaiDien');
+
+            // Hàm hiển thị validation label
+            function showValidationLabel(elementId, message, type = 'error') {
+                const label = document.getElementById(elementId);
+                if (label) {
+                    label.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:6px;flex-shrink:0;">
+                        ${type === 'error' 
+                            ? '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>'
+                            : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'
+                        }
+                    </svg><span>${message}</span>`;
+                    label.className = `validation-label ${type}`;
+                    label.style.display = 'flex';
+                }
+            }
+
+            function hideValidationLabel(elementId) {
+                const label = document.getElementById(elementId);
+                if (label) {
+                    label.style.display = 'none';
+                }
+            }
+
+            function hideAllValidationLabels() {
+                ['cccdValidationLabel', 'hoTenValidationLabel', 'ngaySinhValidationLabel', 'gioiTinhValidationLabel'].forEach(id => {
+                    hideValidationLabel(id);
+                });
+                document.getElementById('referenceInfo').style.display = 'none';
+            }
+
+            // Hàm kiểm tra cross-check với CIC và khách hàng cá nhân
+            async function validateNguoiDaiDien() {
+                const soCccd = cccdInput?.value?.trim() || '';
+                const nguoiDaiDien = nguoiDaiDienInput?.value?.trim() || '';
+                const ngaySinh = ngaySinhInput?.value || '';
+                const gioiTinh = gioiTinhInput?.value || '';
+
+                // Chỉ validate khi CCCD đủ 12 số
+                if (soCccd.length !== 12) {
+                    hideAllValidationLabels();
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams({
+                        soCccd: soCccd,
+                        nguoiDaiDien: nguoiDaiDien,
+                        ngaySinh: ngaySinh,
+                        gioiTinh: gioiTinh,
+                        excludeId: currentCustomerId // Exclude doanh nghiệp hiện tại khi edit
+                    });
+
+                    const response = await fetch(`${crossCheckUrl}?${params}`);
+                    const data = await response.json();
+
+                    hasValidationErrors = false;
+
+                    if (data.hasWarnings && data.warnings && data.warnings.length > 0) {
+                        data.warnings.forEach(warning => {
+                            hasValidationErrors = true;
+                            
+                            if (warning.fieldName === 'NguoiDaiDienPhapLuat' || warning.fieldName === 'HoTen') {
+                                showValidationLabel('hoTenValidationLabel', warning.message, 'error');
+                                nguoiDaiDienInput?.classList.add('input-error');
+                            } else if (warning.fieldName === 'NgaySinh') {
+                                showValidationLabel('ngaySinhValidationLabel', warning.message, 'error');
+                                ngaySinhInput?.classList.add('input-error');
+                            } else if (warning.fieldName === 'GioiTinh') {
+                                showValidationLabel('gioiTinhValidationLabel', warning.message, 'error');
+                                gioiTinhInput?.classList.add('input-error');
+                            }
+                        });
+                    } else {
+                        // Xóa lỗi nếu không có warning
+                        hideAllValidationLabels();
+                        nguoiDaiDienInput?.classList.remove('input-error');
+                        ngaySinhInput?.classList.remove('input-error');
+                        gioiTinhInput?.classList.remove('input-error');
+                    }
+
+                    // Hiển thị thông tin tham chiếu nếu có
+                    if (data.referenceData) {
+                        const refInfo = document.getElementById('referenceInfo');
+                        document.getElementById('refHoTen').textContent = data.referenceData.hoTen || '-';
+                        document.getElementById('refNgaySinh').textContent = data.referenceData.ngaySinh || '-';
+                        document.getElementById('refGioiTinh').textContent = data.referenceData.gioiTinh || '-';
+                        document.getElementById('refSource').textContent = data.referenceData.source || '-';
+                        refInfo.style.display = 'block';
+                    }
+
+                } catch (error) {
+                    console.error('Error validating nguoi dai dien:', error);
+                }
+            }
+
+            // Debounce function
+            function debounce(func, delay) {
+                return function(...args) {
+                    if (validationTimeout) clearTimeout(validationTimeout);
+                    validationTimeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            const debouncedValidate = debounce(validateNguoiDaiDien, 500);
+
+            // Gắn sự kiện
+            if (cccdInput) {
+                cccdInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 12) value = value.substring(0, 12);
+                    e.target.value = value;
+                    debouncedValidate();
+                });
+                cccdInput.addEventListener('blur', validateNguoiDaiDien);
+            }
+
+            if (nguoiDaiDienInput) {
+                nguoiDaiDienInput.addEventListener('input', debouncedValidate);
+                nguoiDaiDienInput.addEventListener('blur', validateNguoiDaiDien);
+            }
+
+            if (ngaySinhInput) {
+                ngaySinhInput.addEventListener('change', validateNguoiDaiDien);
+            }
+
+            if (gioiTinhInput) {
+                gioiTinhInput.addEventListener('change', validateNguoiDaiDien);
+            }
+
+            // ==========================================
+            // KIỂM TRA SĐT VÀ EMAIL TRÙNG
+            // ==========================================
+            
+            const phoneInput = document.getElementById('soDienThoai');
+            const emailInput = document.getElementById('emailInput');
+
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 10) value = value.substring(0, 10);
+                    e.target.value = value;
+                });
+
+                phoneInput.addEventListener('blur', async function() {
+                    const phone = this.value.trim();
+                    if (phone.length === 10) {
+                        try {
+                            const response = await fetch(`${checkPhoneUrl}?phone=${encodeURIComponent(phone)}&excludeId=${currentCustomerId}&customerType=doanhnghiep`);
+                            const data = await response.json();
+                            if (data.exists) {
+                                showValidationLabel('phoneValidationLabel', 'Số điện thoại này đã tồn tại trong hệ thống!', 'warning');
+                                phoneInput.classList.add('input-warning');
+                            } else {
+                                hideValidationLabel('phoneValidationLabel');
+                                phoneInput.classList.remove('input-warning');
+                            }
+                        } catch (error) {
+                            console.error('Error checking phone:', error);
+                        }
+                    } else {
+                        hideValidationLabel('phoneValidationLabel');
+                    }
+                });
+            }
+
+            if (emailInput) {
+                emailInput.addEventListener('blur', async function() {
+                    const email = this.value.trim();
+                    if (email) {
+                        try {
+                            const response = await fetch(`${checkEmailUrl}?email=${encodeURIComponent(email)}&excludeId=${currentCustomerId}&customerType=doanhnghiep`);
+                            const data = await response.json();
+                            if (data.exists) {
+                                showValidationLabel('emailValidationLabel', 'Email này đã tồn tại trong hệ thống!', 'warning');
+                                emailInput.classList.add('input-warning');
+                            } else {
+                                hideValidationLabel('emailValidationLabel');
+                                emailInput.classList.remove('input-warning');
+                            }
+                        } catch (error) {
+                            console.error('Error checking email:', error);
+                        }
+                    }
+                });
+            }
+
+            // ==========================================
+            // FORMAT TIỀN TỆ
+            // ==========================================
+            
+            function setupMoneyInput(inputId, hiddenId, initialValue) {
+                const input = document.getElementById(inputId);
+                const hidden = document.getElementById(hiddenId);
+                
+                if (input && hidden) {
+                    if (initialValue && initialValue !== '') {
+                        hidden.value = parseFloat(initialValue).toString();
+                    }
+
+                    input.addEventListener('input', function(e) {
+                        let value = e.target.value.replace(/\./g, '');
+                        if (value && !isNaN(value)) {
+                            let formatted = parseInt(value).toLocaleString('vi-VN').replace(/,/g, '.');
+                            e.target.value = formatted;
+                            hidden.value = value;
+                        } else {
+                            hidden.value = '';
+                        }
+                    });
+                }
+            }
+
+            setupMoneyInput('doanhThuInput', 'doanhThuHidden', '@Model.DoanhThuHangNam');
+            setupMoneyInput('tongTaiSanInput', 'tongTaiSanHidden', '@Model.TongTaiSan');
+            setupMoneyInput('vonDieuLeInput', 'vonDieuLeHidden', '@Model.VonDieuLe');
+
+            // Submit form - CHẶN nếu có lỗi validation
+            document.getElementById('editDoanhNghiepForm')?.addEventListener('submit', function(e) {
+                // Cập nhật giá trị hidden
+                ['doanhThuInput', 'tongTaiSanInput', 'vonDieuLeInput'].forEach(function(inputId) {
+                    const input = document.getElementById(inputId);
+                    const hidden = document.getElementById(inputId.replace('Input', 'Hidden'));
+                    if (input && hidden && input.value) {
+                        let value = input.value.replace(/\./g, '');
+                        hidden.value = value;
+                    }
+                });
+
+                // CHẶN CỨNG nếu có lỗi validation về người đại diện
+                if (hasValidationErrors) {
+                    e.preventDefault();
+                    alert('Không thể lưu! Thông tin người đại diện pháp luật không khớp với dữ liệu đã có trong hệ thống (Khách hàng cá nhân hoặc CIC).\n\nVui lòng kiểm tra và sửa lại:\n- Họ tên người đại diện\n- Ngày sinh\n- Giới tính\n\nThông tin phải khớp với CCCD đã đăng ký.');
+                    return false;
+                }
+            });
+
+            // Chạy validation ban đầu nếu đã có CCCD
+            if (cccdInput && cccdInput.value.length === 12) {
+                validateNguoiDaiDien();
+            }
+        });
+    </script>
+}
+
+<style>
+.form-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.form-header {
+    margin-bottom: 2rem;
+}
+
+.header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+.back-button:hover {
+    background: #e5e7eb;
+    transform: translateX(-2px);
+}
+
+.back-button img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.form-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.customer-form {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.readonly-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+}
+
+.readonly-section .section-title {
+    color: #64748b;
+    border-bottom-color: #cbd5e1;
+}
+
+.validation-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+    color: #1e40af;
+}
+
+.validation-notice svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.file-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.required {
+    color: #ef4444;
+}
+
+.readonly-value {
+    padding: 0.625rem 0.875rem;
+    background: #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.form-control {
+    padding: 0.625rem 0.875rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input-error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+
+.input-warning {
+    border-color: #f59e0b !important;
+    background-color: #fffbeb !important;
+}
+
+.validation-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.validation-label.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.validation-label.warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+
+.reference-info {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.reference-info h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #166534;
+    margin: 0 0 0.75rem 0;
+}
+
+.reference-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+}
+
+.reference-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.ref-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.ref-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #166534;
+}
+
+.form-text {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+}
+
+.text-danger {
+    color: #ef4444;
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+}
+
+.image-preview {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.image-preview img {
+    max-width: 120px;
+    max-height: 90px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.multi-preview img {
+    margin-right: 0.375rem;
+    margin-bottom: 0.375rem;
+}
+
+.avatar-preview img {
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+}
+
+.preview-label {
+    display: block;
+    font-size: 0.6875rem;
+    color: #9ca3af;
+    margin-top: 0.375rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1.5rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background: white;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.success-notification, .error-notification {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.success-notification {
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+}
+
+.error-notification {
+    background: #fef2f2;
+    border: 1px solid #ef4444;
+}
+
+.success-icon, .error-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.success-icon {
+    background: #10b981;
+    color: white;
+}
+
+.error-icon {
+    background: #ef4444;
+    color: white;
+}
+
+@@media (max-width: 992px) {
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .file-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .reference-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@@media (max-width: 576px) {
+    .form-grid, .file-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-group.full-width {
+        grid-column: 1;
+    }
+    .reference-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

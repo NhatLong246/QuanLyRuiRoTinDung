@@ -658,7 +658,7 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     @{
-        var taiSanListForJs = ViewBag.TaiSanDamBaos as List<TaiSanDamBao> ?? new List<TaiSanDamBao>();
+        var loaiTaiSanListForJs = ViewBag.LoaiTaiSans as List<LoaiTaiSanDamBao> ?? new List<LoaiTaiSanDamBao>();
         // Lấy ghi chú nhân viên đã lưu trước đó (nếu có)
         var ghiChuNhanVienSaved = Model?.GhiChuNhanVien ?? "";
     }
@@ -707,7 +707,8 @@
         // Loại khách hàng
         var customerType = '@customerType';
         
-        var availableTaiSanList = @Html.Raw(Json.Serialize(taiSanListForJs.Select(t => new { maTaiSan = t.MaTaiSan, tenGoi = t.TenGoi, maTaiSanCode = t.MaTaiSanCode, giaTriDinhGia = t.GiaTriDinhGia, tenLoaiTaiSan = t.MaLoaiTaiSanNavigation?.TenLoaiTaiSan ?? "" })));
+        // Danh sách loại tài sản (không còn dùng danh sách tài sản có sẵn nữa)
+        var loaiTaiSanList = @Html.Raw(Json.Serialize(loaiTaiSanListForJs.Select(l => new { maLoaiTaiSan = l.MaLoaiTaiSan, tenLoaiTaiSan = l.TenLoaiTaiSan, maLoaiTaiSanCode = l.MaLoaiTaiSanCode })));
         var taiSanCounter = 0;
         
         // Dữ liệu tài sản đảm bảo từ Model (khi Edit mode)

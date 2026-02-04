@@ -1,0 +1,1848 @@
+@{
+    ViewData["Title"] = "Quản lý hồ sơ vay";
+    Layout = "_DashboardLayout";
+    
+    var currentTab = ViewBag.CurrentTab as string ?? "my";
+    var currentTrangThai = ViewBag.CurrentTrangThai as string ?? "all";
+    var searchTerm = ViewBag.SearchTerm as string ?? "";
+    var maNhanVien = ViewBag.MaNhanVien as int? ?? 0;
+    
+    var myLoans = ViewBag.MyLoans as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new();
+    var allLoans = ViewBag.AllLoans as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new();
+    var customerInfoDict = ViewBag.CustomerInfoDict as Dictionary<int, (string TenKhachHang, string LoaiKhachHang, string MaKhachHangCode, string AnhDaiDien)> ?? new();
+    
+    var myStats = ((int Total, int Nhap, int ChoDuyet, int DangXuLy, int DaPheDuyet, int DangVay, int TuChoi, int DaThanhToan))ViewBag.MyStats;
+    var allStats = ((int Total, int Nhap, int ChoDuyet, int DangXuLy, int DaPheDuyet, int DangVay, int TuChoi, int DaThanhToan))ViewBag.AllStats;
+    
+    // Helper function to get status badge class
+    string GetStatusClass(string trangThai) => trangThai switch
+    {
+        "Nháp" => "status-draft",
+        "Chờ duyệt" => "status-pending",
+        "Đang xử lý" => "status-processing",
+        "Đã phê duyệt" => "status-approved",
+        "Đang vay" => "status-active",
+        "Từ chối" => "status-rejected",
+        "Đã thanh toán" => "status-completed",
+        _ => "status-default"
+    };
+    
+    string GetStatusIcon(string trangThai) => trangThai switch
+    {
+        "Nháp" => "📝",
+        "Chờ duyệt" => "⏳",
+        "Đang xử lý" => "⚙️",
+        "Đã phê duyệt" => "✅",
+        "Đang vay" => "💰",
+        "Từ chối" => "❌",
+        "Đã thanh toán" => "🏆",
+        _ => "📄"
+    };
+
+    string GetRiskClass(string? mucDoRuiRo) => mucDoRuiRo switch
+    {
+        "Thấp" => "risk-low",
+        "Trung bình" => "risk-medium",
+        "Cao" => "risk-high",
+        "Rất cao" => "risk-very-high",
+        _ => "risk-none"
+    };
+}
+
+@Html.AntiForgeryToken()
+
+<div class="loan-management">
+    <!-- Animated Background -->
+    <div class="page-bg-decoration">
+        <div class="bg-circle circle-1"></div>
+        <div class="bg-circle circle-2"></div>
+        <div class="bg-circle circle-3"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-left">
+            <div class="header-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                    <path d="M14 2V8H20"/>
+                    <path d="M16 13H8"/>
+                    <path d="M16 17H8"/>
+                    <path d="M10 9H9H8"/>
+                </svg>
+            </div>
+            <div class="header-content">
+                <h1 class="page-title">Quản lý hồ sơ vay</h1>
+                <p class="page-subtitle">Theo dõi và quản lý tất cả hồ sơ vay trong hệ thống</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="@Url.Action("SelectCustomer", "Loan")" class="btn-primary">
+                <span class="btn-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </span>
+                <span class="btn-text">Tạo hồ sơ vay mới</span>
+                <span class="btn-shine"></span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Row -->
+    <div class="filter-row">
+        <form method="get" action="@Url.Action("Index", "Loan")" class="search-form">
+            <input type="hidden" name="tab" value="@currentTab" />
+            <input type="hidden" name="trangThai" value="@currentTrangThai" />
+            <div class="search-input-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" name="searchTerm" placeholder="Tìm kiếm theo mã hồ sơ, mục đích vay..." 
+                       value="@searchTerm" class="search-input" />
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = currentTrangThai })" class="clear-search" title="Xóa tìm kiếm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </a>
+                }
+            </div>
+            <button type="submit" class="btn-search">Tìm kiếm</button>
+        </form>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <a href="@Url.Action("Index", "Loan", new { tab = "my", trangThai = currentTrangThai, searchTerm = searchTerm })" 
+               class="tab-item @(currentTab == "my" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Hồ sơ của tôi</span>
+                <span class="tab-badge">@myLoans.Count</span>
+            </a>
+            <a href="@Url.Action("Index", "Loan", new { tab = "all", trangThai = currentTrangThai, searchTerm = searchTerm })" 
+               class="tab-item @(currentTab == "all" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13"></path>
+                    <path d="M16 3.13C16.8604 3.3503 17.623 3.8507 18.1676 4.55231C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88"></path>
+                </svg>
+                <span>Tất cả hồ sơ</span>
+                <span class="tab-badge">@allLoans.Count</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Filter Pills -->
+    <div class="status-filter-row">
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "all", searchTerm = searchTerm })" 
+           class="status-pill @(currentTrangThai == "all" ? "active" : "")">
+            <span class="pill-icon">📊</span>
+            <span>Tất cả</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.Total : allStats.Total)</span>
+        </a>
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "Nháp", searchTerm = searchTerm })" 
+           class="status-pill pill-draft @(currentTrangThai == "Nháp" ? "active" : "")">
+            <span class="pill-icon">📝</span>
+            <span>Nháp</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.Nhap : allStats.Nhap)</span>
+        </a>
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "Chờ duyệt", searchTerm = searchTerm })" 
+           class="status-pill pill-pending @(currentTrangThai == "Chờ duyệt" ? "active" : "")">
+            <span class="pill-icon">⏳</span>
+            <span>Chờ duyệt</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.ChoDuyet : allStats.ChoDuyet)</span>
+        </a>
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "Đang xử lý", searchTerm = searchTerm })" 
+           class="status-pill pill-processing @(currentTrangThai == "Đang xử lý" ? "active" : "")">
+            <span class="pill-icon">⚙️</span>
+            <span>Đang xử lý</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.DangXuLy : allStats.DangXuLy)</span>
+        </a>
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "Đã phê duyệt", searchTerm = searchTerm })" 
+           class="status-pill pill-approved @(currentTrangThai == "Đã phê duyệt" ? "active" : "")">
+            <span class="pill-icon">✅</span>
+            <span>Đã phê duyệt</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.DaPheDuyet : allStats.DaPheDuyet)</span>
+        </a>
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "Đang vay", searchTerm = searchTerm })" 
+           class="status-pill pill-active @(currentTrangThai == "Đang vay" ? "active" : "")">
+            <span class="pill-icon">💰</span>
+            <span>Đang vay</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.DangVay : allStats.DangVay)</span>
+        </a>
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "Từ chối", searchTerm = searchTerm })" 
+           class="status-pill pill-rejected @(currentTrangThai == "Từ chối" ? "active" : "")">
+            <span class="pill-icon">❌</span>
+            <span>Từ chối</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.TuChoi : allStats.TuChoi)</span>
+        </a>
+        <a href="@Url.Action("Index", "Loan", new { tab = currentTab, trangThai = "Đã thanh toán", searchTerm = searchTerm })" 
+           class="status-pill pill-completed @(currentTrangThai == "Đã thanh toán" ? "active" : "")">
+            <span class="pill-icon">🏆</span>
+            <span>Hoàn thành</span>
+            <span class="pill-count">@(currentTab == "my" ? myStats.DaThanhToan : allStats.DaThanhToan)</span>
+        </a>
+    </div>
+
+    <!-- Loan List Content -->
+    <div class="loan-content">
+        @{
+            var displayLoans = currentTab == "my" ? myLoans : allLoans;
+        }
+        
+        @if (displayLoans.Any())
+        {
+            <div class="loan-grid">
+                @foreach (var loan in displayLoans)
+                {
+                    var customerInfo = customerInfoDict.ContainsKey(loan.MaKhoanVay) 
+                        ? customerInfoDict[loan.MaKhoanVay] 
+                        : ("Không xác định", "CaNhan", "", (string?)null);
+                    var isMyLoan = loan.MaNhanVienTinDung == maNhanVien;
+                    
+                    <div class="loan-card @(isMyLoan ? "my-loan" : "")">
+                        <div class="card-header">
+                            <div class="loan-code-wrapper">
+                                <span class="loan-code">@loan.MaKhoanVayCode</span>
+                                @if (isMyLoan && currentTab == "all")
+                                {
+                                    <span class="my-loan-badge" title="Hồ sơ của tôi">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                        </svg>
+                                    </span>
+                                }
+                            </div>
+                            <span class="status-badge @GetStatusClass(loan.TrangThaiKhoanVay)">
+                                @GetStatusIcon(loan.TrangThaiKhoanVay) @loan.TrangThaiKhoanVay
+                            </span>
+                        </div>
+                        
+                        <div class="card-customer">
+                            <div class="customer-avatar">
+                                @if (!string.IsNullOrEmpty(customerInfo.Item4))
+                                {
+                                    <img src="~/@customerInfo.Item4" alt="Avatar" />
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        @if (customerInfo.Item2 == "CaNhan")
+                                        {
+                                            <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        }
+                                        else
+                                        {
+                                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                            <path d="M16 7V5C16 3.9 15.1 3 14 3H10C8.9 3 8 3.9 8 5V7"></path>
+                                        }
+                                    </svg>
+                                }
+                            </div>
+                            <div class="customer-info">
+                                <span class="customer-name">@customerInfo.Item1</span>
+                                <span class="customer-type">
+                                    @(customerInfo.Item2 == "CaNhan" ? "👤 Cá nhân" : "🏢 Doanh nghiệp")
+                                    @if (!string.IsNullOrEmpty(customerInfo.Item3))
+                                    {
+                                        <span class="customer-code">• @customerInfo.Item3</span>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Loại vay:</span>
+                                <span class="detail-value loan-type">@(loan.MaLoaiVayNavigation?.TenLoaiVay ?? "N/A")</span>
+                            </div>
+                            <div class="detail-row highlight">
+                                <span class="detail-label">Số tiền vay:</span>
+                                <span class="detail-value amount">@loan.SoTienVay.ToString("N0") <small>VNĐ</small></span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Lãi suất:</span>
+                                <span class="detail-value">@loan.LaiSuat%/năm</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Kỳ hạn:</span>
+                                <span class="detail-value">@loan.KyHanVay tháng</span>
+                            </div>
+                            @if (loan.SoTienTraHangThang.HasValue)
+                            {
+                                <div class="detail-row">
+                                    <span class="detail-label">Trả hàng tháng:</span>
+                                    <span class="detail-value">@loan.SoTienTraHangThang.Value.ToString("N0") VNĐ</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(loan.MucDoRuiRo))
+                            {
+                                <div class="detail-row">
+                                    <span class="detail-label">Mức độ rủi ro:</span>
+                                    <span class="detail-value risk-badge @GetRiskClass(loan.MucDoRuiRo)">@loan.MucDoRuiRo</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="card-meta">
+                            <div class="meta-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                <span>@(loan.NgayTao?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                            </div>
+                            @if (currentTab == "all" && loan.MaNhanVienTinDungNavigation != null)
+                            {
+                                <div class="meta-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                    <span>@loan.MaNhanVienTinDungNavigation.HoTen</span>
+                                </div>
+                            }
+                            @if (loan.CoTaiSanDamBao == true)
+                            {
+                                <div class="meta-item collateral">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                    <span>Có TSĐB</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="card-actions">
+                            <a href="@Url.Action("Details", "Loan", new { id = loan.MaKhoanVay })" class="btn-action btn-view" title="Xem chi tiết">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <span>Xem</span>
+                            </a>
+                            @if (loan.TrangThaiKhoanVay == "Nháp" && isMyLoan)
+                            {
+                                <a href="@Url.Action("Edit", "Loan", new { loanId = loan.MaKhoanVay })" class="btn-action btn-edit" title="Chỉnh sửa">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"></path>
+                                        <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z"></path>
+                                    </svg>
+                                    <span>Sửa</span>
+                                </a>
+                                <button onclick="showDeleteModal(@loan.MaKhoanVay, '@loan.MaKhoanVayCode')" class="btn-action btn-delete" title="Xóa">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6"></path>
+                                    </svg>
+                                    <span>Xóa</span>
+                                </button>
+                            }
+                            @if ((loan.TrangThaiKhoanVay == "Chờ duyệt" || loan.TrangThaiKhoanVay == "Đang xử lý") && isMyLoan)
+                            {
+                                <button onclick="showCancelModal(@loan.MaKhoanVay, '@loan.MaKhoanVayCode')" class="btn-action btn-cancel" title="Hủy gửi">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                                    </svg>
+                                    <span>Hủy gửi</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                        <path d="M14 2V8H20"/>
+                    </svg>
+                </div>
+                <h3>Không có hồ sơ vay nào</h3>
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <p>Không tìm thấy hồ sơ vay phù hợp với từ khóa "<strong>@searchTerm</strong>"</p>
+                    <a href="@Url.Action("Index", "Loan", new { tab = currentTab })" class="btn-secondary">Xóa bộ lọc</a>
+                }
+                else if (currentTrangThai != "all")
+                {
+                    <p>Không có hồ sơ vay nào ở trạng thái "<strong>@currentTrangThai</strong>"</p>
+                    <a href="@Url.Action("Index", "Loan", new { tab = currentTab })" class="btn-secondary">Xem tất cả</a>
+                }
+                else
+                {
+                    <p>Bắt đầu bằng cách tạo hồ sơ vay mới cho khách hàng</p>
+                    <a href="@Url.Action("SelectCustomer", "Loan")" class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Tạo hồ sơ vay mới
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-icon warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        </div>
+        <h3 class="modal-title">Xác nhận xóa</h3>
+        <p class="modal-message">Bạn có chắc chắn muốn xóa hồ sơ vay <strong id="deleteLoanCode"></strong>?<br>Hành động này không thể hoàn tác.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeDeleteModal()">Hủy</button>
+            <button type="button" class="btn-modal-confirm danger" onclick="confirmDelete()">Xóa</button>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Submission Modal -->
+<div id="cancelModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-icon warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        </div>
+        <h3 class="modal-title">Xác nhận hủy gửi</h3>
+        <p class="modal-message">Bạn có chắc chắn muốn hủy gửi hồ sơ vay <strong id="cancelLoanCode"></strong>?<br>Hồ sơ sẽ được chuyển về trạng thái nháp.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeCancelModal()">Không</button>
+            <button type="button" class="btn-modal-confirm" onclick="confirmCancel()">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div id="resultModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div id="resultIcon" class="modal-icon success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        </div>
+        <h3 id="resultTitle" class="modal-title">Thành công!</h3>
+        <p id="resultMessage" class="modal-message">Thao tác hoàn tất.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-confirm" onclick="closeResultModal()">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ==================== VARIABLES ==================== */
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #3b82f6;
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success: #10b981;
+    --success-gradient: linear-gradient(135deg, #11998e, #38ef7d);
+    --warning: #f59e0b;
+    --warning-gradient: linear-gradient(135deg, #f093fb, #f5576c);
+    --danger: #ef4444;
+    --danger-gradient: linear-gradient(135deg, #ff416c, #ff4b2b);
+    --info: #06b6d4;
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+    --shadow-glow: 0 0 40px rgba(37, 99, 235, 0.15);
+    
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== LAYOUT ==================== */
+.loan-management {
+    position: relative;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.page-bg-decoration {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--info));
+    opacity: 0.04;
+    animation: float 20s ease-in-out infinite;
+    filter: blur(60px);
+}
+
+.circle-1 { width: 600px; height: 600px; top: -200px; right: -200px; animation-delay: 0s; }
+.circle-2 { width: 400px; height: 400px; bottom: -100px; left: -100px; animation-delay: -5s; background: linear-gradient(135deg, #667eea, #764ba2); }
+.circle-3 { width: 300px; height: 300px; top: 50%; left: 50%; animation-delay: -10s; background: linear-gradient(135deg, #f093fb, #f5576c); }
+
+@@keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    25% { transform: translate(30px, -30px) rotate(5deg) scale(1.05); }
+    50% { transform: translate(-20px, 30px) rotate(-5deg) scale(0.95); }
+    75% { transform: translate(-30px, -15px) rotate(3deg) scale(1.02); }
+}
+
+@@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(37, 99, 235, 0.2), 0 0 20px rgba(37, 99, 235, 0.1); }
+    50% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), 0 0 40px rgba(37, 99, 235, 0.2); }
+}
+
+@@keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ==================== HEADER ==================== */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    animation: slideInLeft 0.6s ease-out, glow 3s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-icon-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: rotate(45deg);
+    animation: shimmer 3s infinite;
+}
+
+.header-icon-wrapper svg {
+    width: 30px;
+    height: 30px;
+    color: white;
+    position: relative;
+    z-index: 1;
+}
+
+.page-title {
+    font-size: 30px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--gray-900) 0%, var(--primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    letter-spacing: -0.5px;
+    animation: slideInUp 0.5s ease-out;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--gray-500);
+    margin: 6px 0 0 0;
+    animation: slideInUp 0.6s ease-out;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    animation: slideInUp 0.7s ease-out;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-primary:hover::before {
+    opacity: 1;
+}
+
+.btn-primary:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    transition: transform var(--transition-fast);
+}
+
+.btn-primary:hover .btn-icon {
+    transform: rotate(90deg);
+}
+
+.btn-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.btn-text {
+    position: relative;
+    z-index: 1;
+}
+
+.btn-shine {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.6s ease;
+    z-index: 1;
+}
+
+.btn-primary:hover .btn-shine {
+    left: 100%;
+}
+
+/* ==================== FILTER ROW ==================== */
+.filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    max-width: 500px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--gray-400);
+}
+
+.search-input {
+    width: 100%;
+    padding: 14px 40px 14px 48px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    transition: all var(--transition-normal);
+    background: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1), 0 4px 20px rgba(37, 99, 235, 0.15);
+    transform: translateY(-1px);
+}
+
+.search-input::placeholder {
+    color: var(--gray-400);
+    transition: color var(--transition-fast);
+}
+
+.search-input:focus::placeholder {
+    color: var(--gray-300);
+}
+
+.clear-search {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-400);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.clear-search:hover {
+    color: var(--gray-600);
+}
+
+.clear-search svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-search {
+    padding: 12px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-search:hover {
+    background: var(--primary-dark);
+}
+
+/* ==================== TABS ==================== */
+.tabs-nav {
+    display: flex;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-50));
+    padding: 8px;
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    animation: slideInUp 0.4s ease-out;
+}
+
+.tab-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-600);
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-item svg {
+    width: 18px;
+    height: 18px;
+    transition: transform var(--transition-fast);
+}
+
+.tab-item:hover {
+    background: white;
+    color: var(--gray-800);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.tab-item:hover svg {
+    transform: scale(1.1);
+}
+
+.tab-item.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.15);
+    transform: translateY(-2px);
+}
+
+.tab-item.active::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 3px;
+}
+
+.tab-badge {
+    background: var(--gray-200);
+    color: var(--gray-600);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tab-item.active .tab-badge {
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary);
+}
+
+/* ==================== STATUS FILTER ==================== */
+.status-filter-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--gray-200);
+    animation: slideInUp 0.5s ease-out;
+}
+
+.status-filter-row::-webkit-scrollbar {
+    height: 4px;
+}
+
+.status-filter-row::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 4px;
+}
+
+.status-filter-row::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 4px;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    justify-content: center;
+}
+
+.status-pill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.4s ease;
+}
+
+.status-pill:hover {
+    border-color: var(--primary);
+    background: rgba(37, 99, 235, 0.05);
+    color: var(--primary);
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.status-pill:hover::before {
+    left: 100%;
+}
+
+.status-pill.active {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    transform: translateY(-2px);
+}
+
+.pill-icon {
+    font-size: 14px;
+}
+
+.pill-count {
+    background: rgba(0,0,0,0.08);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-pill.active .pill-count {
+    background: rgba(255,255,255,0.2);
+}
+
+.pill-draft.active { background: linear-gradient(135deg, #64748b, #475569); border-color: #64748b; }
+.pill-pending.active { background: linear-gradient(135deg, #f59e0b, #d97706); border-color: #f59e0b; }
+.pill-processing.active { background: linear-gradient(135deg, #06b6d4, #0891b2); border-color: #06b6d4; }
+.pill-approved.active { background: linear-gradient(135deg, #10b981, #059669); border-color: #10b981; }
+.pill-active.active { background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-color: #8b5cf6; }
+.pill-rejected.active { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; }
+.pill-completed.active { background: linear-gradient(135deg, #059669, #047857); border-color: #059669; }
+
+/* ==================== LOAN GRID ==================== */
+.loan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
+}
+
+.loan-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+    transition: all var(--transition-normal);
+    animation: scaleIn 0.5s ease-out backwards;
+    position: relative;
+}
+
+.loan-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--info), var(--success));
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.loan-card:hover::before {
+    opacity: 1;
+}
+
+.loan-card:nth-child(1) { animation-delay: 0.05s; }
+.loan-card:nth-child(2) { animation-delay: 0.1s; }
+.loan-card:nth-child(3) { animation-delay: 0.15s; }
+.loan-card:nth-child(4) { animation-delay: 0.2s; }
+.loan-card:nth-child(5) { animation-delay: 0.25s; }
+.loan-card:nth-child(6) { animation-delay: 0.3s; }
+.loan-card:nth-child(7) { animation-delay: 0.35s; }
+.loan-card:nth-child(8) { animation-delay: 0.4s; }
+.loan-card:nth-child(9) { animation-delay: 0.45s; }
+.loan-card:nth-child(10) { animation-delay: 0.5s; }
+
+.loan-card:hover {
+    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+    transform: translateY(-8px);
+    border-color: transparent;
+}
+
+.loan-card.my-loan {
+    border-left: 4px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, var(--primary), #8b5cf6) border-box;
+    border-left: 4px solid var(--primary);
+}
+
+.loan-card.my-loan::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary), #8b5cf6);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, var(--gray-50), white);
+    border-bottom: 1px solid var(--gray-100);
+    position: relative;
+}
+
+.loan-code-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.loan-code {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-800);
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    letter-spacing: 0.5px;
+}
+
+.my-loan-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    border-radius: 50%;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+}
+
+.status-draft { background: var(--gray-100); color: var(--gray-600); }
+.status-pending { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; }
+.status-processing { background: linear-gradient(135deg, #cffafe, #a5f3fc); color: #0891b2; }
+.status-approved { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #059669; }
+.status-active { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #7c3aed; }
+.status-rejected { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; }
+.status-completed { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; }
+.status-default { background: var(--gray-100); color: var(--gray-600); }
+
+/* ==================== CUSTOMER INFO ==================== */
+.card-customer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, var(--gray-50), white);
+    position: relative;
+    overflow: hidden;
+}
+
+.card-customer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.customer-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gray-100), white);
+    border: 3px solid white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.loan-card:hover .customer-avatar {
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.customer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.customer-avatar svg {
+    width: 26px;
+    height: 26px;
+    color: var(--gray-400);
+}
+
+.customer-info {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.customer-name {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 4px;
+    transition: color var(--transition-fast);
+}
+
+.loan-card:hover .customer-name {
+    color: var(--primary);
+}
+
+.customer-type {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.customer-code {
+    color: var(--gray-400);
+}
+
+/* ==================== CARD DETAILS ==================== */
+.card-details {
+    padding: 18px 20px;
+    position: relative;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--gray-100);
+    transition: all var(--transition-fast);
+}
+
+.detail-row:hover {
+    background: rgba(37, 99, 235, 0.02);
+    margin: 0 -20px;
+    padding: 10px 20px;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row.highlight {
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.02));
+    margin: 4px -20px;
+    padding: 14px 20px;
+    border-bottom: none;
+    border-radius: var(--radius-sm);
+}
+
+.detail-label {
+    font-size: 13px;
+    color: var(--gray-500);
+    font-weight: 500;
+}
+
+.detail-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.detail-value.amount {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.detail-value.amount small {
+    font-size: 12px;
+    font-weight: 500;
+    -webkit-text-fill-color: var(--gray-400);
+}
+
+.detail-value.loan-type {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.risk-badge {
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: transform var(--transition-fast);
+}
+
+.risk-badge:hover {
+    transform: scale(1.05);
+}
+
+.risk-low { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #059669; }\n.risk-medium { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; }\n.risk-high { background: linear-gradient(135deg, #fed7aa, #fdba74); color: #ea580c; }\n.risk-very-high { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; }\n.risk-none { background: var(--gray-100); color: var(--gray-500); }
+
+/* ==================== CARD META ==================== */
+.card-meta {
+    display: flex;
+    gap: 16px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--gray-50), white);
+    border-top: 1px solid var(--gray-100);
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--gray-500);
+    transition: color var(--transition-fast);
+}
+
+.meta-item:hover {
+    color: var(--gray-700);
+}
+
+.meta-item svg {
+    color: var(--gray-400);
+    transition: color var(--transition-fast);
+}
+
+.meta-item:hover svg {
+    color: var(--primary);
+}
+}
+
+.meta-item.collateral {
+    color: var(--success);
+}
+
+.meta-item.collateral svg {
+    color: var(--success);
+}
+
+/* ==================== CARD ACTIONS ==================== */
+.card-actions {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, white, var(--gray-50));
+    border-top: 1px solid var(--gray-100);
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-action::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.btn-action:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-action svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--transition-fast);
+}
+
+.btn-action:hover svg {
+    transform: scale(1.15);
+}
+
+.btn-view {
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
+    color: var(--gray-700);
+}
+
+.btn-view:hover {
+    background: linear-gradient(135deg, var(--gray-200), var(--gray-300));
+    color: var(--gray-800);
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn-edit {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.15));
+    color: var(--primary);
+}
+
+.btn-edit:hover {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.15));
+    color: var(--danger);
+}
+
+.btn-delete:hover {
+    background: linear-gradient(135deg, var(--danger), #dc2626);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-cancel {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.15));
+    color: var(--warning);
+}
+
+.btn-cancel:hover {
+    background: linear-gradient(135deg, var(--warning), #d97706);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-state {
+    text-align: center;
+    padding: 100px 40px;
+    background: linear-gradient(135deg, white, var(--gray-50));
+    border-radius: var(--radius-xl);
+    border: 2px dashed var(--gray-200);
+    animation: scaleIn 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.empty-state::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.03) 0%, transparent 50%);
+    animation: float 15s ease-in-out infinite;
+}
+
+.empty-icon {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 28px;
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    animation: bounceIn 0.8s ease-out;
+}
+
+.empty-icon::after {
+    content: '';
+    position: absolute;
+    width: 120%;
+    height: 120%;
+    border: 2px dashed var(--gray-200);
+    border-radius: 50%;
+    animation: spin 20s linear infinite;
+}
+
+@@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.empty-icon svg {
+    width: 48px;
+    height: 40px;
+    color: var(--gray-400);
+}
+
+.empty-state h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: var(--gray-500);
+    margin: 0 0 24px 0;
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: white;
+    color: var(--gray-700);
+    border: 2px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    text-decoration: none;
+    background: rgba(37, 99, 235, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+/* ==================== MODALS ==================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+@@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-container {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--info), var(--success));
+}
+
+@@keyframes modalSlideIn {
+    from { transform: translateY(30px) scale(0.9); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.modal-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    animation: bounceIn 0.6s ease-out;
+}
+
+.modal-icon.warning {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+
+.modal-icon.warning svg {
+    width: 36px;
+    height: 36px;
+    color: #d97706;
+}
+
+.modal-icon.success {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+}
+
+.modal-icon.success svg {
+    width: 36px;
+    height: 36px;
+    color: #059669;
+}
+
+.modal-icon.error {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+}
+
+.modal-icon.error svg {
+    width: 36px;
+    height: 36px;
+    color: #dc2626;
+}
+
+.modal-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0 0 12px 0;
+}
+
+.modal-message {
+    font-size: 15px;
+    color: var(--gray-600);
+    margin: 0 0 28px 0;
+    line-height: 1.7;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.btn-modal-cancel {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
+    color: var(--gray-700);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.btn-modal-cancel:hover {
+    background: linear-gradient(135deg, var(--gray-200), var(--gray-300));
+    transform: translateY(-2px);
+}
+
+.btn-modal-confirm {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.btn-modal-confirm:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.btn-modal-confirm.danger {
+    background: linear-gradient(135deg, var(--danger), #dc2626);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-modal-confirm.danger:hover {
+    background: linear-gradient(135deg, #dc2626, var(--danger));
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+    }
+    
+    .search-form {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .tabs-nav {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .status-filter-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .loan-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .card-actions {
+        flex-wrap: wrap;
+    }
+}
+</style>
+
+<script>
+let deleteId = null;
+let cancelId = null;
+
+function showDeleteModal(id, code) {
+    deleteId = id;
+    document.getElementById('deleteLoanCode').textContent = code;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    deleteId = null;
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+function confirmDelete() {
+    if (!deleteId) return;
+    
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    
+    fetch('@Url.Action("Delete", "Loan")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+        },
+        body: JSON.stringify({ id: deleteId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        closeDeleteModal();
+        if (data.success) {
+            showResult('success', 'Thành công!', data.message || 'Đã xóa hồ sơ vay thành công.');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showResult('error', 'Lỗi!', data.message || 'Không thể xóa hồ sơ vay.');
+        }
+    })
+    .catch(error => {
+        closeDeleteModal();
+        showResult('error', 'Lỗi!', 'Đã xảy ra lỗi khi xóa hồ sơ vay.');
+    });
+}
+
+function showCancelModal(id, code) {
+    cancelId = id;
+    document.getElementById('cancelLoanCode').textContent = code;
+    document.getElementById('cancelModal').style.display = 'flex';
+}
+
+function closeCancelModal() {
+    cancelId = null;
+    document.getElementById('cancelModal').style.display = 'none';
+}
+
+function confirmCancel() {
+    if (!cancelId) return;
+    
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    
+    fetch('@Url.Action("CancelSubmission", "Loan")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+        },
+        body: JSON.stringify({ id: cancelId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        closeCancelModal();
+        if (data.success) {
+            showResult('success', 'Thành công!', data.message || 'Đã hủy gửi hồ sơ vay thành công.');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showResult('error', 'Lỗi!', data.message || 'Không thể hủy gửi hồ sơ vay.');
+        }
+    })
+    .catch(error => {
+        closeCancelModal();
+        showResult('error', 'Lỗi!', 'Đã xảy ra lỗi khi hủy gửi hồ sơ vay.');
+    });
+}
+
+function showResult(type, title, message) {
+    const modal = document.getElementById('resultModal');
+    const icon = document.getElementById('resultIcon');
+    const titleEl = document.getElementById('resultTitle');
+    const messageEl = document.getElementById('resultMessage');
+    
+    icon.className = 'modal-icon ' + type;
+    if (type === 'success') {
+        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+    } else {
+        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+    }
+    
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    modal.style.display = 'flex';
+}
+
+function closeResultModal() {
+    document.getElementById('resultModal').style.display = 'none';
+}
+
+// Close modals on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDeleteModal();
+        closeCancelModal();
+        closeResultModal();
+    }
+});
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+});
+</script>

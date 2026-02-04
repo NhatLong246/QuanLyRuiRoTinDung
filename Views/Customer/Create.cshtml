@@ -1,0 +1,250 @@
+@{
+    ViewData["Title"] = "Tạo khách hàng mới";
+    Layout = "_DashboardLayout";
+}
+
+<div class="customer-type-selection">
+    <div class="page-header">
+        <div class="header-top">
+            <a href="@Url.Action("List", "Customer")" class="back-button" title="Quay lại danh sách">
+                <img src="~/asset/image/icons8-back-arrow-80.png" alt="Quay lại" />
+            </a>
+            <div class="header-content">
+                <h1 class="page-title">Tạo khách hàng mới</h1>
+                <p class="page-subtitle">Chọn loại khách hàng bạn muốn tạo</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="customer-type-cards">
+        <a href="@Url.Action("CreateCaNhan", "Customer")" class="customer-type-card">
+            <div class="card-icon ca-nhan">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h3 class="card-title">Khách hàng cá nhân</h3>
+            <p class="card-description">Tạo hồ sơ cho khách hàng cá nhân với thông tin CMND/CCCD, ngày sinh, địa chỉ, nghề nghiệp...</p>
+            <div class="card-features">
+                <span><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Thông tin CCCD/CMND</span>
+                <span><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Thông tin thu nhập</span>
+                <span><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Upload ảnh CCCD</span>
+            </div>
+            <span class="card-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </span>
+        </a>
+
+        <a href="@Url.Action("CreateDoanhNghiep", "Customer")" class="customer-type-card">
+            <div class="card-icon doanh-nghiep">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h3 class="card-title">Khách hàng doanh nghiệp</h3>
+            <p class="card-description">Tạo hồ sơ cho doanh nghiệp với thông tin mã số thuế, giấy phép kinh doanh, người đại diện...</p>
+            <div class="card-features">
+                <span><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Thông tin mã số thuế</span>
+                <span><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Người đại diện pháp luật</span>
+                <span><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Tài chính doanh nghiệp</span>
+            </div>
+            <span class="card-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </span>
+        </a>
+    </div>
+</div>
+
+<style>
+.customer-type-selection {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 3rem;
+}
+
+.header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+.back-button:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    transform: translateX(-2px);
+}
+
+.back-button img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.header-content {
+    flex: 1;
+    text-align: center;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+    font-size: 1rem;
+    color: #666;
+}
+
+.customer-type-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.customer-type-card {
+    position: relative;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 2rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.customer-type-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15);
+    transform: translateY(-4px);
+}
+
+.card-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    color: white;
+}
+
+.card-icon.ca-nhan {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.card-icon.doanh-nghiep {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.card-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+.card-title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0.75rem;
+}
+
+.card-description {
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.card-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.card-features span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #4b5563;
+}
+
+.card-features svg {
+    width: 16px;
+    height: 16px;
+    color: #10b981;
+}
+
+.card-arrow {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    border-radius: 50%;
+    color: #9ca3af;
+    transition: all 0.3s;
+}
+
+.customer-type-card:hover .card-arrow {
+    background: #3b82f6;
+    color: white;
+    transform: translateX(4px);
+}
+
+.card-arrow svg {
+    width: 20px;
+    height: 20px;
+}
+
+@@media (max-width: 768px) {
+    .customer-type-selection {
+        padding: 1rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .customer-type-cards {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

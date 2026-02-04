@@ -222,7 +222,7 @@
     <script>
         // Custom validation messages tiếng Việt - Phải đặt TRƯỚC khi unobtrusive validation load
         $(document).ready(function() {
-            var checkCmndUrl = '@Url.Action("CheckCmndExists", "Customer")';
+            var checkCmndUrl = '@Url.Action("CheckCmndExistsForCaNhan", "Customer")';
             var checkPhoneUrl = '@Url.Action("CheckPhoneExists", "Customer")';
             var checkEmailUrl = '@Url.Action("CheckEmailExists", "Customer")';
             // Override jQuery validation messages NGAY LẬP TỨC
@@ -299,6 +299,238 @@
                     e.target.value = value;
                 });
             }
+
+            // =============================================
+            // CIC VALIDATION REALTIME - KHÁCH HÀNG CÁ NHÂN
+            // =============================================
+            const checkCicUrl = '@Url.Action("CheckCicForCaNhan", "Customer")';
+            const hoTenInput = document.querySelector('[name="HoTen"]');
+            const cccdInputForCic = document.querySelector('[name="SoCmnd"]');
+            let cicValidationTimeout = null;
+
+            // Hàm hiển thị CIC warning label
+            function showCicWarning(fieldName, message) {
+                let targetInput = null;
+                if (fieldName === 'HoTen') {
+                    targetInput = hoTenInput;
+                } else if (fieldName === 'SoCmnd') {
+                    targetInput = cccdInputForCic;
+                }
+
+                if (!targetInput) return;
+
+                // Tìm hoặc tạo warning label
+                let warningLabel = targetInput.parentElement.querySelector('.cic-warning-label');
+                if (!warningLabel) {
+                    warningLabel = document.createElement('div');
+                    warningLabel.className = 'cic-warning-label';
+                    warningLabel.style.cssText = 'background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px;';
+                    targetInput.parentElement.appendChild(warningLabel);
+                }
+
+                warningLabel.innerHTML = `
+                    <svg style="width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9V13M12 17H12.01M4.93 19H19.07C20.77 19 21.77 17.17 20.92 15.75L13.85 3.63C13 2.21 11 2.21 10.15 3.63L3.08 15.75C2.23 17.17 3.23 19 4.93 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <div>
+                        <strong style="display: block; margin-bottom: 2px;">⚠ Cảnh báo từ CIC</strong>
+                        <span>${message}</span>
+                    </div>
+                `;
+                warningLabel.style.display = 'flex';
+            }
+
+            // Hàm ẩn CIC warning label
+            function hideCicWarning(fieldName) {
+                let targetInput = null;
+                if (fieldName === 'HoTen') {
+                    targetInput = hoTenInput;
+                } else if (fieldName === 'SoCmnd') {
+                    targetInput = cccdInputForCic;
+                }
+
+                if (!targetInput) return;
+
+                const warningLabel = targetInput.parentElement.querySelector('.cic-warning-label');
+                if (warningLabel) {
+                    warningLabel.style.display = 'none';
+                }
+            }
+
+            // Hàm kiểm tra CIC
+            async function checkCicValidation() {
+                const soCccd = cccdInputForCic?.value?.trim() || '';
+                const hoTen = hoTenInput?.value?.trim() || '';
+
+                // Chỉ kiểm tra khi CCCD đủ 12 số
+                if (soCccd.length !== 12) {
+                    hideCicWarning('HoTen');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${checkCicUrl}?soCccd=${encodeURIComponent(soCccd)}&hoTen=${encodeURIComponent(hoTen)}`);
+                    const data = await response.json();
+
+                    if (data.hasCic && !data.isValid) {
+                        showCicWarning(data.fieldName, data.errorMessage);
+                    } else {
+                        hideCicWarning('HoTen');
+                    }
+                } catch (error) {
+                    console.error('Error checking CIC:', error);
+                }
+            }
+
+            // Debounce function
+            function debounce(func, delay) {
+                return function(...args) {
+                    if (cicValidationTimeout) clearTimeout(cicValidationTimeout);
+                    cicValidationTimeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            // Gắn sự kiện cho CCCD và Họ tên
+            if (cccdInputForCic && hoTenInput) {
+                const debouncedCheck = debounce(checkCicValidation, 500);
+                
+                cccdInputForCic.addEventListener('input', debouncedCheck);
+                cccdInputForCic.addEventListener('blur', checkCicValidation);
+                
+                hoTenInput.addEventListener('input', debouncedCheck);
+                hoTenInput.addEventListener('blur', checkCicValidation);
+            }
+            // =============================================
+            // END CIC VALIDATION
+            // =============================================
+
+            // =============================================
+            // CROSS-VALIDATION CCCD - KIỂM TRA VỚI DOANH NGHIỆP
+            // =============================================
+            const crossCheckCccdUrl = '@Url.Action("CrossCheckCccdForCaNhan", "Customer")';
+            const ngaySinhInputForCross = document.querySelector('[name="NgaySinh"]');
+            const gioiTinhInputForCross = document.querySelector('[name="GioiTinh"]');
+            let crossValidationTimeout = null;
+            let hasCrossValidationErrors = false; // Theo dõi trạng thái lỗi cross-validation
+
+            // Hàm hiển thị Cross warning label
+            function showCrossWarning(fieldName, message) {
+                let targetInput = null;
+                if (fieldName === 'HoTen') {
+                    targetInput = hoTenInput;
+                } else if (fieldName === 'NgaySinh') {
+                    targetInput = ngaySinhInputForCross;
+                } else if (fieldName === 'GioiTinh') {
+                    targetInput = gioiTinhInputForCross;
+                }
+
+                if (!targetInput) return;
+
+                // Tìm hoặc tạo warning label
+                let warningLabel = targetInput.parentElement.querySelector('.cross-warning-label');
+                if (!warningLabel) {
+                    warningLabel = document.createElement('div');
+                    warningLabel.className = 'cross-warning-label';
+                    warningLabel.style.cssText = 'background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px;';
+                    targetInput.parentElement.appendChild(warningLabel);
+                }
+
+                warningLabel.innerHTML = `
+                    <svg style="width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9V13M12 17H12.01M4.93 19H19.07C20.77 19 21.77 17.17 20.92 15.75L13.85 3.63C13 2.21 11 2.21 10.15 3.63L3.08 15.75C2.23 17.17 3.23 19 4.93 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <div>
+                        <strong style="display: block; margin-bottom: 2px;">⚠ Không khớp với Doanh nghiệp</strong>
+                        <span>${message}</span>
+                    </div>
+                `;
+                warningLabel.style.display = 'flex';
+            }
+
+            // Hàm ẩn Cross warning label
+            function hideCrossWarning(fieldName) {
+                let targetInput = null;
+                if (fieldName === 'HoTen') {
+                    targetInput = hoTenInput;
+                } else if (fieldName === 'NgaySinh') {
+                    targetInput = ngaySinhInputForCross;
+                } else if (fieldName === 'GioiTinh') {
+                    targetInput = gioiTinhInputForCross;
+                }
+
+                if (!targetInput) return;
+
+                const warningLabel = targetInput.parentElement.querySelector('.cross-warning-label');
+                if (warningLabel) {
+                    warningLabel.style.display = 'none';
+                }
+            }
+
+            // Hàm ẩn tất cả cross warnings
+            function hideAllCrossWarnings() {
+                hideCrossWarning('HoTen');
+                hideCrossWarning('NgaySinh');
+                hideCrossWarning('GioiTinh');
+            }
+
+            // Hàm kiểm tra Cross-validation
+            async function checkCrossValidation() {
+                const soCccd = cccdInputForCic?.value?.trim() || '';
+                const hoTen = hoTenInput?.value?.trim() || '';
+                const ngaySinh = ngaySinhInputForCross?.value || '';
+                const gioiTinh = gioiTinhInputForCross?.value || '';
+
+                // Chỉ kiểm tra khi CCCD đủ 12 số
+                if (soCccd.length !== 12) {
+                    hideAllCrossWarnings();
+                    hasCrossValidationErrors = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${crossCheckCccdUrl}?soCccd=${encodeURIComponent(soCccd)}&hoTen=${encodeURIComponent(hoTen)}&ngaySinh=${encodeURIComponent(ngaySinh)}&gioiTinh=${encodeURIComponent(gioiTinh)}`);
+                    const data = await response.json();
+
+                    if (data.hasExistingData && !data.isValid && data.errors) {
+                        hideAllCrossWarnings();
+                        hasCrossValidationErrors = true; // Đánh dấu có lỗi
+                        data.errors.forEach(err => {
+                            showCrossWarning(err.fieldName, err.errorMessage);
+                        });
+                    } else {
+                        hideAllCrossWarnings();
+                        hasCrossValidationErrors = false; // Không có lỗi
+                    }
+                } catch (error) {
+                    console.error('Error cross-checking CCCD:', error);
+                    hasCrossValidationErrors = false;
+                }
+            }
+
+            // Debounce function for cross validation
+            function debounceCross(func, delay) {
+                return function(...args) {
+                    if (crossValidationTimeout) clearTimeout(crossValidationTimeout);
+                    crossValidationTimeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            // Gắn sự kiện cho các field liên quan
+            if (cccdInputForCic && hoTenInput && ngaySinhInputForCross && gioiTinhInputForCross) {
+                const debouncedCrossCheck = debounceCross(checkCrossValidation, 500);
+                
+                cccdInputForCic.addEventListener('input', debouncedCrossCheck);
+                cccdInputForCic.addEventListener('blur', checkCrossValidation);
+                
+                hoTenInput.addEventListener('input', debouncedCrossCheck);
+                hoTenInput.addEventListener('blur', checkCrossValidation);
+                
+                ngaySinhInputForCross.addEventListener('change', checkCrossValidation);
+                gioiTinhInputForCross.addEventListener('change', checkCrossValidation);
+            }
+            // =============================================
+            // END CROSS-VALIDATION
+            // =============================================
 
             // Validation client-side cho số điện thoại - chỉ giữ số
             document.querySelector('[name="SoDienThoai"]')?.addEventListener('input', function (e) {
@@ -610,11 +842,22 @@
             }
 
             // CCCD trùng
-            setupAjaxUniqueValidation('[name="SoCmnd"]', checkCmndUrl, 'soCmnd', 'Số CMND/CCCD này đã được sử dụng bởi khách hàng khác.');
+            setupAjaxUniqueValidation('[name="SoCmnd"]', checkCmndUrl, 'soCmnd', 'Số CMND/CCCD này đã được sử dụng bởi khách hàng cá nhân khác.');
             // Số điện thoại trùng
             setupAjaxUniqueValidation('[name="SoDienThoai"]', checkPhoneUrl, 'phone', 'Số điện thoại này đã được sử dụng bởi khách hàng khác.');
             // Email trùng
             setupAjaxUniqueValidation('[name="Email"]', checkEmailUrl, 'email', 'Email này đã được sử dụng bởi khách hàng khác.');
+
+            // =============================================
+            // CHẶN SUBMIT NẾU CÓ LỖI CROSS-VALIDATION
+            // =============================================
+            document.querySelector('form.customer-form')?.addEventListener('submit', function(e) {
+                if (hasCrossValidationErrors) {
+                    e.preventDefault();
+                    alert('Vui lòng sửa các lỗi không khớp thông tin với doanh nghiệp trước khi lưu.\n\nNếu CCCD này đã được đăng ký làm người đại diện pháp luật cho doanh nghiệp, thông tin họ tên, ngày sinh, giới tính phải khớp.');
+                    return false;
+                }
+            });
         });
     </script>
 }
