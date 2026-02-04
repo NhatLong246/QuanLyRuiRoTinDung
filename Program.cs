@@ -1,8 +1,18 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using QuanLyRuiRoTinDung.Models.EF;
 using QuanLyRuiRoTinDung.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Cấu hình Kestrel để sử dụng HTTP/1.1 (tránh lỗi HTTP/2 protocol error)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ConfigureEndpointDefaults(listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+    });
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

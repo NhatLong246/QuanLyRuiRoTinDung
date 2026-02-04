@@ -332,7 +332,8 @@
 
                             <div class="form-group">
                                 <label>Nhận xét chi tiết</label>
-                                <textarea id="assessNhanXet" class="form-control" rows="4" placeholder="Nhập nhận xét chi tiết về khoản vay..."></textarea>
+                                <textarea id="assessNhanXet" class="form-control" rows="8" style="min-height: 200px; font-family: monospace; font-size: 13px;" placeholder="Nhập nhận xét chi tiết về khoản vay..."></textarea>
+                                <small class="form-text text-muted">Tối đa 1000 ký tự</small>
                             </div>
 
                             <div class="modal-footer">
@@ -758,6 +759,18 @@
 
         // Load dữ liệu khi trang được tải
         $(document).ready(function() {
+            // Hiển thị thông báo từ TempData (nếu có - khi fallback form submit)
+            @if(TempData["SuccessMessage"] != null) {
+                <text>
+                showNotification('@TempData["SuccessMessage"]', 'success');
+                </text>
+            }
+            @if(TempData["ErrorMessage"] != null) {
+                <text>
+                showNotification('@TempData["ErrorMessage"]', 'error');
+                </text>
+            }
+            
             loadKhoanVayData();
 
             // Xử lý sự kiện tìm kiếm
@@ -901,7 +914,7 @@
 
         function viewDetail(maKhoanVay) {
             // TODO: Implement view detail
-            alert('Xem chi tiết khoản vay: ' + maKhoanVay);
+            showNotification('Xem chi tiết khoản vay: ' + maKhoanVay, 'info');
         }
 
         function editAssessment(maKhoanVay) {
@@ -929,14 +942,14 @@
                         $('#modalContent').fadeIn(300);
                     } else {
                         console.error('Lỗi từ server:', response.message);
-                        alert('Lỗi: ' + response.message);
+                        showNotification('Lỗi: ' + response.message, 'error');
                         closeAssessmentModal();
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Lỗi AJAX:', {xhr: xhr, status: status, error: error});
                     console.error('Response text:', xhr.responseText);
-                    alert('Lỗi khi tải dữ liệu: ' + error + '\nChi tiết: ' + xhr.responseText);
+                    showNotification('Lỗi khi tải dữ liệu: ' + error, 'error');
                     closeAssessmentModal();
                 }
             });
@@ -1274,7 +1287,7 @@
                 const taiSanData = await taiSanResponse.json();
                 
                 if (!taiSanData.success) {
-                    alert('Không thể lấy thông tin tài sản!');
+                    showNotification('Không thể lấy thông tin tài sản!', 'error');
                     return;
                 }
                 
@@ -1345,7 +1358,8 @@
 
                                     <div class="form-group">
                                         <label>Giá trị khai báo (giá trị định giá ban đầu)</label>
-                                        <input type="number" id="thamDinhGiaTriKhaiBao" class="form-control" step="1000000" value="${giaTriKhaiBao}" readonly style="background-color: #f0f0f0;" />
+                                        <input type="text" id="thamDinhGiaTriKhaiBao" class="form-control" value="${giaTriKhaiBao.toLocaleString('vi-VN')}" readonly style="background-color: #f0f0f0;" />
+                                        <input type="hidden" id="thamDinhGiaTriKhaiBaoValue" value="${giaTriKhaiBao}" />
                                         <small class="form-text text-muted">Đây là giá trị định giá mà nhân viên đã nhập ban đầu</small>
                                     </div>
 
@@ -1429,7 +1443,7 @@ $('body').append(modalHtml);
                 }
             } catch (error) {
                 console.error('Lỗi khi thẩm định tài sản:', error);
-                alert('Có lỗi xảy ra khi mở form thẩm định: ' + error.message);
+                showNotification('Có lỗi xảy ra khi mở form thẩm định: ' + error.message, 'error');
             }
         }
 
@@ -1494,7 +1508,7 @@ $('body').append(modalHtml);
             const loaiTaiSan = $('#thamDinhLoaiTaiSan').val().trim();
             const isDat = $('#thamDinhIsDat').val() === 'true';
             if (!loaiTaiSan) {
-                alert('Không xác định được loại tài sản!');
+                showNotification('Không xác định được loại tài sản!', 'warning');
                 return;
             }
 
@@ -1558,13 +1572,13 @@ $('body').append(modalHtml);
                     
                 } else {
                     const errorMsg = result.message || 'Không tìm thấy giá trị tham chiếu phù hợp!';
-                    alert(errorMsg);
+                    showNotification(errorMsg, 'warning');
                     console.error('Lỗi API:', errorMsg);
                     $('#ketQuaThamChieu').hide();
                 }
             } catch (error) {
                 console.error('Lỗi khi tra cứu giá tham chiếu:', error);
-                alert('Có lỗi xảy ra khi tra cứu giá tham chiếu: ' + error.message);
+                showNotification('Có lỗi xảy ra khi tra cứu giá tham chiếu: ' + error.message, 'error');
             }
         }
 
@@ -1572,17 +1586,17 @@ $('body').append(modalHtml);
             const maTaiSan = $('#thamDinhMaTaiSan').val();
             const maLienKet = $('#thamDinhMaLienKet').val();
             const thamChieu = $('#formThamDinh').data('thamChieu');
-            const giaTriKhaiBao = parseFloat($('#thamDinhGiaTriKhaiBao').val()) || 0;
+            const giaTriKhaiBao = parseFloat($('#thamDinhGiaTriKhaiBaoValue').val()) || 0;
             const isDat = $('#thamDinhIsDat').val() === 'true';
             const isXe = $('#thamDinhIsXe').val() === 'true';
             
             if (!thamChieu) {
-                alert('Vui lòng tra cứu giá tham chiếu trước!');
+                showNotification('Vui lòng tra cứu giá tham chiếu trước!', 'warning');
                 return;
             }
 
             if (!maLienKet) {
-                alert('Không tìm thấy mã liên kết tài sản!');
+                showNotification('Không tìm thấy mã liên kết tài sản!', 'error');
                 return;
             }
 
@@ -1604,7 +1618,7 @@ $('body').append(modalHtml);
                 const tinhTrang = $('#thamDinhTinhTrang').val();
                 
                 if (!hangXe || !dongXe || !namSanXuat || !tinhTrang) {
-                    alert('Vui lòng điền đầy đủ thông tin xe: Hãng xe, Dòng xe, Năm sản xuất, Tình trạng!');
+                    showNotification('Vui lòng điền đầy đủ thông tin xe: Hãng xe, Dòng xe, Năm sản xuất, Tình trạng!', 'warning');
                     return;
                 }
                 
@@ -1636,12 +1650,12 @@ $('body').append(modalHtml);
             const diaChi = isDat ? $('#thamDinhDiaChi').val() : null;
             
             if (!soGiayTo || !chuSoHuu) {
-                alert('Vui lòng điền đầy đủ thông tin bắt buộc: Số giấy tờ, Chủ sở hữu!');
+                showNotification('Vui lòng điền đầy đủ thông tin bắt buộc: Số giấy tờ, Chủ sở hữu!', 'warning');
                 return;
             }
             
             if (isDat && !diaChi) {
-                alert('Vui lòng nhập địa chỉ cho loại tài sản đất!');
+                showNotification('Vui lòng nhập địa chỉ cho loại tài sản đất!', 'warning');
                 return;
             }
 
@@ -1671,7 +1685,7 @@ $('body').append(modalHtml);
                 const thamDinhResult = await thamDinhResponse.json();
                 
                 if (!thamDinhResult.success) {
-                    alert('Lỗi khi lưu thẩm định: ' + (thamDinhResult.message || 'Không thể lưu'));
+                    showNotification('Lỗi khi lưu thẩm định: ' + (thamDinhResult.message || 'Không thể lưu'), 'error');
                     return;
                 }
 
@@ -1718,11 +1732,11 @@ $('body').append(modalHtml);
                         closeThamDinhModal();
                     }, 2000);
                 } else {
-                    alert('Lỗi khi cập nhật giá trị: ' + (updateResult.message || 'Không thể cập nhật'));
+                    showNotification('Lỗi khi cập nhật giá trị: ' + (updateResult.message || 'Không thể cập nhật'), 'error');
                 }
             } catch (error) {
                 console.error('Lỗi khi lưu thẩm định:', error);
-                alert('Có lỗi xảy ra khi lưu thẩm định: ' + error.message);
+                showNotification('Có lỗi xảy ra khi lưu thẩm định: ' + error.message, 'error');
             }
         }
 
@@ -1933,45 +1947,35 @@ $('body').append(modalHtml);
                     }
                 }
 
-                // Tạo nhận xét chi tiết (rút gọn để tránh vượt quá 1000 ký tự)
-                let nhanXet = `KẾT QUẢ THẨM ĐỊNH RỦI RO\n`;
-                nhanXet += `========================\n\n`;
-                
-                // Phần CIC (rút gọn)
-                nhanXet += `THÔNG TIN CIC:\n`;
-                if (cicInfo) {
-                    nhanXet += `- Điểm: ${cicInfo.diemTinDungCic || 'N/A'}/1000 | Xếp hạng: ${cicInfo.xepHangTinDungCic || 'N/A'}\n`;
-                    nhanXet += `- Khuyến nghị: ${cicInfo.khuyenNghiChoVay === 'ChoVay' ? 'Cho vay' : 
-                                                   cicInfo.khuyenNghiChoVay === 'KhongChoVay' ? 'KHÔNG CHO VAY' : 
-                                                   'Cần thận trọng'}\n`;
-                    if (cicInfo.soKhoanVayNoXauCic > 0) {
-                        nhanXet += `- CẢNH BÁO: Có ${cicInfo.soKhoanVayNoXauCic} khoản nợ xấu!\n`;
-                    }
-                } else {
-                    nhanXet += `- Không có thông tin CIC\n`;
-                }
-                
-                nhanXet += `\nCHỈ SỐ TÀI CHÍNH:\n`;
-                nhanXet += `- LTV: ${ltv.toFixed(1)}% ${ltv <= 70 ? '(OK)' : ltv <= 80 ? '(Chấp nhận)' : '(VƯỢT NGƯỠNG)'}\n`;
-                nhanXet += `- Giá trị TS: ${formatCurrency(giaTriTaiSanThamDinh)}\n`;
-                nhanXet += `- Số tiền vay: ${formatCurrency(soTienVay)}\n`;
-                
-                if (thuNhap > 0) {
-                    nhanXet += `- Thu nhập/tháng: ${formatCurrency(thuNhap)}\n`;
-                    nhanXet += `- DTI: ${dti.toFixed(1)}% ${dti <= 40 ? '(Tốt)' : dti <= 50 ? '(OK)' : '(Cao)'}\n`;
-                }
-                
-                nhanXet += `\nĐIỂM RỦI RO:\n`;
+                // Tạo nhận xét chi tiết (rút gọn để vừa 1000 ký tự)
+                let nhanXet = 'DIEM RUI RO:\n';
                 nhanXet += `CIC:${diemCIC}/40 | LTV:${diemLTV}/30 | TS:${diemGiaTriTaiSan}/20 | TN:${diemThuNhap}/10\n`;
-                nhanXet += `TỔNG: ${tongDiem}/100\n`;
+                nhanXet += `TONG: ${tongDiem}/100\n\n`;
                 
-                nhanXet += `\nKẾT LUẬN: ${mucDoRuiRo} - ${xepHang} - ${kienNghi.toUpperCase()}`;
+                // Thông tin CIC ngắn gọn
+                if (cicInfo) {
+                    nhanXet += `CIC: ${cicInfo.diemTinDungCic || 'N/A'} - ${cicInfo.xepHangTinDungCic || 'N/A'}`;
+                    if (cicInfo.soKhoanVayNoXauCic > 0) {
+                        nhanXet += ` - CO NO XAU`;
+                    }
+                    nhanXet += '\n';
+                }
+                
+                // Chỉ số tài chính ngắn gọn
+                nhanXet += `LTV: ${ltv.toFixed(0)}%`;
+                if (thuNhap > 0) {
+                    nhanXet += ` | DTI: ${dti.toFixed(0)}%`;
+                }
+                nhanXet += '\n';
+                
+                // Kết luận
+                nhanXet += `KET LUAN: ${mucDoRuiRo} - ${xepHang} - ${kienNghi}`;
                 
                 if (cicInfo && cicInfo.soKhoanVayNoXauCic > 0) {
-                    nhanXet += `\n⚠️ Khách hàng có NỢ XẤU!`;
+                    nhanXet += ' - CANH BAO NO XAU';
                 }
                 if (ltv > 100) {
-                    nhanXet += `\n🚫 Số tiền vay VƯỢT giá trị tài sản!`;
+                    nhanXet += ' - VUOT GIA TRI TS';
                 }
 
                 // Điền vào form
@@ -2016,7 +2020,7 @@ $('body').append(modalHtml);
             
             const parsedValue = parseFloat(newValue);
             if (isNaN(parsedValue) || parsedValue < 0) {
-                alert('Giá trị không hợp lệ!');
+                showNotification('Giá trị không hợp lệ!', 'warning');
                 return;
             }
             
@@ -2048,11 +2052,11 @@ $('body').append(modalHtml);
                     // Hiển thị thông báo thành công
                     showNotification('Đã cập nhật thành công!', 'success');
                 } else {
-                    alert('Lỗi: ' + (result.message || 'Không thể cập nhật'));
+                    showNotification('Lỗi: ' + (result.message || 'Không thể cập nhật'), 'error');
                 }
             } catch (error) {
                 console.error('Lỗi khi cập nhật:', error);
-                alert('Có lỗi xảy ra khi cập nhật!');
+                showNotification('Có lỗi xảy ra khi cập nhật!', 'error');
             }
         }
         
@@ -2165,9 +2169,9 @@ $('body').append(modalHtml);
             const tongDiem = tongDiemStr ? parseFloat(tongDiemStr.replace(',', '.')) : null;
             
             // Lấy nhận xét và cắt ngắn nếu quá dài (giới hạn 1000 ký tự trong database)
-            let nhanXet = $('#assessNhanXet').val() || null;
-            if (nhanXet && nhanXet.length > 990) {
-                nhanXet = nhanXet.substring(0, 990) + '...';
+            let nhanXet = $('#assessNhanXet').val() || '';
+            if (nhanXet && nhanXet.length > 900) {
+                nhanXet = nhanXet.substring(0, 900);
             }
             
             const data = {
@@ -2176,48 +2180,69 @@ $('body').append(modalHtml);
                 mucDoRuiRo: $('#assessMucDoRuiRo').val() || null,
                 xepHangRuiRo: $('#assessXepHang').val() || null,
                 kienNghi: $('#assessKienNghi').val() || null,
-                nhanXet: nhanXet,
+                nhanXet: nhanXet || null,
                 trangThai: trangThai
             };
 
             console.log('Dữ liệu gửi đi:', data);
 
-            // Sử dụng fetch thay vì jQuery AJAX để tránh lỗi HTTP2
-            fetch('@Url.Action("SaveDanhGiaRuiRo", "QuanLyRuiRo")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+            // Sử dụng jQuery AJAX với cấu hình tối ưu để tránh lỗi HTTP/2
+            $.ajax({
+                url: '@Url.Action("SaveDanhGiaRuiRoForm", "QuanLyRuiRo")',
+                type: 'POST',
+                data: data,
+                dataType: 'json',
+                timeout: 30000,
+                success: function(response) {
+                    console.log('Response từ server:', response);
+                    if (response.success) {
+                        showNotification(response.message || 'Lưu đánh giá thành công!', 'success');
+                        closeAssessmentModal();
+                        loadKhoanVayData();
+                    } else {
+                        showNotification('Lỗi: ' + (response.message || 'Không thể lưu đánh giá'), 'error');
+                    }
                 },
-                body: JSON.stringify(data)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.status);
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', status, error);
+                    // Nếu có lỗi HTTP/2, thử fallback với form submit thực sự
+                    if (status === 'error' || status === 'timeout') {
+                        console.log('Thử gửi bằng form submit thực...');
+                        submitViaRealForm(data);
+                    } else {
+                        showNotification('Lỗi kết nối: ' + (error || 'Không thể kết nối đến server'), 'error');
+                    }
                 }
-                return response.json();
-            })
-            .then(response => {
-                console.log('Response từ server:', response);
-                if (response.success) {
-                    showNotification(response.message || 'Lưu đánh giá thành công!', 'success');
-                    closeAssessmentModal();
-                    loadKhoanVayData(); // Reload danh sách
-                } else {
-                    alert('Lỗi: ' + (response.message || 'Không thể lưu đánh giá'));
-                }
-            })
-            .catch(error => {
-                console.error('Lỗi:', error);
-                alert('Lỗi khi lưu đánh giá: ' + error.message);
             });
+        }
+        
+        // Fallback: gửi dữ liệu qua form submit thực sự (không dùng fetch/ajax)
+        function submitViaRealForm(data) {
+            // Tạo form ẩn và submit thực sự
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '@Url.Action("SaveDanhGiaRuiRoFormRedirect", "QuanLyRuiRo")';
+            form.style.display = 'none';
+            
+            for (const key in data) {
+                if (data[key] !== null && data[key] !== undefined) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = data[key];
+                    form.appendChild(input);
+                }
+            }
+            
+            document.body.appendChild(form);
+            form.submit(); // Submit thực sự, sẽ redirect
         }
 
         // Hàm xem thông tin CIC
         async function xemThongTinCIC() {
             const maKhoanVay = $('#assessMaKhoanVay').val();
             if (!maKhoanVay) {
-                alert('Không xác định được khoản vay!');
+                showNotification('Không xác định được khoản vay!', 'warning');
                 return;
             }
 

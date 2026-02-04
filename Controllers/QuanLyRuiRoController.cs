@@ -438,6 +438,101 @@ namespace QuanLyRuiRoTinDung.Controllers
             }
         }
 
+        // Endpoint cho form submit (fallback khi AJAX lỗi HTTP/2)
+        [HttpPost]
+        public async Task<IActionResult> SaveDanhGiaRuiRoForm(
+            int maKhoanVay, 
+            decimal? tongDiem, 
+            string? mucDoRuiRo, 
+            string? xepHangRuiRo, 
+            string? kienNghi, 
+            string? nhanXet, 
+            string? trangThai)
+        {
+            try
+            {
+                var maNguoiDung = HttpContext.Session.GetString("MaNguoiDung");
+                if (string.IsNullOrEmpty(maNguoiDung))
+                {
+                    return Json(new { success = false, message = "Phiên làm việc hết hạn" });
+                }
+
+                // Cắt ngắn các trường nếu vượt quá giới hạn database
+                if (!string.IsNullOrEmpty(nhanXet) && nhanXet.Length > 1000)
+                {
+                    nhanXet = nhanXet.Substring(0, 997) + "...";
+                }
+
+                var danhGia = new Models.Entities.DanhGiaRuiRo
+                {
+                    MaKhoanVay = maKhoanVay,
+                    TongDiem = tongDiem,
+                    MucDoRuiRo = mucDoRuiRo,
+                    XepHangRuiRo = xepHangRuiRo,
+                    KienNghi = kienNghi,
+                    NhanXet = nhanXet,
+                    TrangThai = trangThai
+                };
+
+                var result = await _ruiRoService.CreateOrUpdateDanhGiaRuiRoAsync(danhGia, int.Parse(maNguoiDung));
+                
+                return Json(new { success = true, data = result, message = "Lưu đánh giá thành công" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // Endpoint fallback với redirect (khi AJAX/fetch đều lỗi HTTP/2)
+        [HttpPost]
+        public async Task<IActionResult> SaveDanhGiaRuiRoFormRedirect(
+            int maKhoanVay, 
+            decimal? tongDiem, 
+            string? mucDoRuiRo, 
+            string? xepHangRuiRo, 
+            string? kienNghi, 
+            string? nhanXet, 
+            string? trangThai)
+        {
+            try
+            {
+                var maNguoiDung = HttpContext.Session.GetString("MaNguoiDung");
+                if (string.IsNullOrEmpty(maNguoiDung))
+                {
+                    TempData["ErrorMessage"] = "Phiên làm việc hết hạn";
+                    return RedirectToAction("ThamDinhRuiRoTinDung");
+                }
+
+                // Cắt ngắn các trường nếu vượt quá giới hạn database
+                if (!string.IsNullOrEmpty(nhanXet) && nhanXet.Length > 1000)
+                {
+                    nhanXet = nhanXet.Substring(0, 997) + "...";
+                }
+
+                var danhGia = new Models.Entities.DanhGiaRuiRo
+                {
+                    MaKhoanVay = maKhoanVay,
+                    TongDiem = tongDiem,
+                    MucDoRuiRo = mucDoRuiRo,
+                    XepHangRuiRo = xepHangRuiRo,
+                    KienNghi = kienNghi,
+                    NhanXet = nhanXet,
+                    TrangThai = trangThai
+                };
+
+                await _ruiRoService.CreateOrUpdateDanhGiaRuiRoAsync(danhGia, int.Parse(maNguoiDung));
+                
+                TempData["SuccessMessage"] = "Lưu đánh giá thành công!";
+                return RedirectToAction("ThamDinhRuiRoTinDung");
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi: " + ex.Message;
+                return RedirectToAction("ThamDinhRuiRoTinDung");
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetGiaTriThamChieu(string loaiTaiSan, string? keyword = null)
         {
