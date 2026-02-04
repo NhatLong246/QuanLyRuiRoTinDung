@@ -1,0 +1,313 @@
+@{
+    ViewData["Title"] = "Thanh toán thành công";
+    Layout = "_DashboardLayout";
+    var appTransId = ViewBag.AppTransId as string;
+    var queryResult = ViewBag.QueryResult as QuanLyRuiRoTinDung.Services.ZaloPayQueryResult;
+    var paymentResult = ViewBag.PaymentResult;
+    var lichSu = ViewBag.LichSu as QuanLyRuiRoTinDung.Models.Entities.LichSuTraNo;
+}
+
+<div class="success-container">
+    <div class="success-card">
+        @if (queryResult?.ReturnCode == 1)
+        {
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+            </div>
+            <h1>🎉 Thanh toán thành công!</h1>
+            <p class="success-message">Giao dịch của bạn đã được xử lý thành công.</p>
+            
+            <div class="transaction-details">
+                <div class="detail-row">
+                    <span class="label">Mã giao dịch ZaloPay</span>
+                    <span class="value">@appTransId</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Số tiền</span>
+                    <span class="value amount">@queryResult?.Amount.ToString("N0") VNĐ</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Thời gian</span>
+                    <span class="value">@DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                </div>
+                @if (lichSu != null)
+                {
+                    <div class="detail-row">
+                        <span class="label">Kỳ thanh toán</span>
+                        <span class="value">Kỳ @lichSu.KyTraNo</span>
+                    </div>
+                }
+            </div>
+
+            <div class="success-note">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>Email xác nhận đã được gửi đến địa chỉ email đăng ký.</span>
+            </div>
+        }
+        else if (queryResult?.IsProcessing == true)
+        {
+            <div class="processing-icon">
+                <div class="spinner"></div>
+            </div>
+            <h1>⏳ Đang xử lý...</h1>
+            <p class="success-message">Giao dịch của bạn đang được xử lý. Vui lòng đợi trong giây lát.</p>
+            
+            <div class="transaction-details">
+                <div class="detail-row">
+                    <span class="label">Mã giao dịch</span>
+                    <span class="value">@appTransId</span>
+                </div>
+            </div>
+
+            <button class="btn-refresh" onclick="window.location.reload()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Kiểm tra lại
+            </button>
+        }
+        else
+        {
+            <div class="pending-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <h1>Chờ xác nhận thanh toán</h1>
+            <p class="success-message">@queryResult?.ReturnMessage</p>
+            
+            <div class="transaction-details">
+                <div class="detail-row">
+                    <span class="label">Mã giao dịch</span>
+                    <span class="value">@appTransId</span>
+                </div>
+            </div>
+        }
+
+        <div class="action-buttons">
+            <a href="@Url.Action("Manage", "Loan")" class="btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Quay lại quản lý khoản vay
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .success-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .success-card {
+        background: white;
+        border-radius: 24px;
+        padding: 48px;
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    }
+
+    .success-icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        animation: scaleIn 0.5s ease;
+    }
+
+    .success-icon svg {
+        width: 50px;
+        height: 50px;
+        color: white;
+    }
+
+    .processing-icon {
+        width: 100px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+    }
+
+    .processing-icon .spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .pending-icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+    }
+
+    .pending-icon svg {
+        width: 50px;
+        height: 50px;
+        color: white;
+    }
+
+    @@keyframes scaleIn {
+        from {
+            transform: scale(0);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .success-card h1 {
+        font-size: 28px;
+        color: #1e293b;
+        margin: 0 0 12px 0;
+    }
+
+    .success-message {
+        font-size: 16px;
+        color: #64748b;
+        margin: 0 0 32px 0;
+    }
+
+    .transaction-details {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-row .label {
+        color: #64748b;
+    }
+
+    .detail-row .value {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .detail-row .value.amount {
+        color: #10b981;
+        font-size: 18px;
+    }
+
+    .success-note {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 16px;
+        background: #ecfdf5;
+        border-radius: 12px;
+        color: #059669;
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .success-note svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 14px 28px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        color: white;
+    }
+
+    .btn-primary svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .btn-refresh {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 14px 28px;
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 24px;
+    }
+
+    .btn-refresh:hover {
+        background: #e2e8f0;
+    }
+
+    .btn-refresh svg {
+        width: 20px;
+        height: 20px;
+    }
+</style>

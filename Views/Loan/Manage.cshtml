@@ -1,18 +1,20 @@
+@using QuanLyRuiRoTinDung.Services
 @{
     ViewData["Title"] = "Quản lý khoản vay";
     Layout = "_DashboardLayout";
-    var activeLoans = ViewBag.ActiveLoans as List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay> ?? new List<QuanLyRuiRoTinDung.Models.Entities.KhoanVay>();
-    var customerInfoDict = ViewBag.CustomerInfoDict as Dictionary<int, (string TenKhachHang, string LoaiKhachHang, string? MaKhachHangCode, string? AnhDaiDien)> ?? new Dictionary<int, (string, string, string?, string?)>();
-    var currentTrangThai = ViewBag.CurrentTrangThai as string ?? "all";
+    var customers = ViewBag.Customers as List<CustomerLoanSummary> ?? new List<CustomerLoanSummary>();
+    var currentTab = ViewBag.CurrentTab as string ?? "my";
+    var currentLoaiKhachHang = ViewBag.CurrentLoaiKhachHang as string ?? "all";
     var searchTerm = ViewBag.SearchTerm as string ?? "";
-    
-    // Tính toán thống kê
-    var totalLoans = activeLoans.Count;
-    var dangVay = activeLoans.Count(l => l.TrangThaiKhoanVay == "Đang vay");
-    var quaHan = activeLoans.Count(l => l.TrangThaiKhoanVay == "Quá hạn");
-    var daThanhToan = activeLoans.Count(l => l.TrangThaiKhoanVay == "Đã thanh toán");
-    var tongTienVay = activeLoans.Sum(l => l.SoTienVay);
+    var caNhanCount = ViewBag.CaNhanCount as int? ?? 0;
+    var doanhNghiepCount = ViewBag.DoanhNghiepCount as int? ?? 0;
+    var totalLoans = ViewBag.TotalLoans as int? ?? 0;
+    var choGiaiNgan = ViewBag.ChoGiaiNgan as int? ?? 0;
+    var dangVay = ViewBag.DangVay as int? ?? 0;
+    var quaHan = ViewBag.QuaHan as int? ?? 0;
 }
+
+@Html.AntiForgeryToken()
 
 <div class="loan-manage-container">
     <!-- Page Header -->
@@ -41,20 +43,70 @@
         </div>
     </div>
 
+    <!-- Main Tabs: My Customers / All Customers -->
+    <div class="main-tabs-row">
+        <a href="?tab=my&loaiKhachHang=@currentLoaiKhachHang" class="main-tab @(currentTab == "my" ? "active" : "")">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Khách hàng của tôi</span>
+        </a>
+        <a href="?tab=all&loaiKhachHang=@currentLoaiKhachHang" class="main-tab @(currentTab == "all" ? "active" : "")">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13"></path>
+                <path d="M16 3.13C16.8604 3.3503 17.623 3.8507 18.1676 4.55231C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88"></path>
+            </svg>
+            <span>Tất cả khách hàng</span>
+        </a>
+    </div>
+
+    <!-- Customer Type Tabs -->
+    <div class="customer-type-tabs">
+        <a href="?tab=@currentTab&loaiKhachHang=all" class="type-tab @(currentLoaiKhachHang == "all" ? "active" : "")">
+            <span class="type-icon">📋</span>
+            <span>Tất cả</span>
+            <span class="type-count">@(caNhanCount + doanhNghiepCount)</span>
+        </a>
+        <a href="?tab=@currentTab&loaiKhachHang=CaNhan" class="type-tab type-personal @(currentLoaiKhachHang == "CaNhan" ? "active" : "")">
+            <span class="type-icon">👤</span>
+            <span>Cá nhân</span>
+            <span class="type-count">@caNhanCount</span>
+        </a>
+        <a href="?tab=@currentTab&loaiKhachHang=DoanhNghiep" class="type-tab type-business @(currentLoaiKhachHang == "DoanhNghiep" ? "active" : "")">
+            <span class="type-icon">🏢</span>
+            <span>Doanh nghiệp</span>
+            <span class="type-count">@doanhNghiepCount</span>
+        </a>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card stat-total">
             <div class="stat-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
-                    <path d="M14 2V8H20"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
                 </svg>
             </div>
             <div class="stat-content">
-                <span class="stat-number">@totalLoans</span>
-                <span class="stat-label">Tổng khoản vay</span>
+                <span class="stat-number">@customers.Count</span>
+                <span class="stat-label">Khách hàng</span>
+            </div>
+        </div>
+
+        <div class="stat-card stat-pending">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-number">@choGiaiNgan</span>
+                <span class="stat-label">Khoản chờ giải ngân</span>
             </div>
         </div>
 
@@ -67,7 +119,7 @@
             </div>
             <div class="stat-content">
                 <span class="stat-number">@dangVay</span>
-                <span class="stat-label">Đang vay</span>
+                <span class="stat-label">Khoản đang vay</span>
             </div>
         </div>
 
@@ -81,229 +133,138 @@
             </div>
             <div class="stat-content">
                 <span class="stat-number">@quaHan</span>
-                <span class="stat-label">Quá hạn</span>
-            </div>
-        </div>
-
-        <div class="stat-card stat-money">
-            <div class="stat-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="1" x2="12" y2="23"/>
-                    <path d="M17 5H9.5C8.57174 5 7.6815 5.36875 7.02513 6.02513C6.36875 6.6815 6 7.57174 6 8.5C6 9.42826 6.36875 10.3185 7.02513 10.9749C7.6815 11.6313 8.57174 12 9.5 12H14.5C15.4283 12 16.3185 12.3687 16.9749 13.0251C17.6313 13.6815 18 14.5717 18 15.5C18 16.4283 17.6313 17.3185 16.9749 17.9749C16.3185 18.6313 15.4283 19 14.5 19H6"/>
-                </svg>
-            </div>
-            <div class="stat-content">
-                <span class="stat-number">@(tongTienVay >= 1000000000 ? $"{(tongTienVay/1000000000):N1}B" : $"{(tongTienVay/1000000):N0}M")</span>
-                <span class="stat-label">Tổng dư nợ</span>
+                <span class="stat-label">Khoản quá hạn</span>
             </div>
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-        <form method="get" class="filter-form">
-            <div class="filter-tabs">
-                <a href="?trangThai=all" class="filter-tab @(currentTrangThai == "all" ? "active" : "")">
-                    <span class="tab-icon">📋</span>
-                    Tất cả
-                    <span class="tab-count">@totalLoans</span>
-                </a>
-                <a href="?trangThai=Đang vay" class="filter-tab @(currentTrangThai == "Đang vay" ? "active" : "")">
-                    <span class="tab-icon">⏳</span>
-                    Đang vay
-                    <span class="tab-count">@dangVay</span>
-                </a>
-                <a href="?trangThai=Quá hạn" class="filter-tab tab-danger @(currentTrangThai == "Quá hạn" ? "active" : "")">
-                    <span class="tab-icon">⚠️</span>
-                    Quá hạn
-                    <span class="tab-count">@quaHan</span>
-                </a>
-                <a href="?trangThai=Đã thanh toán" class="filter-tab @(currentTrangThai == "Đã thanh toán" ? "active" : "")">
-                    <span class="tab-icon">✅</span>
-                    Đã thanh toán
-                    <span class="tab-count">@daThanhToan</span>
-                </a>
-            </div>
+    <!-- Search Section -->
+    <div class="search-section">
+        <form method="get" class="search-form">
             <div class="search-box">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/>
                     <path d="M21 21L16.65 16.65"/>
                 </svg>
-                <input type="text" name="searchTerm" value="@searchTerm" placeholder="Tìm kiếm mã khoản vay, tên khách hàng..." />
-                <input type="hidden" name="trangThai" value="@currentTrangThai" />
+                <input type="text" name="searchTerm" value="@searchTerm" placeholder="Tìm kiếm theo tên, mã khách hàng, số điện thoại..." />
+                <input type="hidden" name="tab" value="@currentTab" />
+                <input type="hidden" name="loaiKhachHang" value="@currentLoaiKhachHang" />
                 <button type="submit" class="search-submit">Tìm</button>
             </div>
         </form>
     </div>
 
-    <!-- Loans Table -->
-    <div class="table-wrapper">
-        <table class="loans-table">
-            <thead>
-                <tr>
-                    <th class="col-code">
-                        <div class="th-content">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 4h16v16H4z"/>
-                                <path d="M9 9h6"/>
-                                <path d="M9 15h6"/>
-                            </svg>
-                            Mã khoản vay
+    <!-- Customers Grid -->
+    <div class="customers-grid">
+        @if (customers.Any())
+        {
+            foreach (var customer in customers)
+            {
+                <div class="customer-card @(customer.QuaHan > 0 ? "has-overdue" : "") @(customer.ChoGiaiNgan > 0 ? "has-pending" : "")">
+                    <div class="customer-card-header">
+                        <div class="customer-avatar @(customer.LoaiKhachHang == "CaNhan" ? "avatar-personal" : "avatar-business")">
+                            @if (!string.IsNullOrEmpty(customer.AnhDaiDien))
+                            {
+                                <img src="@customer.AnhDaiDien" alt="Avatar" />
+                            }
+                            else
+                            {
+                                @(customer.LoaiKhachHang == "CaNhan" ? "👤" : "🏢")
+                            }
                         </div>
-                    </th>
-                    <th class="col-customer">Khách hàng</th>
-                    <th class="col-amount">Số tiền vay</th>
-                    <th class="col-rate">Lãi suất</th>
-                    <th class="col-term">Kỳ hạn</th>
-                    <th class="col-date">Ngày giải ngân</th>
-                    <th class="col-date">Ngày đáo hạn</th>
-                    <th class="col-status">Trạng thái</th>
-                    <th class="col-action">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (activeLoans.Any())
-                {
-                    foreach (var loan in activeLoans)
-                    {
-                        var customerInfo = customerInfoDict.ContainsKey(loan.MaKhoanVay) ? customerInfoDict[loan.MaKhoanVay] : ("N/A", "CaNhan", null, null);
-                        var statusClass = loan.TrangThaiKhoanVay switch
-                        {
-                            "Đã duyệt" => "badge-approved",
-                            "Đang vay" => "badge-active",
-                            "Quá hạn" => "badge-overdue",
-                            "Đã thanh toán" => "badge-completed",
-                            _ => "badge-default"
-                        };
-                        var statusIcon = loan.TrangThaiKhoanVay switch
-                        {
-                            "Đã duyệt" => "✓",
-                            "Đang vay" => "◉",
-                            "Quá hạn" => "⚠",
-                            "Đã thanh toán" => "✔",
-                            _ => "•"
-                        };
-                        
-                        <tr class="loan-row">
-                            <td>
-                                <a href="@Url.Action("Details", "Loan", new { id = loan.MaKhoanVay })" class="loan-code-link">
-                                    <span class="code-hash">#</span>@loan.MaKhoanVayCode
-                                </a>
-                            </td>
-                            <td>
-                                <div class="customer-cell">
-                                    <div class="avatar @(customerInfo.LoaiKhachHang == "CaNhan" ? "avatar-personal" : "avatar-business")">
-                                        @if (!string.IsNullOrEmpty(customerInfo.Item4))
-                                        {
-                                            <img src="@customerInfo.Item4" alt="Avatar" />
-                                        }
-                                        else
-                                        {
-                                            @(customerInfo.LoaiKhachHang == "CaNhan" ? "👤" : "🏢")
-                                        }
-                                    </div>
-                                    <div class="customer-info">
-                                        <span class="customer-name">@customerInfo.TenKhachHang</span>
-                                        <span class="customer-type-badge @(customerInfo.LoaiKhachHang == "CaNhan" ? "type-personal" : "type-business")">
-                                            @(customerInfo.LoaiKhachHang == "CaNhan" ? "Cá nhân" : "Doanh nghiệp")
-                                        </span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="amount-cell">
-                                    <span class="amount-value">@loan.SoTienVay.ToString("N0")</span>
-                                    <span class="amount-currency">VNĐ</span>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="rate-badge">@($"{loan.LaiSuat:N1}%")/năm</span>
-                            </td>
-                            <td>
-                                <span class="term-value">@loan.KyHanVay <small>tháng</small></span>
-                            </td>
-                            <td>
-                                <div class="date-cell">
-                                    @if (loan.NgayGiaiNgan.HasValue)
-                                    {
-                                        <span class="date-value">@loan.NgayGiaiNgan.Value.ToString("dd/MM/yyyy")</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="date-pending">Chờ giải ngân</span>
-                                    }
-                                </div>
-                            </td>
-                            <td>
-                                <div class="date-cell">
-                                    @if (loan.NgayDaoHan.HasValue)
-                                    {
-                                        var daysLeft = (loan.NgayDaoHan.Value.ToDateTime(TimeOnly.MinValue) - DateTime.Now).Days;
-                                        <span class="date-value">@loan.NgayDaoHan.Value.ToString("dd/MM/yyyy")</span>
-                                        @if (daysLeft > 0 && daysLeft <= 30 && loan.TrangThaiKhoanVay == "Đang vay")
-                                        {
-                                            <span class="days-left warning">Còn @daysLeft ngày</span>
-                                        }
-                                        else if (daysLeft < 0 && loan.TrangThaiKhoanVay != "Đã thanh toán")
-                                        {
-                                            <span class="days-left danger">Quá @(-daysLeft) ngày</span>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <span class="date-pending">--</span>
-                                    }
-                                </div>
-                            </td>
-                            <td>
-                                <span class="status-badge @statusClass">
-                                    <span class="status-icon">@statusIcon</span>
-                                    @loan.TrangThaiKhoanVay
+                        <div class="customer-info">
+                            <h3 class="customer-name">@customer.TenKhachHang</h3>
+                            <div class="customer-meta">
+                                <span class="customer-code">@customer.MaKhachHangCode</span>
+                                <span class="customer-type-badge @(customer.LoaiKhachHang == "CaNhan" ? "type-personal" : "type-business")">
+                                    @(customer.LoaiKhachHang == "CaNhan" ? "Cá nhân" : "Doanh nghiệp")
                                 </span>
-                            </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <a href="@Url.Action("Details", "Loan", new { id = loan.MaKhoanVay })" class="action-btn view-btn" title="Xem chi tiết">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M1 12S5 4 12 4 23 12 23 12 19 20 12 20 1 12 1 12Z"/>
-                                            <circle cx="12" cy="12" r="3"/>
-                                        </svg>
-                                    </a>
-                                    @if (loan.TrangThaiKhoanVay == "Đang vay")
-                                    {
-                                        <button class="action-btn payment-btn" title="Ghi nhận thanh toán" onclick="recordPayment(@loan.MaKhoanVay)">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                                                <line x1="1" y1="10" x2="23" y2="10"/>
-                                            </svg>
-                                        </button>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="9">
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                        <path d="M19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H15L21 9V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21Z"/>
-                                        <path d="M15 3V9H21"/>
-                                        <path d="M9 13H15"/>
-                                        <path d="M9 17H12"/>
-                                    </svg>
-                                </div>
-                                <h3>Chưa có khoản vay nào</h3>
-                                <p>Các khoản vay đã được phê duyệt sẽ hiển thị ở đây</p>
                             </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">@customer.TongKhoanVay</span>
+                            <span class="stat-label">Tổng khoản vay</span>
+                        </div>
+                        <div class="stat-item pending">
+                            <span class="stat-value">@customer.ChoGiaiNgan</span>
+                            <span class="stat-label">Chờ giải ngân</span>
+                        </div>
+                        <div class="stat-item active">
+                            <span class="stat-value">@customer.DangVay</span>
+                            <span class="stat-label">Đang vay</span>
+                        </div>
+                        @if (customer.QuaHan > 0)
+                        {
+                            <div class="stat-item overdue">
+                                <span class="stat-value">@customer.QuaHan</span>
+                                <span class="stat-label">Quá hạn</span>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="customer-financial">
+                        <div class="financial-row">
+                            <span class="financial-label">Tổng tiền vay:</span>
+                            <span class="financial-value">@customer.TongSoTienVay.ToString("N0") VNĐ</span>
+                        </div>
+                        <div class="financial-row">
+                            <span class="financial-label">Dư nợ còn lại:</span>
+                            <span class="financial-value debt">@customer.TongDuNoConLai.ToString("N0") VNĐ</span>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-contact">
+                        @if (!string.IsNullOrEmpty(customer.SoDienThoai))
+                        {
+                            <span class="contact-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                </svg>
+                                @customer.SoDienThoai
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.Email))
+                        {
+                            <span class="contact-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                                @customer.Email
+                            </span>
+                        }
+                    </div>
+                    
+                    <div class="customer-card-actions">
+                        <a href="@Url.Action("CustomerLoans", "Loan", new { customerId = customer.MaKhachHang, customerType = customer.LoaiKhachHang })" class="btn-view-loans">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/>
+                                <path d="M14 2V8H20"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            Xem danh sách khoản vay
+                        </a>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <h3>Chưa có khách hàng nào</h3>
+                <p>Các khách hàng có khoản vay đã được phê duyệt sẽ hiển thị ở đây</p>
+            </div>
+        }
     </div>
 </div>
 
@@ -384,6 +345,106 @@
         height: 18px;
     }
 
+    /* Main Tabs Row */
+    .main-tabs-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .main-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .main-tab svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .main-tab:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+
+    .main-tab.active {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        border-color: transparent;
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Customer Type Tabs */
+    .customer-type-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        background: #f1f5f9;
+        padding: 6px;
+        border-radius: 12px;
+        width: fit-content;
+    }
+
+    .type-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: transparent;
+        border-radius: 8px;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .type-icon {
+        font-size: 16px;
+    }
+
+    .type-count {
+        background: #e2e8f0;
+        color: #64748b;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .type-tab:hover {
+        background: white;
+        color: #334155;
+    }
+
+    .type-tab.active {
+        background: white;
+        color: #1e293b;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .type-tab.active .type-count {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .type-tab.type-personal.active .type-count {
+        background: #8b5cf6;
+    }
+
+    .type-tab.type-business.active .type-count {
+        background: #f59e0b;
+    }
+
     /* Statistics Cards */
     .stats-grid {
         display: grid;
@@ -428,6 +489,11 @@
         color: #4f46e5;
     }
 
+    .stat-pending .stat-icon {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        color: #059669;
+    }
+
     .stat-active .stat-icon {
         background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
         color: #2563eb;
@@ -436,11 +502,6 @@
     .stat-overdue .stat-icon {
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         color: #dc2626;
-    }
-
-    .stat-money .stat-icon {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        color: #059669;
     }
 
     .stat-content {
@@ -452,93 +513,33 @@
         font-size: 28px;
         font-weight: 700;
         color: #1e293b;
-        line-height: 1.2;
+        line-height: 1;
     }
 
     .stat-label {
         font-size: 13px;
         color: #64748b;
-        margin-top: 2px;
+        margin-top: 4px;
     }
 
-    /* Filter Section */
-    .filter-section {
-        background: white;
-        border-radius: 16px;
-        padding: 6px;
+    /* Search Section */
+    .search-section {
         margin-bottom: 24px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        border: 1px solid #f1f5f9;
-    }
-
-    .filter-form {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-    }
-
-    .filter-tabs {
-        display: flex;
-        gap: 4px;
-    }
-
-    .filter-tab {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 18px;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 500;
-        color: #64748b;
-        text-decoration: none;
-        transition: all 0.2s;
-    }
-
-    .filter-tab:hover {
-        background: #f8fafc;
-        color: #3b82f6;
-    }
-
-    .filter-tab.active {
-        background: #3b82f6;
-        color: white;
-    }
-
-    .filter-tab.tab-danger.active {
-        background: #ef4444;
-    }
-
-    .tab-icon {
-        font-size: 16px;
-    }
-
-    .tab-count {
-        background: rgba(0,0,0,0.1);
-        padding: 2px 8px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .filter-tab.active .tab-count {
-        background: rgba(255,255,255,0.25);
     }
 
     .search-box {
         display: flex;
         align-items: center;
-        background: #f8fafc;
+        background: white;
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 4px 4px 4px 14px;
-        min-width: 320px;
+        border-radius: 12px;
+        padding: 4px 4px 4px 16px;
+        max-width: 500px;
     }
 
     .search-box svg {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         color: #94a3b8;
         flex-shrink: 0;
     }
@@ -546,369 +547,291 @@
     .search-box input {
         flex: 1;
         border: none;
-        background: transparent;
-        padding: 8px 12px;
-        font-size: 14px;
         outline: none;
-    }
-
-    .search-box input::placeholder {
-        color: #94a3b8;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: transparent;
     }
 
     .search-submit {
-        padding: 8px 16px;
-        background: #3b82f6;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
         color: white;
         border: none;
         border-radius: 8px;
-        font-size: 13px;
         font-weight: 500;
         cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .search-submit:hover {
-        background: #2563eb;
-    }
-
-    /* Table Styles */
-    .table-wrapper {
-        background: white;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        border: 1px solid #f1f5f9;
-    }
-
-    .loans-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .loans-table thead {
-        background: #f8fafc;
-    }
-
-    .loans-table th {
-        padding: 16px 18px;
-        text-align: left;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: #64748b;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .th-content {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .th-content svg {
-        width: 16px;
-        height: 16px;
-        opacity: 0.5;
-    }
-
-    .loans-table td {
-        padding: 18px;
-        border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle;
-    }
-
-    .loan-row {
-        transition: background 0.15s;
-    }
-
-    .loan-row:hover {
-        background: #fafbfc;
-    }
-
-    .loan-row:last-child td {
-        border-bottom: none;
-    }
-
-    /* Loan Code */
-    .loan-code-link {
-        display: inline-flex;
-        align-items: center;
-        font-size: 14px;
-        font-weight: 600;
-        color: #3b82f6;
-        text-decoration: none;
-        padding: 6px 12px;
-        background: #eff6ff;
-        border-radius: 8px;
         transition: all 0.2s;
     }
 
-    .loan-code-link:hover {
-        background: #dbeafe;
-        color: #2563eb;
+    .search-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 
-    .code-hash {
-        color: #93c5fd;
-        margin-right: 1px;
+    /* Customers Grid */
+    .customers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 24px;
     }
 
-    /* Customer Cell */
-    .customer-cell {
+    .customer-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+    }
+
+    .customer-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+    }
+
+    .customer-card.has-overdue {
+        border-left: 4px solid #ef4444;
+    }
+
+    .customer-card.has-pending:not(.has-overdue) {
+        border-left: 4px solid #10b981;
+    }
+
+    .customer-card-header {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
+        margin-bottom: 20px;
     }
 
-    .avatar {
-        width: 42px;
-        height: 42px;
-        border-radius: 10px;
+    .customer-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 28px;
         overflow: hidden;
     }
 
-    .avatar img {
+    .customer-avatar img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
 
-    .avatar-personal {
+    .customer-avatar.avatar-personal {
         background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
     }
 
-    .avatar-business {
+    .customer-avatar.avatar-business {
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     }
 
     .customer-info {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+        flex: 1;
     }
 
     .customer-name {
-        font-weight: 500;
+        font-size: 18px;
+        font-weight: 600;
         color: #1e293b;
-        font-size: 14px;
+        margin: 0 0 6px 0;
+    }
+
+    .customer-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .customer-code {
+        font-size: 13px;
+        color: #64748b;
     }
 
     .customer-type-badge {
-        display: inline-flex;
-        align-items: center;
         font-size: 11px;
         padding: 2px 8px;
-        border-radius: 4px;
+        border-radius: 6px;
         font-weight: 500;
-        width: fit-content;
     }
 
-    .type-personal {
+    .customer-type-badge.type-personal {
         background: #ede9fe;
         color: #7c3aed;
     }
 
-    .type-business {
+    .customer-type-badge.type-business {
         background: #fef3c7;
-        color: #b45309;
+        color: #d97706;
     }
 
-    /* Amount Cell */
-    .amount-cell {
+    .customer-stats {
         display: flex;
-        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #f1f5f9;
     }
 
-    .amount-value {
+    .customer-stats .stat-item {
+        flex: 1;
+        text-align: center;
+        padding: 10px 8px;
+        background: #f8fafc;
+        border-radius: 10px;
+    }
+
+    .customer-stats .stat-item.pending {
+        background: #d1fae5;
+    }
+
+    .customer-stats .stat-item.active {
+        background: #dbeafe;
+    }
+
+    .customer-stats .stat-item.overdue {
+        background: #fee2e2;
+    }
+
+    .customer-stats .stat-value {
+        display: block;
+        font-size: 20px;
         font-weight: 700;
         color: #1e293b;
-        font-size: 15px;
     }
 
-    .amount-currency {
-        font-size: 11px;
-        color: #94a3b8;
-        font-weight: 500;
-    }
-
-    /* Rate Badge */
-    .rate-badge {
-        display: inline-flex;
-        padding: 4px 10px;
-        background: #f0fdf4;
-        color: #16a34a;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    /* Term Value */
-    .term-value {
-        font-weight: 500;
-        color: #475569;
-    }
-
-    .term-value small {
-        color: #94a3b8;
-        font-weight: 400;
-    }
-
-    /* Date Cell */
-    .date-cell {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .date-value {
-        font-size: 14px;
-        color: #475569;
-    }
-
-    .date-pending {
-        color: #94a3b8;
-        font-style: italic;
-        font-size: 13px;
-    }
-
-    .days-left {
-        font-size: 11px;
-        font-weight: 500;
-        padding: 2px 6px;
-        border-radius: 4px;
-        width: fit-content;
-    }
-
-    .days-left.warning {
-        background: #fef3c7;
-        color: #b45309;
-    }
-
-    .days-left.danger {
-        background: #fee2e2;
-        color: #dc2626;
-    }
-
-    /* Status Badge */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .status-icon {
-        font-size: 10px;
-    }
-
-    .badge-approved {
-        background: #d1fae5;
+    .customer-stats .stat-item.pending .stat-value {
         color: #059669;
     }
 
-    .badge-active {
-        background: #dbeafe;
+    .customer-stats .stat-item.active .stat-value {
         color: #2563eb;
     }
 
-    .badge-overdue {
-        background: #fee2e2;
+    .customer-stats .stat-item.overdue .stat-value {
         color: #dc2626;
     }
 
-    .badge-completed {
-        background: #f1f5f9;
+    .customer-stats .stat-label {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .customer-financial {
+        margin-bottom: 16px;
+    }
+
+    .financial-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+    }
+
+    .financial-label {
+        font-size: 13px;
         color: #64748b;
     }
 
-    .badge-default {
-        background: #f3f4f6;
-        color: #6b7280;
+    .financial-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
     }
 
-    /* Action Buttons */
-    .action-buttons {
+    .financial-value.debt {
+        color: #ef4444;
+    }
+
+    .customer-contact {
         display: flex;
-        gap: 8px;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 10px;
     }
 
-    .action-btn {
-        width: 36px;
-        height: 36px;
-        border: none;
-        border-radius: 8px;
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .contact-item svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .customer-card-actions {
+        margin-top: auto;
+    }
+
+    .btn-view-loans {
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
         cursor: pointer;
         transition: all 0.2s;
-        text-decoration: none;
     }
 
-    .action-btn svg {
+    .btn-view-loans:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+        color: white;
+    }
+
+    .btn-view-loans svg {
         width: 18px;
         height: 18px;
     }
 
-    .view-btn {
-        background: #f1f5f9;
-        color: #64748b;
-    }
-
-    .view-btn:hover {
-        background: #3b82f6;
-        color: white;
-    }
-
-    .payment-btn {
-        background: #f0fdf4;
-        color: #16a34a;
-    }
-
-    .payment-btn:hover {
-        background: #16a34a;
-        color: white;
-    }
-
     /* Empty State */
     .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 80px 40px;
+        grid-column: 1 / -1;
         text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 16px;
+        border: 1px dashed #e2e8f0;
     }
 
     .empty-icon {
         width: 80px;
         height: 80px;
-        background: #f8fafc;
-        border-radius: 20px;
+        margin: 0 auto 20px;
+        background: #f1f5f9;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 20px;
     }
 
     .empty-icon svg {
         width: 40px;
         height: 40px;
-        color: #cbd5e1;
+        color: #94a3b8;
     }
 
     .empty-state h3 {
         font-size: 18px;
-        font-weight: 600;
         color: #475569;
         margin: 0 0 8px 0;
     }
@@ -919,46 +842,22 @@
         margin: 0;
     }
 
-    /* Responsive */
-    @@media (max-width: 1200px) {
+    @@media (max-width: 768px) {
         .stats-grid {
             grid-template-columns: repeat(2, 1fr);
         }
-    }
 
-    @@media (max-width: 992px) {
-        .filter-form {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .filter-tabs {
-            overflow-x: auto;
-            padding-bottom: 8px;
-        }
-
-        .search-box {
-            min-width: unset;
-        }
-    }
-
-    @@media (max-width: 768px) {
-        .page-header-section {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
-        }
-
-        .stats-grid {
+        .customers-grid {
             grid-template-columns: 1fr;
         }
 
-        .table-wrapper {
-            overflow-x: auto;
+        .main-tabs-row {
+            flex-direction: column;
         }
 
-        .loans-table {
-            min-width: 900px;
+        .customer-type-tabs {
+            flex-wrap: wrap;
+            width: 100%;
         }
     }
 </style>
@@ -966,9 +865,5 @@
 <script>
     function exportData() {
         alert('Chức năng xuất báo cáo đang được phát triển');
-    }
-
-    function recordPayment(loanId) {
-        alert('Chức năng ghi nhận thanh toán cho khoản vay #' + loanId + ' đang được phát triển');
     }
 </script>

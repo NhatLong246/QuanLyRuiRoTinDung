@@ -773,7 +773,16 @@ body {
 
 .status-item {
     margin: 0 0 20px 0;
-    padding: 0;
+    padding: 12px;
+    display: block;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    color: inherit;
+}
+
+.status-item:hover {
+    background: var(--bg-gray-light);
+    transform: translateX(4px);
 }
 
 .status-item:last-child {
@@ -796,10 +805,19 @@ body {
     padding: 0;
 }
 
+.status-value {
+    font-size: 13px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
 .status-percent {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 800;
     color: var(--text-dark);
+    display: block;
+    text-align: right;
+    margin-top: 6px;
 }
 
 .status-bar {
@@ -925,6 +943,11 @@ body {
     border-left: 4px solid var(--warning-yellow);
 }
 
+.alert-item.info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+    border-left: 4px solid var(--primary-blue);
+}
+
 .alert-item:hover {
     transform: translateX(4px);
     box-shadow: var(--shadow-md);
@@ -991,6 +1014,47 @@ body {
 .alert-item.warning .alert-action-btn {
     background: var(--warning-gradient);
     color: var(--bg-white);
+}
+
+.alert-item.info .alert-action-btn {
+    background: var(--blue-gradient);
+    color: var(--bg-white);
+}
+
+/* Severity Badges for Alerts */
+.severity-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.severity-badge.severity-khẩn\ cấp,
+.severity-badge.severity-khẩn {
+    background: rgba(239, 68, 68, 0.15);
+    color: #DC2626;
+}
+
+.severity-badge.severity-rất\ cao {
+    background: rgba(249, 115, 22, 0.15);
+    color: #EA580C;
+}
+
+.severity-badge.severity-cao {
+    background: rgba(245, 158, 11, 0.15);
+    color: #D97706;
+}
+
+.severity-badge.severity-trung\ bình {
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563EB;
+}
+
+.severity-badge.severity-thấp {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
 }
 
 .alert-action-btn:hover {
