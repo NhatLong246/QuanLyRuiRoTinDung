@@ -20,7 +20,8 @@ namespace QuanLyRuiRoTinDung.Services
         Task<bool> CheckCustomerHasActiveLoanAsync(int maKhachHang, string loaiKhachHang);
         Task<List<TaiSanDamBao>> GetAllTaiSanDamBaoAsync();
         Task<TaiSanDamBao?> GetTaiSanDamBaoAsync(int maTaiSan);
-        Task<TaiSanDamBao> CreateOrGetTaiSanAsync(string loaiTaiSan, string? tenTaiSanKhac = null, string? donVi = null, decimal? giaTriDinhGia = null);
+        Task<List<LoaiTaiSanDamBao>> GetAllLoaiTaiSanAsync();
+        Task<TaiSanDamBao> CreateTaiSanAsync(int maLoaiTaiSan, string tenGoi, string? moTaChiTiet, string? chuSoHuu, string? diaChi, decimal? giaTriDinhGia, int nguoiTao);
         Task<int> GetOrCreateLoaiTaiSanAsync(string tenLoai);
         Task<List<HoSoVayFileDinhKem>> SaveLoanFilesAsync(int maKhoanVay, List<(IFormFile File, string LoaiFile)> files, int nguoiTao, string webRootPath);
         Task<List<HoSoVayFileDinhKem>> GetLoanFilesAsync(int maKhoanVay);
@@ -30,6 +31,11 @@ namespace QuanLyRuiRoTinDung.Services
         Task<KhoanVay> SubmitLoanForApprovalAsync(int maKhoanVay, string phanLoai, string? ghiChu, int nguoiCapNhat);
         Task<bool> DeleteLoanAsync(int maKhoanVay, int nguoiXoa);
         Task<bool> CancelSubmissionAsync(int maKhoanVay, int nguoiCapNhat);
+        
+        // Loan Management - Index page
+        Task<List<KhoanVay>> GetMyLoansAsync(int maNhanVien, string? trangThai = null, string? searchTerm = null);
+        Task<List<KhoanVay>> GetAllLoansAsync(string? trangThai = null, string? searchTerm = null);
+        Task<(int Total, int Nhap, int ChoDuyet, int DangXuLy, int DaPheDuyet, int DangVay, int TuChoi, int DaThanhToan)> GetLoanStatsAsync(int? maNhanVien = null);
     }
 
     public class LoanService : ILoanService
@@ -224,6 +230,13 @@ namespace QuanLyRuiRoTinDung.Services
                 .FirstOrDefaultAsync(t => t.MaTaiSan == maTaiSan);
         }
 
+        public async Task<List<LoaiTaiSanDamBao>> GetAllLoaiTaiSanAsync()
+        {
+            return await _context.LoaiTaiSanDamBaos
+                .OrderBy(l => l.TenLoaiTaiSan)
+                .ToListAsync();
+        }
+
         public async Task<int> GetOrCreateLoaiTaiSanAsync(string tenLoai)
         {
             var loaiTaiSan = await _context.LoaiTaiSanDamBaos
@@ -257,43 +270,12 @@ namespace QuanLyRuiRoTinDung.Services
             return newLoaiTaiSan.MaLoaiTaiSan;
         }
 
-        public async Task<TaiSanDamBao> CreateOrGetTaiSanAsync(string loaiTaiSan, string? tenTaiSanKhac = null, string? donVi = null, decimal? giaTriDinhGia = null)
+        /// <summary>
+        /// Tạo mới một tài sản đảm bảo cho khoản vay. Mỗi khoản vay sẽ có tài sản riêng biệt.
+        /// </summary>
+        public async Task<TaiSanDamBao> CreateTaiSanAsync(int maLoaiTaiSan, string tenGoi, string? moTaChiTiet, string? chuSoHuu, string? diaChi, decimal? giaTriDinhGia, int nguoiTao)
         {
-            // Tìm loại tài sản
-            string tenLoai = loaiTaiSan switch
-            {
-                "Dat" => "Đất",
-                "Xe" => "Xe",
-                "Khac" => "Khác",
-                _ => "Khác"
-            };
-
-            var maLoaiTaiSan = await GetOrCreateLoaiTaiSanAsync(tenLoai);
-
-            // Tìm tài sản hiện có
-            TaiSanDamBao? existingTaiSan = null;
-
-            if (loaiTaiSan == "Khac" && !string.IsNullOrEmpty(tenTaiSanKhac))
-            {
-                // Tìm tài sản "Khác" có tên tương tự
-                existingTaiSan = await _context.TaiSanDamBaos
-                    .FirstOrDefaultAsync(t => t.MaLoaiTaiSan == maLoaiTaiSan && 
-                                             t.TenGoi.Contains(tenTaiSanKhac));
-            }
-            else
-            {
-                // Tìm tài sản "Đất" hoặc "Xe" chung
-                existingTaiSan = await _context.TaiSanDamBaos
-                    .FirstOrDefaultAsync(t => t.MaLoaiTaiSan == maLoaiTaiSan && 
-                                             (t.TenGoi.Contains(tenLoai) || t.TenGoi == tenLoai));
-            }
-
-            if (existingTaiSan != null)
-            {
-                return existingTaiSan;
-            }
-
-            // Tạo tài sản mới
+            // Tạo mã tài sản mới
             var maxCode = await _context.TaiSanDamBaos
                 .Where(t => t.MaTaiSanCode.StartsWith("TS"))
                 .Select(t => t.MaTaiSanCode)
@@ -312,23 +294,19 @@ namespace QuanLyRuiRoTinDung.Services
             maxNumber++;
             var maTaiSanCode = $"TS{maxNumber:D4}";
 
-            var tenGoi = loaiTaiSan == "Khac" && !string.IsNullOrEmpty(tenTaiSanKhac)
-                ? tenTaiSanKhac
-                : tenLoai;
-
             var newTaiSan = new TaiSanDamBao
             {
                 MaTaiSanCode = maTaiSanCode,
                 MaLoaiTaiSan = maLoaiTaiSan,
                 TenGoi = tenGoi,
-                MoTaChiTiet = loaiTaiSan == "Khac" && !string.IsNullOrEmpty(tenTaiSanKhac)
-                    ? $"Tài sản khác: {tenTaiSanKhac}, Đơn vị: {donVi}"
-                    : $"Tài sản {tenLoai}",
+                MoTaChiTiet = moTaChiTiet,
+                ChuSoHuu = chuSoHuu,
+                DiaChi = diaChi,
                 GiaTriDinhGia = giaTriDinhGia,
                 NgayDinhGia = DateOnly.FromDateTime(DateTime.Now),
-                DonViDinhGia = donVi,
-                TrangThaiSuDung = "Chưa thế chấp",
-                NgayTao = DateTime.Now
+                TrangThaiSuDung = "Đang thế chấp",
+                NgayTao = DateTime.Now,
+                NguoiTao = nguoiTao
             };
 
             _context.TaiSanDamBaos.Add(newTaiSan);
@@ -707,6 +685,90 @@ namespace QuanLyRuiRoTinDung.Services
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        // Loan Management - Get my loans (loans assigned to current employee)
+        public async Task<List<KhoanVay>> GetMyLoansAsync(int maNhanVien, string? trangThai = null, string? searchTerm = null)
+        {
+            var query = _context.KhoanVays
+                .Where(k => k.MaNhanVienTinDung == maNhanVien)
+                .Include(k => k.MaLoaiVayNavigation)
+                .Include(k => k.MaNhanVienTinDungNavigation)
+                .AsQueryable();
+
+            // Filter by status
+            if (!string.IsNullOrEmpty(trangThai) && trangThai != "all")
+            {
+                query = query.Where(k => k.TrangThaiKhoanVay == trangThai);
+            }
+
+            // Search by loan code, customer info
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var term = searchTerm.ToLower();
+                query = query.Where(k => 
+                    k.MaKhoanVayCode.ToLower().Contains(term) ||
+                    (k.MucDichVay != null && k.MucDichVay.ToLower().Contains(term)));
+            }
+
+            return await query
+                .OrderByDescending(k => k.NgayTao)
+                .ToListAsync();
+        }
+
+        // Loan Management - Get all loans
+        public async Task<List<KhoanVay>> GetAllLoansAsync(string? trangThai = null, string? searchTerm = null)
+        {
+            var query = _context.KhoanVays
+                .Include(k => k.MaLoaiVayNavigation)
+                .Include(k => k.MaNhanVienTinDungNavigation)
+                .AsQueryable();
+
+            // Filter by status
+            if (!string.IsNullOrEmpty(trangThai) && trangThai != "all")
+            {
+                query = query.Where(k => k.TrangThaiKhoanVay == trangThai);
+            }
+
+            // Search by loan code
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var term = searchTerm.ToLower();
+                query = query.Where(k => 
+                    k.MaKhoanVayCode.ToLower().Contains(term) ||
+                    (k.MucDichVay != null && k.MucDichVay.ToLower().Contains(term)));
+            }
+
+            return await query
+                .OrderByDescending(k => k.NgayTao)
+                .ToListAsync();
+        }
+
+        // Get loan statistics
+        public async Task<(int Total, int Nhap, int ChoDuyet, int DangXuLy, int DaPheDuyet, int DangVay, int TuChoi, int DaThanhToan)> GetLoanStatsAsync(int? maNhanVien = null)
+        {
+            var query = _context.KhoanVays.AsQueryable();
+            
+            if (maNhanVien.HasValue)
+            {
+                query = query.Where(k => k.MaNhanVienTinDung == maNhanVien.Value);
+            }
+
+            var stats = await query
+                .GroupBy(k => k.TrangThaiKhoanVay)
+                .Select(g => new { TrangThai = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            return (
+                Total: stats.Sum(s => s.Count),
+                Nhap: stats.FirstOrDefault(s => s.TrangThai == "Nháp")?.Count ?? 0,
+                ChoDuyet: stats.FirstOrDefault(s => s.TrangThai == "Chờ duyệt")?.Count ?? 0,
+                DangXuLy: stats.FirstOrDefault(s => s.TrangThai == "Đang xử lý")?.Count ?? 0,
+                DaPheDuyet: stats.FirstOrDefault(s => s.TrangThai == "Đã phê duyệt")?.Count ?? 0,
+                DangVay: stats.FirstOrDefault(s => s.TrangThai == "Đang vay")?.Count ?? 0,
+                TuChoi: stats.FirstOrDefault(s => s.TrangThai == "Từ chối")?.Count ?? 0,
+                DaThanhToan: stats.FirstOrDefault(s => s.TrangThai == "Đã thanh toán")?.Count ?? 0
+            );
         }
     }
 }

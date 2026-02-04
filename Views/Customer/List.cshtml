@@ -1,0 +1,1425 @@
+@{
+    ViewData["Title"] = "Quản lý khách hàng";
+    Layout = "_DashboardLayout";
+    
+    var currentTab = ViewBag.CurrentTab as string ?? "my";
+    var searchTerm = ViewBag.SearchTerm as string ?? "";
+    var currentUserName = ViewBag.CurrentUserName as string ?? "Nhân viên";
+    
+    var myCaNhans = ViewBag.MyCaNhans as List<QuanLyRuiRoTinDung.Models.Entities.KhachHangCaNhan> ?? new();
+    var myDoanhNghieps = ViewBag.MyDoanhNghieps as List<QuanLyRuiRoTinDung.Models.Entities.KhachHangDoanhNghiep> ?? new();
+    var allCaNhans = ViewBag.AllCaNhans as List<QuanLyRuiRoTinDung.Models.Entities.KhachHangCaNhan> ?? new();
+    var allDoanhNghieps = ViewBag.AllDoanhNghieps as List<QuanLyRuiRoTinDung.Models.Entities.KhachHangDoanhNghiep> ?? new();
+    
+    int myCaNhanCount = ViewBag.MyCaNhanCount;
+    int myDoanhNghiepCount = ViewBag.MyDoanhNghiepCount;
+    int allCaNhanCount = ViewBag.AllCaNhanCount;
+    int allDoanhNghiepCount = ViewBag.AllDoanhNghiepCount;
+    
+    int myTotalCount = myCaNhanCount + myDoanhNghiepCount;
+    int allTotalCount = allCaNhanCount + allDoanhNghiepCount;
+}
+
+<div class="customer-management">
+    <!-- Animated Background -->
+    <div class="page-bg-decoration">
+        <div class="bg-circle circle-1"></div>
+        <div class="bg-circle circle-2"></div>
+        <div class="bg-circle circle-3"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-left">
+            <div class="header-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13"></path>
+                    <path d="M16 3.13C16.8604 3.3503 17.623 3.8507 18.1676 4.55231C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88"></path>
+                </svg>
+            </div>
+            <div class="header-content">
+                <h1 class="page-title">Quản lý khách hàng</h1>
+                <p class="page-subtitle">Xem và quản lý danh sách khách hàng trong hệ thống</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="@Url.Action("Create", "Customer")" class="btn-primary">
+                <span class="btn-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </span>
+                <span class="btn-text">Tạo khách hàng mới</span>
+                <span class="btn-shine"></span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Row - Search + Tabs on same line -->
+    <div class="filter-row">
+        <form method="get" action="@Url.Action("List", "Customer")" class="search-form">
+            <input type="hidden" name="tab" value="@currentTab" />
+            <div class="search-input-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" name="searchTerm" placeholder="Tìm kiếm theo tên, CCCD/MST, SĐT, email, mã KH..." 
+                       value="@searchTerm" class="search-input" />
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <a href="@Url.Action("List", "Customer", new { tab = currentTab })" class="clear-search" title="Xóa tìm kiếm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </a>
+                }
+            </div>
+            <button type="submit" class="btn-search">Tìm kiếm</button>
+        </form>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <a href="@Url.Action("List", "Customer", new { tab = "my", searchTerm = searchTerm })" 
+               class="tab-item @(currentTab == "my" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Khách hàng của tôi</span>
+                <span class="tab-badge">@myTotalCount</span>
+            </a>
+            <a href="@Url.Action("List", "Customer", new { tab = "all", searchTerm = searchTerm })" 
+               class="tab-item @(currentTab == "all" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13"></path>
+                    <path d="M16 3.13C16.8604 3.3503 17.623 3.8507 18.1676 4.55231C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88"></path>
+                </svg>
+                <span>Tất cả khách hàng</span>
+                <span class="tab-badge">@allTotalCount</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        @if (currentTab == "my")
+        {
+            <!-- My Customers Tab -->
+            <div class="tab-pane active" id="my-customers">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        Khách hàng do tôi tạo
+                    </h2>
+                    <p class="section-subtitle">Danh sách khách hàng được tạo bởi: <strong>@currentUserName</strong></p>
+                </div>
+
+                <!-- Stats Cards - Centered and Wider -->
+                <div class="stats-cards-wrapper">
+                    <div class="stats-cards">
+                        <div class="stat-card ca-nhan">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value">@myCaNhanCount</span>
+                                <span class="stat-label">Cá nhân</span>
+                            </div>
+                        </div>
+                        <div class="stat-card doanh-nghiep">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"></path>
+                                    <path d="M9 22V12H15V22"></path>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value">@myDoanhNghiepCount</span>
+                                <span class="stat-label">Doanh nghiệp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (myTotalCount == 0)
+                {
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9 15C9 15 10.5 16.5 12 16.5C13.5 16.5 15 15 15 15"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                        <h3>Chưa có khách hàng nào</h3>
+                        <p>Bạn chưa tạo khách hàng nào. Hãy bắt đầu tạo khách hàng mới!</p>
+                        <a href="@Url.Action("Create", "Customer")" class="btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Tạo khách hàng mới
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <!-- Customer Tables -->
+                    @if (myCaNhans.Any())
+                    {
+                        <div class="table-section">
+                            <h3 class="table-title">
+                                <span class="badge ca-nhan">Cá nhân</span>
+                                @myCaNhanCount khách hàng cá nhân
+                            </h3>
+                            <div class="table-responsive">
+                                <table class="customer-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã KH</th>
+                                            <th>Họ tên</th>
+                                            <th>CCCD/CMND</th>
+                                            <th>Số điện thoại</th>
+                                            <th>Email</th>
+                                            <th>Ngày tạo</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var kh in myCaNhans)
+                                        {
+                                            <tr>
+                                                <td><span class="customer-code">@kh.MaKhachHangCode</span></td>
+                                                <td><strong>@kh.HoTen</strong></td>
+                                                <td>@kh.SoCmnd</td>
+                                                <td>@kh.SoDienThoai</td>
+                                                <td>@(kh.Email ?? "-")</td>
+                                                <td>@kh.NgayTao?.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <a href="@Url.Action("DetailsCaNhan", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action view" title="Xem chi tiết">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                                                <circle cx="12" cy="12" r="3"></circle>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="@Url.Action("EditCaNhan", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action edit" title="Cập nhật">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+
+                    @if (myDoanhNghieps.Any())
+                    {
+                        <div class="table-section">
+                            <h3 class="table-title">
+                                <span class="badge doanh-nghiep">Doanh nghiệp</span>
+                                @myDoanhNghiepCount khách hàng doanh nghiệp
+                            </h3>
+                            <div class="table-responsive">
+                                <table class="customer-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã KH</th>
+                                            <th>Tên công ty</th>
+                                            <th>Mã số thuế</th>
+                                            <th>Người đại diện</th>
+                                            <th>Số điện thoại</th>
+                                            <th>Ngày tạo</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var kh in myDoanhNghieps)
+                                        {
+                                            <tr>
+                                                <td><span class="customer-code">@kh.MaKhachHangCode</span></td>
+                                                <td><strong>@kh.TenCongTy</strong></td>
+                                                <td>@kh.MaSoThue</td>
+                                                <td>@kh.NguoiDaiDienPhapLuat</td>
+                                                <td>@kh.SoDienThoai</td>
+                                                <td>@kh.NgayTao?.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <a href="@Url.Action("DetailsDoanhNghiep", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action view" title="Xem chi tiết">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                                                <circle cx="12" cy="12" r="3"></circle>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="@Url.Action("EditDoanhNghiep", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action edit" title="Cập nhật">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else
+        {
+            <!-- All Customers Tab -->
+            <div class="tab-pane active" id="all-customers">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13"></path>
+                            <path d="M16 3.13C16.8604 3.3503 17.623 3.8507 18.1676 4.55231C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88"></path>
+                        </svg>
+                        Tất cả khách hàng
+                    </h2>
+                    <p class="section-subtitle">Danh sách tất cả khách hàng trong hệ thống</p>
+                </div>
+
+                <!-- Stats Cards - Centered and Wider -->
+                <div class="stats-cards-wrapper">
+                    <div class="stats-cards">
+                        <div class="stat-card ca-nhan">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value">@allCaNhanCount</span>
+                                <span class="stat-label">Cá nhân</span>
+                            </div>
+                        </div>
+                        <div class="stat-card doanh-nghiep">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"></path>
+                                    <path d="M9 22V12H15V22"></path>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value">@allDoanhNghiepCount</span>
+                                <span class="stat-label">Doanh nghiệp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (allTotalCount == 0)
+                {
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9 15C9 15 10.5 16.5 12 16.5C13.5 16.5 15 15 15 15"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                        <h3>Chưa có khách hàng nào trong hệ thống</h3>
+                        <p>Hệ thống chưa có dữ liệu khách hàng nào.</p>
+                    </div>
+                }
+                else
+                {
+                    <!-- Customer Tables -->
+                    @if (allCaNhans.Any())
+                    {
+                        <div class="table-section">
+                            <h3 class="table-title">
+                                <span class="badge ca-nhan">Cá nhân</span>
+                                @allCaNhanCount khách hàng cá nhân
+                            </h3>
+                            <div class="table-responsive">
+                                <table class="customer-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã KH</th>
+                                            <th>Họ tên</th>
+                                            <th>CCCD/CMND</th>
+                                            <th>Số điện thoại</th>
+                                            <th>Email</th>
+                                            <th>Người tạo</th>
+                                            <th>Ngày tạo</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var kh in allCaNhans)
+                                        {
+                                            <tr>
+                                                <td><span class="customer-code">@kh.MaKhachHangCode</span></td>
+                                                <td><strong>@kh.HoTen</strong></td>
+                                                <td>@kh.SoCmnd</td>
+                                                <td>@kh.SoDienThoai</td>
+                                                <td>@(kh.Email ?? "-")</td>
+                                                <td>
+                                                    <span class="creator-name">
+                                                        @(kh.NguoiTaoNavigation?.HoTen ?? "N/A")
+                                                    </span>
+                                                </td>
+                                                <td>@kh.NgayTao?.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <a href="@Url.Action("DetailsCaNhan", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action view" title="Xem chi tiết">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                                                <circle cx="12" cy="12" r="3"></circle>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="@Url.Action("EditCaNhan", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action edit" title="Cập nhật">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+
+                    @if (allDoanhNghieps.Any())
+                    {
+                        <div class="table-section">
+                            <h3 class="table-title">
+                                <span class="badge doanh-nghiep">Doanh nghiệp</span>
+                                @allDoanhNghiepCount khách hàng doanh nghiệp
+                            </h3>
+                            <div class="table-responsive">
+                                <table class="customer-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã KH</th>
+                                            <th>Tên công ty</th>
+                                            <th>Mã số thuế</th>
+                                            <th>Người đại diện</th>
+                                            <th>Số điện thoại</th>
+                                            <th>Người tạo</th>
+                                            <th>Ngày tạo</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var kh in allDoanhNghieps)
+                                        {
+                                            <tr>
+                                                <td><span class="customer-code">@kh.MaKhachHangCode</span></td>
+                                                <td><strong>@kh.TenCongTy</strong></td>
+                                                <td>@kh.MaSoThue</td>
+                                                <td>@kh.NguoiDaiDienPhapLuat</td>
+                                                <td>@kh.SoDienThoai</td>
+                                                <td>
+                                                    <span class="creator-name">
+                                                        @(kh.NguoiTaoNavigation?.HoTen ?? "N/A")
+                                                    </span>
+                                                </td>
+                                                <td>@kh.NgayTao?.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <a href="@Url.Action("DetailsDoanhNghiep", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action view" title="Xem chi tiết">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                                                <circle cx="12" cy="12" r="3"></circle>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="@Url.Action("EditDoanhNghiep", "Customer", new { id = kh.MaKhachHang })" 
+                                                           class="btn-action edit" title="Cập nhật">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+/* Main Container */
+.customer-management {
+    padding: 1.5rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    min-height: calc(100vh - 100px);
+}
+
+/* Animated Background Decoration */
+.page-bg-decoration {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 300px;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.5;
+    filter: blur(60px);
+    animation: floatBubble 20s infinite ease-in-out;
+}
+
+.circle-1 {
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    top: -100px;
+    right: 10%;
+    animation-delay: 0s;
+}
+
+.circle-2 {
+    width: 200px;
+    height: 200px;
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    top: -50px;
+    right: 30%;
+    animation-delay: -7s;
+}
+
+.circle-3 {
+    width: 250px;
+    height: 250px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    top: -80px;
+    left: 5%;
+    animation-delay: -14s;
+}
+
+@@keyframes floatBubble {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, 20px) scale(1.05); }
+    50% { transform: translate(-20px, 40px) scale(0.95); }
+    75% { transform: translate(20px, -10px) scale(1.02); }
+}
+
+/* Header Styles */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.header-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+    flex-shrink: 0;
+    animation: iconPulse 3s infinite ease-in-out;
+}
+
+@@keyframes iconPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35); }
+    50% { transform: scale(1.05); box-shadow: 0 12px 32px rgba(59, 130, 246, 0.45); }
+}
+
+.header-icon-wrapper svg {
+    width: 28px;
+    height: 28px;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 1.85rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin: 0.35rem 0 0;
+    font-weight: 500;
+}
+
+/* Primary Button with shine effect */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.875rem 1.5rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+}
+
+.btn-primary:active {
+    transform: translateY(-1px);
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.btn-primary:hover .btn-icon {
+    background: rgba(255,255,255,0.3);
+    transform: rotate(90deg);
+}
+
+.btn-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-text {
+    position: relative;
+    z-index: 1;
+}
+
+.btn-shine {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover .btn-shine {
+    left: 100%;
+}
+
+/* Search Section - Now combined with tabs in filter-row */
+.filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.search-form {
+    display: flex;
+    gap: 0.75rem;
+    flex: 1;
+    max-width: 500px;
+}
+
+.search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.85rem 2.5rem 0.85rem 2.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #f8fafc;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    background: white;
+}
+
+.clear-search {
+    position: absolute;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #9ca3af;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.clear-search:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.clear-search svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-search {
+    padding: 0.85rem 1.75rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-search:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-search:active {
+    transform: translateY(0);
+}
+
+/* Tabs Navigation - Now inside filter-row */
+.tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    padding: 0.5rem;
+    border-radius: 14px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.tab-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.tab-item svg {
+    width: 20px;
+    height: 20px;
+    transition: all 0.3s;
+}
+
+.tab-item:hover {
+    background: rgba(255,255,255,0.8);
+    color: #374151;
+}
+
+.tab-item:hover svg {
+    transform: scale(1.1);
+}
+
+.tab-item.active {
+    background: white;
+    color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.tab-item.active svg {
+    color: #3b82f6;
+}
+
+.tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 8px;
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 13px;
+    transition: all 0.3s;
+}
+
+.tab-item.active .tab-badge {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Tab Content */
+.tab-content {
+    background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.section-header {
+    margin-bottom: 1.75rem;
+    text-align: center;
+}
+
+.section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.5rem;
+}
+
+.section-title svg {
+    width: 28px;
+    height: 28px;
+    color: #3b82f6;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    padding: 6px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.section-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Stats Cards - Centered and Wider */
+.stats-cards-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.stats-cards {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem 2.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    border: none;
+    min-width: 240px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card.ca-nhan::before {
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.stat-card.doanh-nghiep::before {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+
+.stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    transition: all 0.3s;
+}
+
+.stat-card:hover .stat-icon {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.stat-card.ca-nhan .stat-icon {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.stat-card.doanh-nghiep .stat-icon {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #059669;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.stat-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.2;
+}
+
+.stat-card.ca-nhan .stat-value {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-card.doanh-nghiep .stat-value {
+    background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-state svg {
+    width: 80px;
+    height: 80px;
+    color: #d1d5db;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.5rem;
+}
+
+.empty-state p {
+    color: #6b7280;
+    margin: 0 0 1.5rem;
+    max-width: 400px;
+}
+
+/* Table Section */
+.table-section {
+    margin-bottom: 2rem;
+}
+
+.table-section:last-child {
+    margin-bottom: 0;
+}
+
+.table-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 1rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+}
+
+.badge.ca-nhan {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.badge.doanh-nghiep {
+    background: #d1fae5;
+    color: #059669;
+}
+
+/* Table Styles - With scroll for max 10 rows */
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 500px;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.customer-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.customer-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.customer-table th {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-weight: 700;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.customer-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+    transition: all 0.2s;
+}
+
+.customer-table tbody tr {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.customer-table tbody tr:hover {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.customer-table tbody tr:hover td {
+    color: #1e40af;
+}
+
+.customer-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.customer-code {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #475569;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.creator-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-action::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.4s;
+}
+
+.btn-action:hover::before {
+    width: 100%;
+    height: 100%;
+}
+
+.btn-action svg {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s;
+}
+
+.btn-action:hover svg {
+    transform: scale(1.15);
+}
+
+.btn-action.view {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1d4ed8;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.btn-action.view:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-action.edit {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #b45309;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.btn-action.edit:hover {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+/* Table Title */
+.table-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0 0 1.25rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+}
+
+.badge.ca-nhan {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1d4ed8;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.badge.doanh-nghiep {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #047857;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 16px;
+    border: 2px dashed #e2e8f0;
+}
+
+.empty-state svg {
+    width: 100px;
+    height: 100px;
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+    animation: emptyBounce 3s infinite ease-in-out;
+}
+
+@@keyframes emptyBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.empty-state h3 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0 0 0.75rem;
+}
+
+.empty-state p {
+    color: #64748b;
+    margin: 0 0 2rem;
+    max-width: 400px;
+    line-height: 1.6;
+}
+
+/* Responsive */
+@@media (max-width: 992px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-form {
+        max-width: 100%;
+    }
+
+    .tabs-nav {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .page-bg-decoration {
+        display: none;
+    }
+}
+
+@@media (max-width: 768px) {
+    .customer-management {
+        padding: 1rem;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1.25rem;
+    }
+
+    .header-icon-wrapper {
+        width: 48px;
+        height: 48px;
+    }
+
+    .header-icon-wrapper svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .filter-row {
+        padding: 1rem;
+    }
+
+    .search-form {
+        flex-direction: column;
+        max-width: 100%;
+    }
+
+    .tabs-nav {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .tab-item {
+        justify-content: center;
+    }
+
+    .tab-content {
+        padding: 1.25rem;
+    }
+
+    .stats-cards-wrapper {
+        width: 100%;
+    }
+
+    .stats-cards {
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .stat-card {
+        min-width: auto;
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>

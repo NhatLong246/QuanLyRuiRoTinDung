@@ -222,10 +222,8 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    width: calc(100vw - var(--sidebar-width));
     max-width: calc(100vw - var(--sidebar-width));
     overflow-x: hidden;
-    box-sizing: border-box;
 }
 
 /* ============================================
@@ -417,7 +415,6 @@ body {
     overflow-x: hidden;
     max-width: 100%;
     box-sizing: border-box;
-    width: 100%;
 }
 
 /* ============================================

@@ -16,8 +16,53 @@ namespace QuanLyRuiRoTinDung.Controllers
             _customerService = customerService;
         }
 
-        // GET: Customer - Chọn loại khách hàng
+        // GET: Customer - Chọn loại khách hàng (Redirect to List)
         public IActionResult Index()
+        {
+            // Redirect tới trang quản lý khách hàng
+            return RedirectToAction("List");
+        }
+
+        // GET: Customer/List - Quản lý danh sách khách hàng
+        public async Task<IActionResult> List(string? searchTerm = null, string? tab = null)
+        {
+            // Kiểm tra đăng nhập
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int nguoiDung))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Tab hiện tại (default là "my")
+            ViewBag.CurrentTab = tab ?? "my";
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.CurrentUserName = HttpContext.Session.GetString("HoTen");
+
+            // Lấy dữ liệu khách hàng của nhân viên
+            var myCaNhans = await _customerService.GetCaNhanByNguoiTaoAsync(nguoiDung, searchTerm);
+            var myDoanhNghieps = await _customerService.GetDoanhNghiepByNguoiTaoAsync(nguoiDung, searchTerm);
+
+            // Lấy tất cả khách hàng
+            var allCaNhans = await _customerService.GetAllCaNhanWithFilterAsync(searchTerm);
+            var allDoanhNghieps = await _customerService.GetAllDoanhNghiepWithFilterAsync(searchTerm);
+
+            // Đếm số lượng
+            ViewBag.MyCaNhanCount = myCaNhans.Count;
+            ViewBag.MyDoanhNghiepCount = myDoanhNghieps.Count;
+            ViewBag.AllCaNhanCount = allCaNhans.Count;
+            ViewBag.AllDoanhNghiepCount = allDoanhNghieps.Count;
+
+            // Pass data to view
+            ViewBag.MyCaNhans = myCaNhans;
+            ViewBag.MyDoanhNghieps = myDoanhNghieps;
+            ViewBag.AllCaNhans = allCaNhans;
+            ViewBag.AllDoanhNghieps = allDoanhNghieps;
+
+            return View();
+        }
+
+        // GET: Customer/Create - Chọn loại khách hàng để tạo
+        public IActionResult Create()
         {
             // Kiểm tra đăng nhập
             var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
@@ -122,6 +167,13 @@ namespace QuanLyRuiRoTinDung.Controllers
                 if (existingCaNhan != null)
                 {
                     ModelState.AddModelError("SoCmnd", "Số CMND/CCCD này đã được sử dụng bởi khách hàng cá nhân khác.");
+                }
+
+                // Kiểm tra với CIC: Nếu CCCD đã tồn tại trong CIC (loại Cá nhân), tên phải khớp
+                var cicValidation = await _customerService.ValidateCicForCaNhanAsync(khachHang.SoCmnd, khachHang.HoTen ?? "");
+                if (!cicValidation.isValid && !string.IsNullOrEmpty(cicValidation.fieldName))
+                {
+                    ModelState.AddModelError(cicValidation.fieldName, cicValidation.errorMessage ?? "Thông tin không khớp với CIC.");
                 }
 
                 // Kiểm tra CMND đã tồn tại trong bảng doanh nghiệp chưa (người đại diện pháp luật)
@@ -361,6 +413,17 @@ namespace QuanLyRuiRoTinDung.Controllers
                     if (existing != null)
                     {
                         ModelState.AddModelError("MaSoThue", "Mã số thuế này đã được sử dụng bởi doanh nghiệp khác.");
+                    }
+
+                    // Kiểm tra với CIC: Nếu MST đã tồn tại trong CIC (loại Doanh nghiệp), 
+                    // CCCD người đại diện và tên công ty phải khớp
+                    var cicValidation = await _customerService.ValidateCicForDoanhNghiepAsync(
+                        khachHang.MaSoThue,
+                        khachHang.SoCccdNguoiDaiDienPhapLuat,
+                        khachHang.TenCongTy ?? "");
+                    if (!cicValidation.isValid && !string.IsNullOrEmpty(cicValidation.fieldName))
+                    {
+                        ModelState.AddModelError(cicValidation.fieldName, cicValidation.errorMessage ?? "Thông tin không khớp với CIC.");
                     }
                 }
             }
@@ -664,31 +727,31 @@ namespace QuanLyRuiRoTinDung.Controllers
 
         // AJAX: Kiểm tra số điện thoại trùng
         [HttpGet]
-        public async Task<IActionResult> CheckPhoneExists(string phone)
+        public async Task<IActionResult> CheckPhoneExists(string phone, int? excludeId = null, string? customerType = null)
         {
             if (string.IsNullOrEmpty(phone))
             {
                 return Json(new { exists = false });
             }
 
-            var exists = await _customerService.CheckPhoneExistsAsync(phone);
+            var exists = await _customerService.CheckPhoneExistsAsync(phone, excludeId, customerType);
             return Json(new { exists = exists });
         }
 
         // AJAX: Kiểm tra email trùng
         [HttpGet]
-        public async Task<IActionResult> CheckEmailExists(string email)
+        public async Task<IActionResult> CheckEmailExists(string email, int? excludeId = null, string? customerType = null)
         {
             if (string.IsNullOrEmpty(email))
             {
                 return Json(new { exists = false });
             }
 
-            var exists = await _customerService.CheckEmailExistsAsync(email);
+            var exists = await _customerService.CheckEmailExistsAsync(email, excludeId, customerType);
             return Json(new { exists = exists });
         }
 
-        // AJAX: Kiểm tra CCCD/CMND trùng
+        // AJAX: Kiểm tra CCCD/CMND trùng (tất cả - dùng cho doanh nghiệp)
         [HttpGet]
         public async Task<IActionResult> CheckCmndExists(string soCmnd)
         {
@@ -704,6 +767,542 @@ namespace QuanLyRuiRoTinDung.Controllers
 
             var exists = existingCaNhan != null || (existingDoanhNghieps != null && existingDoanhNghieps.Any());
             return Json(new { exists });
+        }
+
+        // AJAX: Kiểm tra CCCD/CMND trùng - CHỈ trong bảng KhachHangCaNhan (dùng cho tạo khách hàng cá nhân)
+        [HttpGet]
+        public async Task<IActionResult> CheckCmndExistsForCaNhan(string soCmnd, int? excludeId = null)
+        {
+            if (string.IsNullOrEmpty(soCmnd))
+            {
+                return Json(new { exists = false });
+            }
+
+            var soCmndClean = soCmnd.Replace(" ", "").Replace("-", "");
+
+            var existingCaNhan = await _customerService.GetCustomerByCmndAsync(soCmndClean);
+            
+            // Nếu có excludeId, bỏ qua khách hàng hiện tại (cho trường hợp edit)
+            var exists = existingCaNhan != null && (!excludeId.HasValue || existingCaNhan.MaKhachHang != excludeId.Value);
+            return Json(new { exists });
+        }
+
+        // AJAX: Lấy thông tin từ CCCD (khách hàng cá nhân) để auto-fill vào form doanh nghiệp
+        [HttpGet]
+        public async Task<IActionResult> GetInfoFromCccd(string soCccd)
+        {
+            if (string.IsNullOrEmpty(soCccd))
+            {
+                return Json(new { exists = false });
+            }
+
+            var soCccdClean = soCccd.Replace(" ", "").Replace("-", "");
+            var caNhan = await _customerService.GetCustomerByCmndAsync(soCccdClean);
+
+            if (caNhan != null)
+            {
+                return Json(new
+                {
+                    exists = true,
+                    hoTen = caNhan.HoTen,
+                    ngaySinh = caNhan.NgaySinh?.ToString("yyyy-MM-dd"),
+                    gioiTinh = caNhan.GioiTinh
+                });
+            }
+
+            return Json(new { exists = false });
+        }
+
+        // AJAX: Kiểm tra giấy phép kinh doanh trùng
+        [HttpGet]
+        public async Task<IActionResult> CheckGiayPhepExists(string soGiayPhep)
+        {
+            if (string.IsNullOrEmpty(soGiayPhep))
+            {
+                return Json(new { exists = false });
+            }
+
+            var existing = await _customerService.GetCustomerByGiayPhepAsync(soGiayPhep.Trim());
+            return Json(new { exists = existing != null });
+        }
+
+        // AJAX: Kiểm tra tên công ty trùng - REALTIME
+        [HttpGet]
+        public async Task<IActionResult> CheckTenCongTyExists(string tenCongTy)
+        {
+            if (string.IsNullOrEmpty(tenCongTy))
+            {
+                return Json(new { exists = false });
+            }
+
+            var exists = await _customerService.CheckTenCongTyExistsAsync(tenCongTy.Trim());
+            return Json(new { exists = exists });
+        }
+
+        // AJAX: Cross-validate doanh nghiệp với CIC (Mã số thuế, Tên công ty, CCCD người đại diện)
+        [HttpGet]
+        public async Task<IActionResult> CrossValidateCIC(string maSoThue, string tenCongTy, string? cccd)
+        {
+            if (string.IsNullOrEmpty(maSoThue) || string.IsNullOrEmpty(tenCongTy))
+            {
+                return Json(new { hasCicRecord = false });
+            }
+
+            var maSoThueClean = maSoThue.Replace("-", "");
+            var result = await _customerService.CrossValidateCICForDoanhNghiepAsync(maSoThueClean, tenCongTy, cccd);
+
+            return Json(new
+            {
+                hasCicRecord = result.HasCicRecord,
+                maSoThueMismatch = result.MaSoThueMismatch,
+                tenCongTyMismatch = result.TenCongTyMismatch,
+                cccdMismatch = result.CccdMismatch,
+                cicMaSoThue = result.CicMaSoThue,
+                cicTenCongTy = result.CicTenCongTy,
+                cicCccd = result.CicCccd
+            });
+        }
+
+        // AJAX: Cross-check người đại diện với CIC, Khách hàng cá nhân VÀ các Doanh nghiệp khác
+        [HttpGet]
+        public async Task<IActionResult> CrossCheckWithCIC(string soCccd, string? nguoiDaiDien, string? ngaySinh, string? gioiTinh, int? excludeId = null)
+        {
+            if (string.IsNullOrEmpty(soCccd))
+            {
+                return Json(new { hasWarnings = false, warnings = new List<object>() });
+            }
+
+            var soCccdClean = soCccd.Replace(" ", "").Replace("-", "");
+            DateOnly? ngaySinhParsed = null;
+            if (!string.IsNullOrEmpty(ngaySinh) && DateOnly.TryParse(ngaySinh, out var parsed))
+            {
+                ngaySinhParsed = parsed;
+            }
+
+            var result = await _customerService.CrossCheckNguoiDaiDienWithCICAsync(
+                soCccdClean, nguoiDaiDien, ngaySinhParsed, gioiTinh, excludeId);
+
+            return Json(new
+            {
+                hasWarnings = result.Warnings.Count > 0,
+                warnings = result.Warnings.Select(w => new { fieldName = w.FieldName, message = w.Message }),
+                referenceData = result.ReferenceData != null ? new
+                {
+                    hoTen = result.ReferenceData.HoTen,
+                    ngaySinh = result.ReferenceData.NgaySinh,
+                    gioiTinh = result.ReferenceData.GioiTinh,
+                    source = result.ReferenceData.Source
+                } : null
+            });
+        }
+
+        // AJAX: Kiểm tra CIC cho khách hàng cá nhân - trả về thông tin để so sánh realtime
+        [HttpGet]
+        public async Task<IActionResult> CheckCicForCaNhan(string soCccd, string hoTen)
+        {
+            if (string.IsNullOrEmpty(soCccd))
+            {
+                return Json(new { hasCic = false });
+            }
+
+            var soCccdClean = soCccd.Replace(" ", "").Replace("-", "");
+            var validation = await _customerService.ValidateCicForCaNhanAsync(soCccdClean, hoTen ?? "");
+
+            if (!validation.isValid)
+            {
+                return Json(new { 
+                    hasCic = true, 
+                    isValid = false, 
+                    fieldName = validation.fieldName,
+                    errorMessage = validation.errorMessage 
+                });
+            }
+
+            return Json(new { hasCic = true, isValid = true });
+        }
+
+        // AJAX: Kiểm tra CIC cho doanh nghiệp - trả về thông tin để so sánh realtime
+        [HttpGet]
+        public async Task<IActionResult> CheckCicForDoanhNghiep(string maSoThue, string? soCccdNguoiDaiDien, string tenCongTy)
+        {
+            if (string.IsNullOrEmpty(maSoThue))
+            {
+                return Json(new { hasCic = false });
+            }
+
+            var maSoThueClean = maSoThue.Replace("-", "");
+            var validation = await _customerService.ValidateCicForDoanhNghiepAsync(maSoThueClean, soCccdNguoiDaiDien, tenCongTy ?? "");
+
+            if (!validation.isValid)
+            {
+                return Json(new { 
+                    hasCic = true, 
+                    isValid = false, 
+                    fieldName = validation.fieldName,
+                    errorMessage = validation.errorMessage 
+                });
+            }
+
+            return Json(new { hasCic = true, isValid = true });
+        }
+
+        // AJAX: Cross-validation CCCD cho Doanh nghiệp - kiểm tra với Khách hàng cá nhân/CIC cá nhân
+        [HttpGet]
+        public async Task<IActionResult> CrossCheckCccdForDoanhNghiep(string soCccd, string? nguoiDaiDien, string? ngaySinh, string? gioiTinh)
+        {
+            if (string.IsNullOrEmpty(soCccd))
+            {
+                return Json(new { hasExistingData = false });
+            }
+
+            var soCccdClean = soCccd.Replace(" ", "").Replace("-", "");
+            DateOnly? ngaySinhParsed = null;
+            if (!string.IsNullOrEmpty(ngaySinh) && DateOnly.TryParse(ngaySinh, out var parsed))
+            {
+                ngaySinhParsed = parsed;
+            }
+
+            var result = await _customerService.ValidateCrossCheckCccdForDoanhNghiepAsync(
+                soCccdClean, nguoiDaiDien, ngaySinhParsed, gioiTinh);
+
+            return Json(new
+            {
+                hasExistingData = result.HasExistingData,
+                isValid = result.IsValid,
+                sourceType = result.SourceType,
+                refHoTen = result.RefHoTen,
+                refNgaySinh = result.RefNgaySinh?.ToString("yyyy-MM-dd"),
+                refGioiTinh = result.RefGioiTinh,
+                errors = result.Errors.Select(e => new { fieldName = e.FieldName, errorMessage = e.ErrorMessage })
+            });
+        }
+
+        // AJAX: Cross-validation CCCD cho Cá nhân - kiểm tra với Doanh nghiệp (người đại diện)
+        [HttpGet]
+        public async Task<IActionResult> CrossCheckCccdForCaNhan(string soCccd, string? hoTen, string? ngaySinh, string? gioiTinh)
+        {
+            if (string.IsNullOrEmpty(soCccd))
+            {
+                return Json(new { hasExistingData = false });
+            }
+
+            var soCccdClean = soCccd.Replace(" ", "").Replace("-", "");
+            DateOnly? ngaySinhParsed = null;
+            if (!string.IsNullOrEmpty(ngaySinh) && DateOnly.TryParse(ngaySinh, out var parsed))
+            {
+                ngaySinhParsed = parsed;
+            }
+
+            var result = await _customerService.ValidateCrossCheckCccdForCaNhanAsync(
+                soCccdClean, hoTen, ngaySinhParsed, gioiTinh);
+
+            return Json(new
+            {
+                hasExistingData = result.HasExistingData,
+                isValid = result.IsValid,
+                sourceType = result.SourceType,
+                refHoTen = result.RefHoTen,
+                refNgaySinh = result.RefNgaySinh?.ToString("yyyy-MM-dd"),
+                refGioiTinh = result.RefGioiTinh,
+                errors = result.Errors.Select(e => new { fieldName = e.FieldName, errorMessage = e.ErrorMessage })
+            });
+        }
+
+        // GET: Customer/DetailsCaNhan/5 - Xem chi tiết khách hàng cá nhân
+        public async Task<IActionResult> DetailsCaNhan(int id)
+        {
+            // Kiểm tra đăng nhập
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var khachHang = await _customerService.GetCaNhanByIdAsync(id);
+            if (khachHang == null)
+            {
+                return NotFound();
+            }
+
+            return View(khachHang);
+        }
+
+        // GET: Customer/DetailsDoanhNghiep/5 - Xem chi tiết khách hàng doanh nghiệp
+        public async Task<IActionResult> DetailsDoanhNghiep(int id)
+        {
+            // Kiểm tra đăng nhập
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var khachHang = await _customerService.GetDoanhNghiepByIdAsync(id);
+            if (khachHang == null)
+            {
+                return NotFound();
+            }
+
+            return View(khachHang);
+        }
+
+        // GET: Customer/EditCaNhan/5 - Form cập nhật khách hàng cá nhân
+        public async Task<IActionResult> EditCaNhan(int id)
+        {
+            // Kiểm tra đăng nhập
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var khachHang = await _customerService.GetCaNhanByIdAsync(id);
+            if (khachHang == null)
+            {
+                return NotFound();
+            }
+
+            return View(khachHang);
+        }
+
+        // POST: Customer/EditCaNhan/5 - Xử lý cập nhật khách hàng cá nhân
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCaNhan(int id, KhachHangCaNhan model,
+            IFormFile? cccdTruocFile, IFormFile? cccdSauFile, IFormFile? anhDaiDienFile,
+            string? existingCccdTruoc, string? existingCccdSau, string? existingAnhDaiDien)
+        {
+            // Kiểm tra đăng nhập
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (id != model.MaKhachHang)
+            {
+                return BadRequest();
+            }
+
+            var existing = await _customerService.GetCaNhanByIdAsync(id);
+            if (existing == null)
+            {
+                return NotFound();
+            }
+
+            // Cập nhật các thông tin (không cho phép thay đổi CCCD, mã khách hàng, họ tên)
+            existing.SoDienThoai = model.SoDienThoai;
+            existing.Email = model.Email;
+            existing.DiaChi = model.DiaChi;
+            existing.ThanhPho = model.ThanhPho;
+            existing.Quan = model.Quan;
+            existing.Phuong = model.Phuong;
+            existing.NgheNghiep = model.NgheNghiep;
+            existing.ThuNhapHangThang = model.ThuNhapHangThang;
+            existing.TinhTrangHonNhan = model.TinhTrangHonNhan;
+            existing.TenCongTy = model.TenCongTy;
+            existing.SoNamLamViec = model.SoNamLamViec;
+
+            // Xử lý upload file ảnh
+            if (cccdTruocFile != null && cccdTruocFile.Length > 0)
+            {
+                existing.CccdTruoc = await SaveFileAsync(cccdTruocFile, "cccd");
+            }
+            else if (!string.IsNullOrEmpty(existingCccdTruoc))
+            {
+                existing.CccdTruoc = existingCccdTruoc;
+            }
+
+            if (cccdSauFile != null && cccdSauFile.Length > 0)
+            {
+                existing.CccdSau = await SaveFileAsync(cccdSauFile, "cccd");
+            }
+            else if (!string.IsNullOrEmpty(existingCccdSau))
+            {
+                existing.CccdSau = existingCccdSau;
+            }
+
+            if (anhDaiDienFile != null && anhDaiDienFile.Length > 0)
+            {
+                existing.AnhDaiDien = await SaveFileAsync(anhDaiDienFile, "avatar");
+            }
+            else if (!string.IsNullOrEmpty(existingAnhDaiDien))
+            {
+                existing.AnhDaiDien = existingAnhDaiDien;
+            }
+
+            await _customerService.UpdateCaNhanAsync(existing);
+
+            TempData["SuccessMessage"] = "Cập nhật thông tin khách hàng thành công!";
+            return RedirectToAction("DetailsCaNhan", new { id = id });
+        }
+
+        // GET: Customer/EditDoanhNghiep/5 - Form cập nhật khách hàng doanh nghiệp
+        public async Task<IActionResult> EditDoanhNghiep(int id)
+        {
+            // Kiểm tra đăng nhập
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var khachHang = await _customerService.GetDoanhNghiepByIdAsync(id);
+            if (khachHang == null)
+            {
+                return NotFound();
+            }
+
+            return View(khachHang);
+        }
+
+        // POST: Customer/EditDoanhNghiep/5 - Xử lý cập nhật khách hàng doanh nghiệp
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditDoanhNghiep(int id, KhachHangDoanhNghiep model,
+            IFormFile? cccdTruocFile, IFormFile? cccdSauFile, IFormFile? anhNguoiDaiDienFile,
+            List<IFormFile>? anhGiayPhepKinhDoanhFiles, List<IFormFile>? anhBaoCaoTaichinhFiles,
+            List<IFormFile>? anhGiayToLienQuanKhacFiles,
+            string? existingCccdTruoc, string? existingCccdSau, string? existingAnhNguoiDaiDien,
+            string? existingAnhGiayPhepKinhDoanh, string? existingAnhBaoCaoTaichinh, string? existingAnhGiayToLienQuanKhac)
+        {
+            // Kiểm tra đăng nhập
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (id != model.MaKhachHang)
+            {
+                return BadRequest();
+            }
+
+            var existing = await _customerService.GetDoanhNghiepByIdAsync(id);
+            if (existing == null)
+            {
+                return NotFound();
+            }
+
+            // VALIDATION: Kiểm tra CCCD người đại diện phải khớp với khách hàng cá nhân/CIC/các doanh nghiệp khác
+            if (!string.IsNullOrEmpty(model.SoCccdNguoiDaiDienPhapLuat))
+            {
+                var soCccdClean = model.SoCccdNguoiDaiDienPhapLuat.Replace(" ", "").Replace("-", "");
+                var crossCheckResult = await _customerService.CrossCheckNguoiDaiDienWithCICAsync(
+                    soCccdClean, model.NguoiDaiDienPhapLuat, model.NgaySinh, model.GioiTinh, id); // Exclude current DN when editing
+                
+                if (crossCheckResult.Warnings.Count > 0)
+                {
+                    // Nếu có cảnh báo từ CIC hoặc khách hàng cá nhân => CHẶN không cho lưu
+                    foreach (var warning in crossCheckResult.Warnings)
+                    {
+                        ModelState.AddModelError(warning.FieldName, warning.Message);
+                    }
+                    TempData["ErrorMessage"] = "Thông tin người đại diện không khớp với dữ liệu đã có trong hệ thống (Khách hàng cá nhân hoặc CIC). Vui lòng kiểm tra lại!";
+                    return View(model);
+                }
+            }
+
+            // Cập nhật các thông tin (không cho phép thay đổi MST, mã khách hàng)
+            existing.TenCongTy = model.TenCongTy;
+            existing.SoGiayPhepKinhDoanh = model.SoGiayPhepKinhDoanh;
+            existing.NgayCapGiayPhep = model.NgayCapGiayPhep;
+            existing.NguoiDaiDienPhapLuat = model.NguoiDaiDienPhapLuat;
+            existing.SoCccdNguoiDaiDienPhapLuat = model.SoCccdNguoiDaiDienPhapLuat;
+            existing.NgaySinh = model.NgaySinh;
+            existing.GioiTinh = model.GioiTinh;
+            existing.SoDienThoai = model.SoDienThoai;
+            existing.Email = model.Email;
+            existing.DiaChi = model.DiaChi;
+            existing.ThanhPho = model.ThanhPho;
+            existing.Quan = model.Quan;
+            existing.Phuong = model.Phuong;
+            existing.LinhVucKinhDoanh = model.LinhVucKinhDoanh;
+            existing.SoLuongNhanVien = model.SoLuongNhanVien;
+            existing.DoanhThuHangNam = model.DoanhThuHangNam;
+            existing.TongTaiSan = model.TongTaiSan;
+            existing.VonDieuLe = model.VonDieuLe;
+
+            // Xử lý upload file ảnh CCCD
+            if (cccdTruocFile != null && cccdTruocFile.Length > 0)
+            {
+                existing.CccdTruoc = await SaveFileAsync(cccdTruocFile, "cccd");
+            }
+            else if (!string.IsNullOrEmpty(existingCccdTruoc))
+            {
+                existing.CccdTruoc = existingCccdTruoc;
+            }
+
+            if (cccdSauFile != null && cccdSauFile.Length > 0)
+            {
+                existing.CccdSau = await SaveFileAsync(cccdSauFile, "cccd");
+            }
+            else if (!string.IsNullOrEmpty(existingCccdSau))
+            {
+                existing.CccdSau = existingCccdSau;
+            }
+
+            if (anhNguoiDaiDienFile != null && anhNguoiDaiDienFile.Length > 0)
+            {
+                existing.AnhNguoiDaiDien = await SaveFileAsync(anhNguoiDaiDienFile, "avatar");
+            }
+            else if (!string.IsNullOrEmpty(existingAnhNguoiDaiDien))
+            {
+                existing.AnhNguoiDaiDien = existingAnhNguoiDaiDien;
+            }
+
+            // Xử lý upload nhiều file giấy phép kinh doanh
+            if (anhGiayPhepKinhDoanhFiles != null && anhGiayPhepKinhDoanhFiles.Any(f => f.Length > 0))
+            {
+                var filePaths = new List<string>();
+                foreach (var file in anhGiayPhepKinhDoanhFiles.Where(f => f.Length > 0))
+                {
+                    var path = await SaveFileAsync(file, "business");
+                    filePaths.Add(path);
+                }
+                existing.AnhGiayPhepKinhDoanh = string.Join(";", filePaths);
+            }
+            else if (!string.IsNullOrEmpty(existingAnhGiayPhepKinhDoanh))
+            {
+                existing.AnhGiayPhepKinhDoanh = existingAnhGiayPhepKinhDoanh;
+            }
+
+            // Xử lý upload nhiều file báo cáo tài chính
+            if (anhBaoCaoTaichinhFiles != null && anhBaoCaoTaichinhFiles.Any(f => f.Length > 0))
+            {
+                var filePaths = new List<string>();
+                foreach (var file in anhBaoCaoTaichinhFiles.Where(f => f.Length > 0))
+                {
+                    var path = await SaveFileAsync(file, "finance");
+                    filePaths.Add(path);
+                }
+                existing.AnhBaoCaoTaichinh = string.Join(";", filePaths);
+            }
+            else if (!string.IsNullOrEmpty(existingAnhBaoCaoTaichinh))
+            {
+                existing.AnhBaoCaoTaichinh = existingAnhBaoCaoTaichinh;
+            }
+
+            // Xử lý upload nhiều file giấy tờ liên quan khác
+            if (anhGiayToLienQuanKhacFiles != null && anhGiayToLienQuanKhacFiles.Any(f => f.Length > 0))
+            {
+                var filePaths = new List<string>();
+                foreach (var file in anhGiayToLienQuanKhacFiles.Where(f => f.Length > 0))
+                {
+                    var path = await SaveFileAsync(file, "documents");
+                    filePaths.Add(path);
+                }
+                existing.AnhGiayToLienQuanKhac = string.Join(";", filePaths);
+            }
+            else if (!string.IsNullOrEmpty(existingAnhGiayToLienQuanKhac))
+            {
+                existing.AnhGiayToLienQuanKhac = existingAnhGiayToLienQuanKhac;
+            }
+
+            await _customerService.UpdateDoanhNghiepAsync(existing);
+
+            TempData["SuccessMessage"] = "Cập nhật thông tin doanh nghiệp thành công!";
+            return RedirectToAction("DetailsDoanhNghiep", new { id = id });
         }
     }
 }

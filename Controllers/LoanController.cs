@@ -22,6 +22,73 @@ namespace QuanLyRuiRoTinDung.Controllers
             _webHostEnvironment = webHostEnvironment;
         }
 
+        // GET: Loan/Index - Quản lý hồ sơ vay
+        public async Task<IActionResult> Index(string tab = "my", string? trangThai = null, string? searchTerm = null)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Lấy danh sách hồ sơ vay
+            var myLoans = await _loanService.GetMyLoansAsync(maNhanVien, trangThai, searchTerm);
+            var allLoans = await _loanService.GetAllLoansAsync(trangThai, searchTerm);
+
+            // Lấy thống kê
+            var myStats = await _loanService.GetLoanStatsAsync(maNhanVien);
+            var allStats = await _loanService.GetLoanStatsAsync();
+
+            // Lấy thông tin khách hàng cho từng hồ sơ vay
+            var customerInfoDict = new Dictionary<int, (string TenKhachHang, string LoaiKhachHang, string? MaKhachHangCode, string? AnhDaiDien)>();
+            
+            var allLoansList = myLoans.Concat(allLoans).DistinctBy(l => l.MaKhoanVay).ToList();
+            foreach (var loan in allLoansList)
+            {
+                if (!customerInfoDict.ContainsKey(loan.MaKhoanVay))
+                {
+                    string tenKH = "";
+                    string? maKHCode = null;
+                    string? anhDaiDien = null;
+                    
+                    if (loan.LoaiKhachHang == "CaNhan")
+                    {
+                        var kh = await _loanService.GetKhachHangCaNhanAsync(loan.MaKhachHang);
+                        if (kh != null)
+                        {
+                            tenKH = kh.HoTen;
+                            maKHCode = kh.MaKhachHangCode;
+                            anhDaiDien = kh.AnhDaiDien;
+                        }
+                    }
+                    else
+                    {
+                        var kh = await _loanService.GetKhachHangDoanhNghiepAsync(loan.MaKhachHang);
+                        if (kh != null)
+                        {
+                            tenKH = kh.TenCongTy;
+                            maKHCode = kh.MaKhachHangCode;
+                            anhDaiDien = kh.AnhNguoiDaiDien;
+                        }
+                    }
+                    
+                    customerInfoDict[loan.MaKhoanVay] = (tenKH, loan.LoaiKhachHang, maKHCode, anhDaiDien);
+                }
+            }
+
+            ViewBag.MyLoans = myLoans;
+            ViewBag.AllLoans = allLoans;
+            ViewBag.MyStats = myStats;
+            ViewBag.AllStats = allStats;
+            ViewBag.CustomerInfoDict = customerInfoDict;
+            ViewBag.CurrentTab = tab;
+            ViewBag.CurrentTrangThai = trangThai ?? "all";
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.MaNhanVien = maNhanVien;
+
+            return View();
+        }
+
         // GET: Loan/SelectCustomer - Hiển thị danh sách khách hàng để chọn
         public async Task<IActionResult> SelectCustomer()
         {
@@ -128,9 +195,9 @@ namespace QuanLyRuiRoTinDung.Controllers
                 LaiSuatToiDa = l.LaiSuatToiDa
             }).ToList();
 
-            // Lấy danh sách tài sản đảm bảo
-            var taiSanDamBaos = await _loanService.GetAllTaiSanDamBaoAsync();
-            ViewBag.TaiSanDamBaos = taiSanDamBaos;
+            // Lấy danh sách loại tài sản đảm bảo
+            var loaiTaiSans = await _loanService.GetAllLoaiTaiSanAsync();
+            ViewBag.LoaiTaiSans = loaiTaiSans;
 
             var khoanVay = new KhoanVay
             {
@@ -227,7 +294,7 @@ namespace QuanLyRuiRoTinDung.Controllers
             if (khoanVay.CoTaiSanDamBao == true)
             {
                 // Lấy tất cả giá trị từ form (bao gồm cả giá trị rỗng)
-                var loaiTaiSans = Request.Form["LoaiTaiSan"].ToArray();
+                var formLoaiTaiSans = Request.Form["LoaiTaiSan"].ToArray();
                 var tenTaiSanKhacs = Request.Form["TenTaiSanKhac"].ToArray();
                 var donViTaiSans = Request.Form["DonViTaiSan"].ToArray();
                 var soLuongTaiSans = Request.Form["SoLuongTaiSan"].ToArray();
@@ -235,17 +302,17 @@ namespace QuanLyRuiRoTinDung.Controllers
                 var tyLeTheChaps = Request.Form["TyLeTheChap"].ToArray();
                 var ngayTheChaps = Request.Form["NgayTheChap"].ToArray();
                 
-                _logger.LogInformation("Create - LoaiTaiSans count: {Count}, values: {Values}", loaiTaiSans.Length, string.Join("|", loaiTaiSans));
+                _logger.LogInformation("Create - LoaiTaiSans count: {Count}, values: {Values}", formLoaiTaiSans.Length, string.Join("|", formLoaiTaiSans));
                 _logger.LogInformation("Create - TenTaiSanKhacs count: {Count}, values: {Values}", tenTaiSanKhacs.Length, string.Join("|", tenTaiSanKhacs));
                 _logger.LogInformation("Create - DonViTaiSans count: {Count}, values: {Values}", donViTaiSans.Length, string.Join("|", donViTaiSans));
                 _logger.LogInformation("Create - SoLuongTaiSans count: {Count}, values: {Values}", soLuongTaiSans.Length, string.Join("|", soLuongTaiSans));
 
-                if (loaiTaiSans.Length > 0)
+                if (formLoaiTaiSans.Length > 0)
                 {
                     khoanVayTaiSans = new List<KhoanVayTaiSan>();
-                    for (int i = 0; i < loaiTaiSans.Length; i++)
+                    for (int i = 0; i < formLoaiTaiSans.Length; i++)
                     {
-                        var loaiTaiSan = loaiTaiSans.ElementAtOrDefault(i) ?? "";
+                        var loaiTaiSan = formLoaiTaiSans.ElementAtOrDefault(i) ?? "";
                         if (string.IsNullOrWhiteSpace(loaiTaiSan)) continue;
                         
                         var tenTaiSanKhac = tenTaiSanKhacs.ElementAtOrDefault(i) ?? "";
@@ -268,16 +335,39 @@ namespace QuanLyRuiRoTinDung.Controllers
                             soLuong = sl;
                         }
                         
-                        // Tìm hoặc tạo tài sản đảm bảo
+                        // Lấy tên khách hàng để làm chủ sở hữu mặc định
+                        string? chuSoHuu = null;
+                        if (khoanVay.LoaiKhachHang == "CaNhan")
+                        {
+                            var khCN = await _loanService.GetKhachHangCaNhanAsync(khoanVay.MaKhachHang);
+                            chuSoHuu = khCN?.HoTen;
+                        }
+                        else
+                        {
+                            var khDN = await _loanService.GetKhachHangDoanhNghiepAsync(khoanVay.MaKhachHang);
+                            chuSoHuu = khDN?.TenCongTy;
+                        }
+                        
+                        // Tạo tài sản đảm bảo MỚI cho khoản vay
                         TaiSanDamBao taiSan;
                         string? tenTaiSanKhacToSave = null;
                         string? donViToSave = null;
                         decimal? soLuongToSave = null;
                         
+                        // Lấy MaLoaiTaiSan từ loại tài sản đã chọn
+                        string tenLoaiTaiSan = loaiTaiSan switch
+                        {
+                            "Dat" => "Đất",
+                            "Xe" => "Xe",
+                            "Khac" => "Khác",
+                            _ => "Khác"
+                        };
+                        var maLoaiTaiSan = await _loanService.GetOrCreateLoaiTaiSanAsync(tenLoaiTaiSan);
+                        
                         if (loaiTaiSan == "Khac")
                         {
                             // Tài sản "Khác": lưu tất cả thông tin
-                            taiSan = await _loanService.CreateOrGetTaiSanAsync("Khac", tenTaiSanKhac, donViTaiSan, giaTriDinhGia);
+                            taiSan = await _loanService.CreateTaiSanAsync(maLoaiTaiSan, tenTaiSanKhac, donViTaiSan, chuSoHuu, null, giaTriDinhGia, nguoiTao);
                             tenTaiSanKhacToSave = !string.IsNullOrEmpty(tenTaiSanKhac) ? tenTaiSanKhac : null;
                             donViToSave = !string.IsNullOrEmpty(donViTaiSan) ? donViTaiSan : null;
                             soLuongToSave = soLuong;
@@ -285,7 +375,7 @@ namespace QuanLyRuiRoTinDung.Controllers
                         else
                         {
                             // Tài sản "Đất" hoặc "Xe"
-                            taiSan = await _loanService.CreateOrGetTaiSanAsync(loaiTaiSan, null, null, giaTriDinhGia);
+                            taiSan = await _loanService.CreateTaiSanAsync(maLoaiTaiSan, tenLoaiTaiSan, null, chuSoHuu, null, giaTriDinhGia, nguoiTao);
                         }
                         
                         var khoanVayTaiSan = new KhoanVayTaiSan
@@ -356,9 +446,9 @@ namespace QuanLyRuiRoTinDung.Controllers
             var loaiKhoanVays = await _loanService.GetAllLoaiKhoanVayAsync();
             ViewBag.LoaiKhoanVays = new SelectList(loaiKhoanVays, "MaLoaiVay", "TenLoaiVay");
 
-            // Lấy danh sách tài sản đảm bảo
-            var taiSanDamBaos = await _loanService.GetAllTaiSanDamBaoAsync();
-            ViewBag.TaiSanDamBaos = taiSanDamBaos;
+            // Lấy danh sách loại tài sản đảm bảo
+            var loaiTaiSans = await _loanService.GetAllLoaiTaiSanAsync();
+            ViewBag.LoaiTaiSans = loaiTaiSans;
 
             // Lấy lại thông tin khách hàng và CIC
             object? khachHang = null;
@@ -556,22 +646,45 @@ namespace QuanLyRuiRoTinDung.Controllers
                         {
                             soLuong = sl;
                         }
+                        
+                        // Lấy tên khách hàng để làm chủ sở hữu mặc định
+                        string? chuSoHuu = null;
+                        if (khoanVay.LoaiKhachHang == "CaNhan")
+                        {
+                            var khCN = await _loanService.GetKhachHangCaNhanAsync(khoanVay.MaKhachHang);
+                            chuSoHuu = khCN?.HoTen;
+                        }
+                        else
+                        {
+                            var khDN = await _loanService.GetKhachHangDoanhNghiepAsync(khoanVay.MaKhachHang);
+                            chuSoHuu = khDN?.TenCongTy;
+                        }
 
                         TaiSanDamBao taiSan;
                         string? tenTaiSanKhacToSave = null;
                         string? donViToSave = null;
                         
+                        // Lấy MaLoaiTaiSan từ loại tài sản đã chọn
+                        string tenLoaiTaiSan = loaiTaiSan switch
+                        {
+                            "Dat" => "Đất",
+                            "Xe" => "Xe",
+                            "Khac" => "Khác",
+                            _ => "Khác"
+                        };
+                        var maLoaiTaiSan = await _loanService.GetOrCreateLoaiTaiSanAsync(tenLoaiTaiSan);
+                        
                         // Nếu loại tài sản là "Khac", luôn lưu TenTaiSanKhac và DonVi (kể cả nếu rỗng)
                         if (loaiTaiSan == "Khac")
                         {
-                            taiSan = await _loanService.CreateOrGetTaiSanAsync("Khac", tenTaiSanKhac, donViTaiSan, giaTriDinhGia);
+                            taiSan = await _loanService.CreateTaiSanAsync(maLoaiTaiSan, tenTaiSanKhac, donViTaiSan, chuSoHuu, null, giaTriDinhGia, nguoiTao);
                             tenTaiSanKhacToSave = tenTaiSanKhac;
                             donViToSave = donViTaiSan;
                             _logger.LogInformation("SaveDraft - Loại Khác: TenTaiSanKhacToSave='{Ten}', DonViToSave='{DonVi}'", tenTaiSanKhacToSave, donViToSave);
                         }
                         else
                         {
-                            taiSan = await _loanService.CreateOrGetTaiSanAsync(loaiTaiSan, null, null, giaTriDinhGia);
+                            taiSan = await _loanService.CreateTaiSanAsync(maLoaiTaiSan, tenLoaiTaiSan, null, chuSoHuu, null, giaTriDinhGia, nguoiTao);
                         }
                         
                         // Parse tỷ lệ thế chấp - xử lý đúng cả số thập phân
@@ -808,8 +921,8 @@ namespace QuanLyRuiRoTinDung.Controllers
                 LaiSuatToiDa = l.LaiSuatToiDa
             }).ToList();
 
-            var taiSanDamBaos = await _loanService.GetAllTaiSanDamBaoAsync();
-            ViewBag.TaiSanDamBaos = taiSanDamBaos;
+            var loaiTaiSans = await _loanService.GetAllLoaiTaiSanAsync();
+            ViewBag.LoaiTaiSans = loaiTaiSans;
 
             // Lấy thông tin khách hàng
             object? khachHang = null;
@@ -941,7 +1054,10 @@ namespace QuanLyRuiRoTinDung.Controllers
 
             try
             {
-                var success = await _loanService.CancelSubmissionAsync(request.LoanId, nguoiCapNhat);
+                // Support both LoanId and Id (for different call sources)
+                var loanId = request.LoanId > 0 ? request.LoanId : request.Id;
+                
+                var success = await _loanService.CancelSubmissionAsync(loanId, nguoiCapNhat);
                 if (success)
                 {
                     return Json(new { success = true, message = "Đã hủy gửi hồ sơ thành công." });
@@ -957,6 +1073,133 @@ namespace QuanLyRuiRoTinDung.Controllers
                 return Json(new { success = false, message = "Có lỗi xảy ra khi hủy gửi hồ sơ." });
             }
         }
+
+        // POST: Loan/Delete - API for deleting loans from Index page
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete([FromBody] DeleteLoanRequest request)
+        {
+            try
+            {
+                var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+                if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int nguoiXoa))
+                {
+                    return Json(new { success = false, message = "Phiên đăng nhập đã hết hạn." });
+                }
+
+                // Support both LoanId and Id
+                var loanId = request.LoanId > 0 ? request.LoanId : request.Id;
+
+                if (loanId <= 0)
+                {
+                    return Json(new { success = false, message = "Thông tin hồ sơ không hợp lệ." });
+                }
+
+                var success = await _loanService.DeleteLoanAsync(loanId, nguoiXoa);
+                if (success)
+                {
+                    return Json(new { success = true, message = "Đã xóa hồ sơ vay thành công." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Không tìm thấy hồ sơ hoặc không thể xóa." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting loan");
+                return Json(new { success = false, message = "Có lỗi xảy ra khi xóa hồ sơ." });
+            }
+        }
+
+        // GET: Loan/Details/{id} - View loan details
+        public async Task<IActionResult> Details(int id)
+        {
+            var maNguoiDungStr = HttpContext.Session.GetString("MaNguoiDung");
+            if (string.IsNullOrEmpty(maNguoiDungStr) || !int.TryParse(maNguoiDungStr, out int maNhanVien))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var loan = await _loanService.GetLoanByIdAsync(id);
+            if (loan == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy hồ sơ vay.";
+                return RedirectToAction("Index");
+            }
+
+            // Lấy thông tin khách hàng
+            object? khachHang = null;
+            string tenKhachHang = "";
+            string? anhDaiDien = null;
+            string? maKhachHangCode = null;
+            string? soDienThoai = null;
+            string? email = null;
+            string? diaChi = null;
+            string? soCmndCccd = null;
+            string? maSoThue = null;
+
+            if (loan.LoaiKhachHang == "CaNhan")
+            {
+                var kh = await _loanService.GetKhachHangCaNhanAsync(loan.MaKhachHang);
+                if (kh != null)
+                {
+                    khachHang = kh;
+                    tenKhachHang = kh.HoTen;
+                    anhDaiDien = kh.AnhDaiDien;
+                    maKhachHangCode = kh.MaKhachHangCode;
+                    soDienThoai = kh.SoDienThoai;
+                    email = kh.Email;
+                    diaChi = kh.DiaChi;
+                    soCmndCccd = kh.SoCmnd;
+                }
+            }
+            else
+            {
+                var kh = await _loanService.GetKhachHangDoanhNghiepAsync(loan.MaKhachHang);
+                if (kh != null)
+                {
+                    khachHang = kh;
+                    tenKhachHang = kh.TenCongTy;
+                    anhDaiDien = kh.AnhNguoiDaiDien;
+                    maKhachHangCode = kh.MaKhachHangCode;
+                    soDienThoai = kh.SoDienThoai;
+                    email = kh.Email;
+                    diaChi = kh.DiaChi;
+                    maSoThue = kh.MaSoThue;
+                }
+            }
+
+            // Tra cứu CIC
+            ThongTinCic? cicInfo = null;
+            if (!string.IsNullOrEmpty(soCmndCccd))
+            {
+                cicInfo = await _cicService.GetCicByCmndAsync(soCmndCccd);
+            }
+            else if (!string.IsNullOrEmpty(maSoThue))
+            {
+                cicInfo = await _cicService.GetCicByMstAsync(maSoThue);
+            }
+
+            // Lấy các file đính kèm
+            var files = await _loanService.GetLoanFilesAsync(id);
+
+            ViewBag.Loan = loan;
+            ViewBag.TenKhachHang = tenKhachHang;
+            ViewBag.CustomerType = loan.LoaiKhachHang;
+            ViewBag.AnhDaiDien = anhDaiDien;
+            ViewBag.KhachHang = khachHang;
+            ViewBag.MaKhachHangCode = maKhachHangCode;
+            ViewBag.SoDienThoai = soDienThoai;
+            ViewBag.Email = email;
+            ViewBag.DiaChi = diaChi;
+            ViewBag.CicInfo = cicInfo;
+            ViewBag.Files = files;
+            ViewBag.MaNhanVien = maNhanVien;
+            ViewBag.IsMyLoan = loan.MaNhanVienTinDung == maNhanVien;
+
+            return View(loan);
+        }
     }
 
     // ViewModel cho SelectCustomer
@@ -969,10 +1212,12 @@ namespace QuanLyRuiRoTinDung.Controllers
     public class DeleteLoanRequest
     {
         public int LoanId { get; set; }
+        public int Id { get; set; }
     }
 
     public class CancelSubmissionRequest
     {
         public int LoanId { get; set; }
+        public int Id { get; set; }
     }
 }

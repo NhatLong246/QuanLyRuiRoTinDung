@@ -1,25 +1,34 @@
 $(document).ready(function() {
-    // Override jQuery validation messages tiếng Việt NGAY LẬP TỨC
-    if (typeof $.validator !== 'undefined' && $.validator.messages) {
-        $.validator.messages.email = "Vui lòng nhập địa chỉ email hợp lệ.";
-        $.validator.messages.required = "Trường này là bắt buộc.";
+    // Disable jQuery validation hoàn toàn để dùng custom validation
+    if (typeof $.validator !== 'undefined') {
+        $.validator.setDefaults({
+            ignore: '*' // Ignore all fields - disable jQuery validation
+        });
     }
 
-    // Override cho tất cả required fields
-    $('input').filter(function() { return $(this).attr('required'); }).each(function() {
-        var $input = $(this);
-        var fieldName = $input.attr('name');
-        if (fieldName) {
-            // Lấy message từ data attribute hoặc dùng default
-            var customMessage = $input.attr('data-val-required');
-            if (!customMessage) {
-                // Tạo message mặc định dựa trên tên field
-                var label = $input.closest('.form-group').find('label').text().replace('*', '').trim();
-                customMessage = label + " là bắt buộc.";
-                $input.attr('data-val-required', customMessage);
+    // Custom realtime validation cho TẤT CẢ các trường required
+    $('input[required], select[required], textarea[required]').each(function() {
+        const $input = $(this);
+        const errorSpan = $input.parent().find('.validation-error')[0] || 
+                         $input.siblings('.validation-error')[0];
+        
+        // Validate ngay khi nhập
+        $input.on('input change', function() {
+            const value = this.value.trim();
+            const fieldName = $input.parent().find('label').text().replace('*', '').trim();
+            
+            if (!value || value === '') {
+                if (errorSpan) {
+                    errorSpan.textContent = fieldName + ' là bắt buộc.';
+                    errorSpan.style.display = 'block';
+                }
+            } else {
+                if (errorSpan && errorSpan.textContent.includes('là bắt buộc')) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
             }
-            $input.attr('data-val', 'true');
-        }
+        });
     });
 
     // Format số tiền với dấu chấm cho Doanh thu hàng năm
@@ -329,7 +338,7 @@ $(document).ready(function() {
         });
     }
     
-    // Kiểm tra mã số thuế trùng
+    // Kiểm tra mã số thuế trùng và cross-validate với CIC
     async function checkMaSoThueExists(maSoThue) {
         try {
             const response = await fetch(`/Customer/CheckMaSoThueExists?maSoThue=${encodeURIComponent(maSoThue)}`);
@@ -346,10 +355,171 @@ $(document).ready(function() {
                     errorSpan.textContent = '';
                     errorSpan.style.display = 'none';
                 }
+                
+                // Cross-validate với CIC nếu không trùng
+                await checkCrossValidationCIC();
             }
         } catch (error) {
             console.error('Error checking MaSoThue:', error);
         }
+    }
+    
+    // Kiểm tra giấy phép kinh doanh trùng - REALTIME
+    const giayPhepInput = document.getElementById('giayPhepInput');
+    let giayPhepTimeout = null;
+    if (giayPhepInput) {
+        giayPhepInput.addEventListener('input', async function() {
+            const value = this.value.trim();
+            const errorSpan = document.getElementById('giayPhepError');
+            
+            // Debounce để tránh gọi API quá nhiều
+            if (giayPhepTimeout) clearTimeout(giayPhepTimeout);
+            
+            if (value && value.length >= 3) {
+                giayPhepTimeout = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/Customer/CheckGiayPhepExists?soGiayPhep=${encodeURIComponent(value)}`);
+                        const data = await response.json();
+                        
+                        if (data.exists) {
+                            if (errorSpan) {
+                                errorSpan.textContent = 'Số giấy phép kinh doanh này đã được sử dụng bởi doanh nghiệp khác.';
+                                errorSpan.style.display = 'block';
+                            }
+                        } else {
+                            if (errorSpan && errorSpan.textContent.includes('đã được sử dụng')) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking GiayPhep:', error);
+                    }
+                }, 300); // 300ms debounce
+            } else {
+                if (errorSpan && errorSpan.textContent.includes('đã được sử dụng')) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // Kiểm tra Tên công ty ngay khi nhập - REALTIME với check trùng
+    const tenCongTyInput = document.getElementById('tenCongTyInput');
+    let tenCongTyTimeout = null;
+    if (tenCongTyInput) {
+        tenCongTyInput.addEventListener('input', async function() {
+            const value = this.value.trim();
+            const errorSpan = document.getElementById('tenCongTyError');
+            
+            // Debounce để tránh gọi API quá nhiều
+            if (tenCongTyTimeout) clearTimeout(tenCongTyTimeout);
+            
+            // Hiển thị lỗi nếu rỗng
+            if (!value) {
+                if (errorSpan) {
+                    errorSpan.textContent = 'Tên công ty là bắt buộc.';
+                    errorSpan.style.display = 'block';
+                }
+            } else {
+                // Xóa lỗi required nếu có
+                if (errorSpan && errorSpan.textContent === 'Tên công ty là bắt buộc.') {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+                
+                // Check trùng tên công ty sau 300ms
+                if (value.length >= 2) {
+                    tenCongTyTimeout = setTimeout(async () => {
+                        try {
+                            const response = await fetch(`/Customer/CheckTenCongTyExists?tenCongTy=${encodeURIComponent(value)}`);
+                            const data = await response.json();
+                            
+                            if (data.exists) {
+                                if (errorSpan) {
+                                    errorSpan.textContent = 'Tên công ty này đã được sử dụng bởi doanh nghiệp khác.';
+                                    errorSpan.style.display = 'block';
+                                }
+                            } else {
+                                if (errorSpan && errorSpan.textContent.includes('đã được sử dụng')) {
+                                    errorSpan.textContent = '';
+                                    errorSpan.style.display = 'none';
+                                }
+                                // Cross-validate với CIC
+                                await checkCrossValidationCIC();
+                            }
+                        } catch (error) {
+                            console.error('Error checking TenCongTy:', error);
+                        }
+                    }, 300);
+                }
+            }
+        });
+    }
+    
+    // Hàm cross-validation với CIC cho Mã số thuế, Tên công ty và CCCD người đại diện
+    async function checkCrossValidationCIC() {
+        const maSoThue = document.getElementById('maSoThueHidden')?.value;
+        const tenCongTy = document.getElementById('tenCongTyInput')?.value.trim();
+        const cccdNguoiDaiDien = document.getElementById('cccdInput')?.value.trim();
+        
+        // Chỉ kiểm tra khi có đủ thông tin
+        if (!maSoThue || maSoThue.length !== 13) return;
+        if (!tenCongTy) return;
+        
+        try {
+            const response = await fetch(`/Customer/CrossValidateCIC?maSoThue=${encodeURIComponent(maSoThue)}&tenCongTy=${encodeURIComponent(tenCongTy)}&cccd=${encodeURIComponent(cccdNguoiDaiDien || '')}`);
+            const data = await response.json();
+            
+            // Xóa tất cả warning cũ
+            hideAllCrossWarnings();
+            
+            if (data.hasCicRecord) {
+                // Kiểm tra Mã số thuế
+                if (data.maSoThueMismatch) {
+                    showCrossWarning('maSoThueInput', 'Mã số thuế không khớp với thông tin trong CIC.');
+                }
+                
+                // Kiểm tra Tên công ty
+                if (data.tenCongTyMismatch) {
+                    showCrossWarning('tenCongTyInput', 'Tên công ty không khớp với thông tin trong CIC.');
+                }
+                
+                // Kiểm tra CCCD người đại diện
+                if (cccdNguoiDaiDien && data.cccdMismatch) {
+                    showCrossWarning('cccdInput', 'CCCD người đại diện không khớp với thông tin trong CIC.');
+                }
+            }
+        } catch (error) {
+            console.error('Error cross-validating with CIC:', error);
+        }
+    }
+    
+    // Hàm hiển thị warning label cho cross-validation
+    function showCrossWarning(inputId, message) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        // Tìm hoặc tạo warning label
+        let warningLabel = input.parentElement.querySelector('.cross-validation-warning');
+        if (!warningLabel) {
+            warningLabel = document.createElement('span');
+            warningLabel.className = 'cross-validation-warning';
+            warningLabel.style.color = '#ff9800';
+            warningLabel.style.fontSize = '0.875rem';
+            warningLabel.style.display = 'block';
+            warningLabel.style.marginTop = '4px';
+            input.parentElement.appendChild(warningLabel);
+        }
+        
+        warningLabel.textContent = '⚠ ' + message;
+        warningLabel.style.display = 'block';
+    }
+    
+    function hideAllCrossWarnings() {
+        const warnings = document.querySelectorAll('.cross-validation-warning');
+        warnings.forEach(w => w.remove());
     }
     
     // Validation client-side cho số điện thoại
@@ -360,11 +530,26 @@ $(document).ready(function() {
             if (value.length > 10) value = value.substring(0, 10);
             e.target.value = value;
             
-            // Xóa lỗi khi nhập
             const errorSpan = this.parentElement.querySelector('.validation-error');
-            if (errorSpan && value.length === 10) {
-                errorSpan.textContent = '';
-                errorSpan.style.display = 'none';
+            
+            // Validate ngay khi nhập
+            if (value.length > 0 && value.length < 10) {
+                if (errorSpan) {
+                    errorSpan.textContent = 'Số điện thoại phải đủ 10 chữ số.';
+                    errorSpan.style.display = 'block';
+                }
+            } else if (value.length === 10) {
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+                // Kiểm tra trùng qua AJAX khi đủ 10 số
+                checkPhoneExists(value);
+            } else {
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
             }
         });
         
@@ -420,11 +605,30 @@ $(document).ready(function() {
 
         emailInput.addEventListener('input', function(e) {
             e.target.setCustomValidity('');
-            // Xóa lỗi khi nhập
+            const email = this.value.trim();
             const errorSpan = this.parentElement.querySelector('.validation-error');
-            if (errorSpan && e.target.validity.valid) {
-                errorSpan.textContent = '';
-                errorSpan.style.display = 'none';
+            
+            // Validate realtime khi nhập
+            if (email.length > 0) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Email không đúng định dạng.';
+                        errorSpan.style.display = 'block';
+                    }
+                } else {
+                    if (errorSpan) {
+                        errorSpan.textContent = '';
+                        errorSpan.style.display = 'none';
+                    }
+                    // Kiểm tra trùng khi email hợp lệ
+                    checkEmailExists(email);
+                }
+            } else {
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
             }
         });
         
@@ -522,19 +726,38 @@ $(document).ready(function() {
         }
     }
     
-    // Validate CCCD người đại diện pháp luật
-    const cccdInput = document.querySelector('input[name="SoCccdNguoiDaiDienPhapLuat"]');
+    // Validate CCCD người đại diện pháp luật và auto-fill
+    const cccdInput = document.getElementById('cccdNguoiDaiDienInput') || document.querySelector('input[name="SoCccdNguoiDaiDienPhapLuat"]');
+    const nguoiDaiDienInput = document.getElementById('nguoiDaiDienInput') || document.querySelector('input[name="NguoiDaiDienPhapLuat"]');
+    const ngaySinhInput = document.getElementById('ngaySinhNguoiDaiDienInput') || document.querySelector('input[name="NgaySinh"]');
+    const gioiTinhInput = document.getElementById('gioiTinhInput') || document.querySelector('select[name="GioiTinh"]');
+    
     if (cccdInput) {
         cccdInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 12) value = value.substring(0, 12);
             e.target.value = value;
             
-            // Xóa lỗi khi nhập
             const errorSpan = this.parentElement.querySelector('.validation-error');
-            if (errorSpan && value.length === 12) {
-                errorSpan.textContent = '';
-                errorSpan.style.display = 'none';
+            
+            // Validate realtime khi nhập
+            if (value.length > 0 && value.length < 12) {
+                if (errorSpan) {
+                    errorSpan.textContent = 'Số CCCD phải đủ 12 chữ số.';
+                    errorSpan.style.display = 'block';
+                }
+            } else if (value.length === 12) {
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+                // Auto-fill thông tin từ CCCD
+                checkAndAutoFillFromCccd(value);
+            } else {
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
             }
         });
         
@@ -547,8 +770,212 @@ $(document).ready(function() {
                     errorSpan.textContent = 'Số CCCD phải đủ 12 chữ số.';
                     errorSpan.style.display = 'block';
                 }
+            } else if (value.length === 12) {
+                checkAndAutoFillFromCccd(value);
             }
         });
+    }
+    
+    // Hàm kiểm tra và tự động điền thông tin từ CCCD + CROSS-VALIDATION NGAY LẬP TỨC
+    async function checkAndAutoFillFromCccd(soCccd) {
+        try {
+            const response = await fetch(`/Customer/GetInfoFromCccd?soCccd=${encodeURIComponent(soCccd)}`);
+            const data = await response.json();
+            
+            // Xóa tất cả warning cũ trước
+            hideAllCrossWarnings();
+            
+            if (data.exists) {
+                // Kiểm tra nếu đã có giá trị trong form, so sánh và hiển thị lỗi NGAY
+                const currentNguoiDaiDien = nguoiDaiDienInput?.value?.trim() || '';
+                const currentNgaySinh = ngaySinhInput?.value || '';
+                const currentGioiTinh = gioiTinhInput?.value || '';
+                
+                // Nếu form đã có data, so sánh và báo lỗi NGAY nếu không khớp
+                if (currentNguoiDaiDien && data.hoTen && currentNguoiDaiDien.toLowerCase() !== data.hoTen.toLowerCase()) {
+                    showCrossWarningNguoiDaiDien('NguoiDaiDienPhapLuat', 
+                        `Người đại diện pháp luật phải giống với thông tin khách hàng cá nhân đã đăng ký với CCCD này. Giá trị hiện tại: ${data.hoTen}`);
+                }
+                
+                if (currentNgaySinh && data.ngaySinh && currentNgaySinh !== data.ngaySinh) {
+                    showCrossWarningNguoiDaiDien('NgaySinh', 
+                        `Ngày sinh phải giống với thông tin khách hàng cá nhân đã đăng ký. Giá trị hiện tại: ${formatDate(data.ngaySinh)}`);
+                }
+                
+                if (currentGioiTinh && data.gioiTinh && currentGioiTinh !== data.gioiTinh) {
+                    showCrossWarningNguoiDaiDien('GioiTinh', 
+                        `Giới tính phải giống với thông tin khách hàng cá nhân đã đăng ký. Giá trị hiện tại: ${data.gioiTinh}`);
+                }
+                
+                // Nếu form chưa có data, tự động điền
+                if (!currentNguoiDaiDien && data.hoTen) {
+                    nguoiDaiDienInput.value = data.hoTen;
+                }
+                if (!currentNgaySinh && data.ngaySinh) {
+                    ngaySinhInput.value = data.ngaySinh;
+                }
+                if (!currentGioiTinh && data.gioiTinh) {
+                    gioiTinhInput.value = data.gioiTinh;
+                }
+                
+                // Lưu thông tin chuẩn để so sánh sau này
+                window.cicNguoiDaiDienData = {
+                    hoTen: data.hoTen,
+                    ngaySinh: data.ngaySinh,
+                    gioiTinh: data.gioiTinh
+                };
+                
+                // Cross-validate với CIC
+                await checkCrossValidationCIC();
+            } else {
+                // CCCD chưa có trong hệ thống
+                window.cicNguoiDaiDienData = null;
+            }
+        } catch (error) {
+            console.error('Error checking CCCD:', error);
+        }
+    }
+    
+    // Hàm format date
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('vi-VN');
+    }
+    
+    // Hàm hiển thị warning cho người đại diện - HIỂN THỊ NGAY
+    function showCrossWarningNguoiDaiDien(fieldName, message) {
+        let targetInput = null;
+        if (fieldName === 'NguoiDaiDienPhapLuat') {
+            targetInput = nguoiDaiDienInput;
+        } else if (fieldName === 'NgaySinh') {
+            targetInput = ngaySinhInput;
+        } else if (fieldName === 'GioiTinh') {
+            targetInput = gioiTinhInput;
+        }
+        
+        if (!targetInput) return;
+        
+        let warningLabel = targetInput.parentElement.querySelector('.cross-validation-warning');
+        if (!warningLabel) {
+            warningLabel = document.createElement('span');
+            warningLabel.className = 'cross-validation-warning text-danger';
+            warningLabel.style.fontSize = '0.875rem';
+            warningLabel.style.display = 'block';
+            warningLabel.style.marginTop = '4px';
+            targetInput.parentElement.appendChild(warningLabel);
+        }
+        
+        warningLabel.textContent = message;
+        warningLabel.style.display = 'block';
+    }
+    
+    // Thêm listener cho các field người đại diện để kiểm tra NGAY khi thay đổi
+    if (nguoiDaiDienInput) {
+        nguoiDaiDienInput.addEventListener('input', function() {
+            // Nếu đã có data CCCD chuẩn, so sánh ngay
+            if (window.cicNguoiDaiDienData && window.cicNguoiDaiDienData.hoTen) {
+                const currentValue = this.value.trim();
+                const warningLabel = this.parentElement.querySelector('.cross-validation-warning');
+                
+                if (currentValue && currentValue.toLowerCase() !== window.cicNguoiDaiDienData.hoTen.toLowerCase()) {
+                    showCrossWarningNguoiDaiDien('NguoiDaiDienPhapLuat', 
+                        `Người đại diện pháp luật phải giống với thông tin khách hàng cá nhân đã đăng ký với CCCD này. Giá trị hiện tại: ${window.cicNguoiDaiDienData.hoTen}`);
+                } else if (warningLabel) {
+                    warningLabel.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    if (ngaySinhInput) {
+        ngaySinhInput.addEventListener('change', function() {
+            if (window.cicNguoiDaiDienData && window.cicNguoiDaiDienData.ngaySinh) {
+                const currentValue = this.value;
+                const warningLabel = this.parentElement.querySelector('.cross-validation-warning');
+                
+                if (currentValue && currentValue !== window.cicNguoiDaiDienData.ngaySinh) {
+                    showCrossWarningNguoiDaiDien('NgaySinh', 
+                        `Ngày sinh phải giống với thông tin khách hàng cá nhân đã đăng ký. Giá trị hiện tại: ${formatDate(window.cicNguoiDaiDienData.ngaySinh)}`);
+                } else if (warningLabel) {
+                    warningLabel.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    if (gioiTinhInput) {
+        gioiTinhInput.addEventListener('change', function() {
+            if (window.cicNguoiDaiDienData && window.cicNguoiDaiDienData.gioiTinh) {
+                const currentValue = this.value;
+                const warningLabel = this.parentElement.querySelector('.cross-validation-warning');
+                
+                if (currentValue && currentValue !== window.cicNguoiDaiDienData.gioiTinh) {
+                    showCrossWarningNguoiDaiDien('GioiTinh', 
+                        `Giới tính phải giống với thông tin khách hàng cá nhân đã đăng ký. Giá trị hiện tại: ${window.cicNguoiDaiDienData.gioiTinh}`);
+                } else if (warningLabel) {
+                    warningLabel.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    
+    // Hàm kiểm tra cross-validation với CIC
+    async function checkCrossValidationWithCIC() {
+        const soCccd = cccdInput?.value?.trim() || '';
+        const nguoiDaiDien = nguoiDaiDienInput?.value?.trim() || '';
+        const ngaySinh = ngaySinhInput?.value || '';
+        const gioiTinh = gioiTinhInput?.value || '';
+        
+        if (soCccd.length !== 12) return;
+        
+        try {
+            const response = await fetch(`/Customer/CrossCheckWithCIC?soCccd=${encodeURIComponent(soCccd)}&nguoiDaiDien=${encodeURIComponent(nguoiDaiDien)}&ngaySinh=${encodeURIComponent(ngaySinh)}&gioiTinh=${encodeURIComponent(gioiTinh)}`);
+            const data = await response.json();
+            
+            // Hiển thị cảnh báo nếu thông tin không khớp
+            if (data.hasWarnings) {
+                data.warnings.forEach(warning => {
+                    showCrossWarning(warning.fieldName, warning.message);
+                });
+            } else {
+                hideAllCrossWarnings();
+            }
+        } catch (error) {
+            console.error('Error cross-checking with CIC:', error);
+        }
+    }
+    
+    // Hàm hiển thị cảnh báo cross-validation
+    function showCrossWarning(fieldName, message) {
+        let targetInput = null;
+        if (fieldName === 'NguoiDaiDienPhapLuat') {
+            targetInput = nguoiDaiDienInput;
+        } else if (fieldName === 'NgaySinh') {
+            targetInput = ngaySinhInput;
+        } else if (fieldName === 'GioiTinh') {
+            targetInput = gioiTinhInput;
+        }
+        
+        if (!targetInput) return;
+        
+        let warningLabel = targetInput.parentElement.querySelector('.cross-validation-warning');
+        if (!warningLabel) {
+            warningLabel = document.createElement('div');
+            warningLabel.className = 'cross-validation-warning text-danger';
+            warningLabel.style.cssText = 'margin-top: 0.5rem; padding: 0.75rem; background: #fee2e2; border: 1px solid #ef4444; border-radius: 6px; font-size: 0.875rem;';
+            targetInput.parentElement.appendChild(warningLabel);
+        }
+        
+        warningLabel.innerHTML = `<strong>⚠ Cảnh báo:</strong> ${message}`;
+        warningLabel.style.display = 'block';
+    }
+    
+    // Hàm ẩn cảnh báo
+    function hideAllCrossWarnings() {
+        const warnings = document.querySelectorAll('.cross-validation-warning');
+        warnings.forEach(w => w.style.display = 'none');
     }
 
     // Validate số lượng nhân viên không được âm
@@ -556,9 +983,10 @@ $(document).ready(function() {
     if (soLuongNhanVien) {
         soLuongNhanVien.addEventListener('input', function(e) {
             let value = parseFloat(e.target.value);
+            const errorSpan = this.parentElement.querySelector('.validation-error');
+            
             if (isNaN(value) || value < 0) {
                 e.target.value = '';
-                const errorSpan = this.parentElement.querySelector('.validation-error');
                 if (errorSpan) {
                     errorSpan.textContent = 'Số lượng nhân viên không được âm.';
                     errorSpan.style.display = 'block';
@@ -566,7 +994,6 @@ $(document).ready(function() {
             } else {
                 // Đảm bảo là số nguyên
                 e.target.value = Math.floor(value);
-                const errorSpan = this.parentElement.querySelector('.validation-error');
                 if (errorSpan) {
                     errorSpan.textContent = '';
                     errorSpan.style.display = 'none';
@@ -596,6 +1023,39 @@ $(document).ready(function() {
                 if (errorSpan) {
                     errorSpan.textContent = '';
                     errorSpan.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // Validate Tên công ty realtime
+    const tenCongTyInput = document.querySelector('input[name="TenCongTy"]');
+    if (tenCongTyInput) {
+        tenCongTyInput.addEventListener('input', function(e) {
+            const value = this.value.trim();
+            const errorSpan = this.parentElement.querySelector('.validation-error');
+            
+            if (value.length === 0) {
+                if (errorSpan) {
+                    errorSpan.textContent = 'Tên công ty là bắt buộc.';
+                    errorSpan.style.display = 'block';
+                }
+            } else {
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.style.display = 'none';
+                }
+            }
+        });
+        
+        tenCongTyInput.addEventListener('blur', function() {
+            const value = this.value.trim();
+            const errorSpan = this.parentElement.querySelector('.validation-error');
+            
+            if (value.length === 0) {
+                if (errorSpan) {
+                    errorSpan.textContent = 'Tên công ty là bắt buộc.';
+                    errorSpan.style.display = 'block';
                 }
             }
         });
@@ -736,4 +1196,346 @@ $(document).ready(function() {
             maSoThueHidden.value = maSoThueHidden.value.replace(/[^\d]/g, '').substring(0, 13);
         }
     });
-});
+
+    // =============================================
+    // CIC VALIDATION REALTIME - DOANH NGHIỆP
+    // =============================================
+    const tenCongTyInput = document.querySelector('[name="TenCongTy"]');
+    const cccdNguoiDaiDienInput = document.querySelector('[name="SoCccdNguoiDaiDienPhapLuat"]');
+    let cicValidationTimeout = null;
+
+    // Hàm hiển thị CIC warning label
+    function showCicWarning(fieldName, message) {
+        let targetInput = null;
+        if (fieldName === 'TenCongTy') {
+            targetInput = tenCongTyInput;
+        } else if (fieldName === 'SoCccdNguoiDaiDienPhapLuat') {
+            targetInput = cccdNguoiDaiDienInput;
+        } else if (fieldName === 'MaSoThue') {
+            targetInput = maSoThueInput;
+        }
+
+        if (!targetInput) return;
+
+        // Tìm hoặc tạo warning label
+        let warningLabel = targetInput.parentElement.querySelector('.cic-warning-label');
+        if (!warningLabel) {
+            warningLabel = document.createElement('div');
+            warningLabel.className = 'cic-warning-label';
+            warningLabel.style.cssText = 'background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px;';
+            targetInput.parentElement.appendChild(warningLabel);
+        }
+
+        warningLabel.innerHTML = `
+            <svg style="width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9V13M12 17H12.01M4.93 19H19.07C20.77 19 21.77 17.17 20.92 15.75L13.85 3.63C13 2.21 11 2.21 10.15 3.63L3.08 15.75C2.23 17.17 3.23 19 4.93 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+                <strong style="display: block; margin-bottom: 2px;">⚠ Cảnh báo từ CIC</strong>
+                <span>${message}</span>
+            </div>
+        `;
+        warningLabel.style.display = 'flex';
+    }
+
+    // Hàm ẩn CIC warning label
+    function hideCicWarning(fieldName) {
+        let targetInput = null;
+        if (fieldName === 'TenCongTy') {
+            targetInput = tenCongTyInput;
+        } else if (fieldName === 'SoCccdNguoiDaiDienPhapLuat') {
+            targetInput = cccdNguoiDaiDienInput;
+        } else if (fieldName === 'MaSoThue') {
+            targetInput = maSoThueInput;
+        }
+
+        if (!targetInput) return;
+
+        const warningLabel = targetInput.parentElement.querySelector('.cic-warning-label');
+        if (warningLabel) {
+            warningLabel.style.display = 'none';
+        }
+    }
+
+    // Hàm ẩn tất cả CIC warning
+    function hideAllCicWarnings() {
+        hideCicWarning('TenCongTy');
+        hideCicWarning('SoCccdNguoiDaiDienPhapLuat');
+        hideCicWarning('MaSoThue');
+    }
+
+    // Hàm kiểm tra CIC cho doanh nghiệp
+    async function checkCicValidationDoanhNghiep() {
+        const maSoThue = maSoThueHidden?.value || '';
+        const tenCongTy = tenCongTyInput?.value?.trim() || '';
+        const soCccdNguoiDaiDien = cccdNguoiDaiDienInput?.value?.trim() || '';
+
+        // Chỉ kiểm tra khi MST đủ 13 số
+        if (maSoThue.length !== 13) {
+            hideAllCicWarnings();
+            return;
+        }
+
+        try {
+            const checkCicDoanhNghiepUrl = window.location.origin + '/Customer/CheckCicForDoanhNghiep';
+            const response = await fetch(`${checkCicDoanhNghiepUrl}?maSoThue=${encodeURIComponent(maSoThue)}&soCccdNguoiDaiDien=${encodeURIComponent(soCccdNguoiDaiDien)}&tenCongTy=${encodeURIComponent(tenCongTy)}`);
+            const data = await response.json();
+
+            if (data.hasCic && !data.isValid) {
+                showCicWarning(data.fieldName, data.errorMessage);
+            } else {
+                hideAllCicWarnings();
+            }
+        } catch (error) {
+            console.error('Error checking CIC for Doanh nghiệp:', error);
+        }
+    }
+
+    // Debounce function
+    function debounceCic(func, delay) {
+        return function(...args) {
+            if (cicValidationTimeout) clearTimeout(cicValidationTimeout);
+            cicValidationTimeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Gắn sự kiện cho các input
+    if (maSoThueInput && tenCongTyInput && cccdNguoiDaiDienInput) {
+        const debouncedCheckCic = debounceCic(checkCicValidationDoanhNghiep, 500);
+        
+        // Khi MST thay đổi
+        maSoThueInput.addEventListener('input', debouncedCheckCic);
+        maSoThueInput.addEventListener('blur', checkCicValidationDoanhNghiep);
+        
+        // Khi Tên công ty thay đổi
+        tenCongTyInput.addEventListener('input', debouncedCheckCic);
+        tenCongTyInput.addEventListener('blur', checkCicValidationDoanhNghiep);
+        
+        // Khi CCCD người đại diện thay đổi
+        cccdNguoiDaiDienInput.addEventListener('input', debouncedCheckCic);
+        cccdNguoiDaiDienInput.addEventListener('blur', checkCicValidationDoanhNghiep);
+    }
+    // =============================================
+    // END CIC VALIDATION
+    // =============================================
+
+    // =============================================
+    // CROSS-VALIDATION CCCD - KIỂM TRA VỚI CÁ NHÂN/CIC CÁ NHÂN
+    // =============================================
+    const nguoiDaiDienInput = document.querySelector('[name="NguoiDaiDienPhapLuat"]');
+    const ngaySinhNguoiDaiDienInput = document.querySelector('[name="NgaySinh"]');
+    const gioiTinhNguoiDaiDienInput = document.querySelector('[name="GioiTinh"]');
+    let crossValidationTimeout = null;
+
+    // Hàm hiển thị Cross warning label cho doanh nghiệp
+    function showCrossWarningDN(fieldName, message) {
+        let targetInput = null;
+        if (fieldName === 'NguoiDaiDienPhapLuat') {
+            targetInput = nguoiDaiDienInput;
+        } else if (fieldName === 'NgaySinh') {
+            targetInput = ngaySinhNguoiDaiDienInput;
+        } else if (fieldName === 'GioiTinh') {
+            targetInput = gioiTinhNguoiDaiDienInput;
+        }
+
+        if (!targetInput) return;
+
+        // Tìm hoặc tạo warning label
+        let warningLabel = targetInput.parentElement.querySelector('.cross-warning-label');
+        if (!warningLabel) {
+            warningLabel = document.createElement('div');
+            warningLabel.className = 'cross-warning-label';
+            warningLabel.style.cssText = 'background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px;';
+            targetInput.parentElement.appendChild(warningLabel);
+        }
+
+        warningLabel.innerHTML = `
+            <svg style="width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9V13M12 17H12.01M4.93 19H19.07C20.77 19 21.77 17.17 20.92 15.75L13.85 3.63C13 2.21 11 2.21 10.15 3.63L3.08 15.75C2.23 17.17 3.23 19 4.93 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+                <strong style="display: block; margin-bottom: 2px;">⚠ Không khớp với Khách hàng cá nhân/CIC</strong>
+                <span>${message}</span>
+            </div>
+        `;
+        warningLabel.style.display = 'flex';
+    }
+
+    // Hàm ẩn Cross warning label
+    function hideCrossWarningDN(fieldName) {
+        let targetInput = null;
+        if (fieldName === 'NguoiDaiDienPhapLuat') {
+            targetInput = nguoiDaiDienInput;
+        } else if (fieldName === 'NgaySinh') {
+            targetInput = ngaySinhNguoiDaiDienInput;
+        } else if (fieldName === 'GioiTinh') {
+            targetInput = gioiTinhNguoiDaiDienInput;
+        }
+
+        if (!targetInput) return;
+
+        const warningLabel = targetInput.parentElement.querySelector('.cross-warning-label');
+        if (warningLabel) {
+            warningLabel.style.display = 'none';
+        }
+    }
+
+    // Hàm ẩn tất cả cross warnings
+    function hideAllCrossWarningsDN() {
+        hideCrossWarningDN('NguoiDaiDienPhapLuat');
+        hideCrossWarningDN('NgaySinh');
+        hideCrossWarningDN('GioiTinh');
+    }
+
+    // Hàm kiểm tra Cross-validation cho doanh nghiệp
+    async function checkCrossValidationDoanhNghiep() {
+        const soCccd = cccdNguoiDaiDienInput?.value?.trim() || '';
+        const nguoiDaiDien = nguoiDaiDienInput?.value?.trim() || '';
+        const ngaySinh = ngaySinhNguoiDaiDienInput?.value || '';
+        const gioiTinh = gioiTinhNguoiDaiDienInput?.value || '';
+
+        // Chỉ kiểm tra khi CCCD đủ 12 số
+        if (soCccd.length !== 12) {
+            hideAllCrossWarningsDN();
+            return;
+        }
+
+        try {
+            const crossCheckUrl = window.location.origin + '/Customer/CrossCheckCccdForDoanhNghiep';
+            const response = await fetch(`${crossCheckUrl}?soCccd=${encodeURIComponent(soCccd)}&nguoiDaiDien=${encodeURIComponent(nguoiDaiDien)}&ngaySinh=${encodeURIComponent(ngaySinh)}&gioiTinh=${encodeURIComponent(gioiTinh)}`);
+            const data = await response.json();
+
+            if (data.hasExistingData && !data.isValid && data.errors) {
+                hideAllCrossWarningsDN();
+                data.errors.forEach(err => {
+                    showCrossWarningDN(err.fieldName, err.errorMessage);
+                });
+            } else {
+                hideAllCrossWarningsDN();
+            }
+        } catch (error) {
+            console.error('Error cross-checking CCCD for Doanh nghiệp:', error);
+        }
+    }
+
+    // Debounce function for cross validation
+    function debounceCrossValidation(func, delay) {
+        return function(...args) {
+            if (crossValidationTimeout) clearTimeout(crossValidationTimeout);
+            crossValidationTimeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Gắn sự kiện cho các field người đại diện
+    if (cccdNguoiDaiDienInput && nguoiDaiDienInput && ngaySinhNguoiDaiDienInput && gioiTinhNguoiDaiDienInput) {
+        const debouncedCrossCheck = debounceCrossValidation(checkCrossValidationDoanhNghiep, 500);
+        
+        // Khi CCCD người đại diện thay đổi
+        cccdNguoiDaiDienInput.addEventListener('input', debouncedCrossCheck);
+        cccdNguoiDaiDienInput.addEventListener('blur', checkCrossValidationDoanhNghiep);
+        
+        // Khi Người đại diện pháp luật thay đổi
+        nguoiDaiDienInput.addEventListener('input', debouncedCrossCheck);
+        nguoiDaiDienInput.addEventListener('blur', checkCrossValidationDoanhNghiep);
+        
+        // Khi Ngày sinh thay đổi
+        ngaySinhNguoiDaiDienInput.addEventListener('change', checkCrossValidationDoanhNghiep);
+        
+        // Khi Giới tính thay đổi
+        gioiTinhNguoiDaiDienInput.addEventListener('change', checkCrossValidationDoanhNghiep);
+    }
+    // =============================================
+    // END CROSS-VALIDATION
+    // =============================================
+
+    // Form submit validation - hiển thị TẤT CẢ lỗi khi submit
+    const form = document.querySelector('form.customer-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let hasError = false;
+            
+            // Validate TẤT CẢ required fields
+            const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+            requiredInputs.forEach(input => {
+                const value = input.value.trim();
+                const errorSpan = input.parentElement.querySelector('.validation-error') || 
+                                input.nextElementSibling;
+                const fieldName = input.parentElement.querySelector('label')?.textContent.replace('*', '').trim() || 'Trường này';
+                
+                if (!value || value === '') {
+                    if (errorSpan) {
+                        errorSpan.textContent = fieldName + ' là bắt buộc.';
+                        errorSpan.style.display = 'block';
+                    }
+                    hasError = true;
+                    
+                    // Focus vào field đầu tiên có lỗi
+                    if (hasError && !form.querySelector('input:focus, select:focus, textarea:focus')) {
+                        input.focus();
+                    }
+                }
+            });
+            
+            // Validate số điện thoại
+            if (soDienThoaiInput) {
+                const phone = soDienThoaiInput.value.replace(/\D/g, '');
+                const errorSpan = soDienThoaiInput.parentElement.querySelector('.validation-error');
+                if (phone && phone.length !== 10) {
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Số điện thoại phải đủ 10 chữ số.';
+                        errorSpan.style.display = 'block';
+                    }
+                    hasError = true;
+                }
+            }
+            
+            // Validate email format
+            if (emailInput) {
+                const email = emailInput.value.trim();
+                const errorSpan = emailInput.parentElement.querySelector('.validation-error');
+                if (email) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        if (errorSpan) {
+                            errorSpan.textContent = 'Email không đúng định dạng.';
+                            errorSpan.style.display = 'block';
+                        }
+                        hasError = true;
+                    }
+                }
+            }
+            
+            // Validate CCCD
+            const cccdInput = form.querySelector('input[name="SoCccdNguoiDaiDienPhapLuat"]');
+            if (cccdInput) {
+                const cccd = cccdInput.value.replace(/\D/g, '');
+                const errorSpan = cccdInput.parentElement.querySelector('.validation-error');
+                if (cccd && cccd.length !== 12) {
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Số CCCD phải đủ 12 chữ số.';
+                        errorSpan.style.display = 'block';
+                    }
+                    hasError = true;
+                }
+            }
+            
+            // Validate Mã số thuế
+            if (maSoThueHidden) {
+                const mst = maSoThueHidden.value;
+                const errorSpan = document.getElementById('maSoThueError');
+                if (mst && mst.length !== 13) {
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Mã số thuế phải đủ 13 chữ số.';
+                        errorSpan.style.display = 'block';
+                    }
+                    hasError = true;
+                }
+            }
+            
+            if (hasError) {
+                e.preventDefault();
+                alert('Vui lòng kiểm tra lại các trường thông tin được đánh dấu đỏ.');
+                return false;
+            }
+        });
+    }

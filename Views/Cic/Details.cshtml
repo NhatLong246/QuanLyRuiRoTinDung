@@ -239,9 +239,44 @@
                     <div class="bank-count">Đã vay tại <strong>@Model.SoToChucTinDungDaVay</strong> tổ chức tín dụng</div>
                     @if (!string.IsNullOrEmpty(Model.DanhSachToChucTinDung))
                     {
-                        <div class="bank-list">
-                            <pre class="bank-json">@Model.DanhSachToChucTinDung</pre>
-                        </div>
+                        @try
+                        {
+                            var bankList = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, object>>>(Model.DanhSachToChucTinDung);
+                            if (bankList != null && bankList.Count > 0)
+                            {
+                                <div class="bank-cards">
+                                    @foreach (var bank in bankList)
+                                    {
+                                        var tenNganHang = bank.ContainsKey("TenNganHang") ? bank["TenNganHang"]?.ToString() : "N/A";
+                                        var soKhoanVay = bank.ContainsKey("SoKhoanVay") ? bank["SoKhoanVay"]?.ToString() : "0";
+                                        <div class="bank-card">
+                                            <div class="bank-icon">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M3 21H21"/>
+                                                    <path d="M3 10H21"/>
+                                                    <path d="M5 6L12 3L19 6"/>
+                                                    <path d="M4 10V21"/>
+                                                    <path d="M20 10V21"/>
+                                                    <path d="M8 14V17"/>
+                                                    <path d="M12 14V17"/>
+                                                    <path d="M16 14V17"/>
+                                                </svg>
+                                            </div>
+                                            <div class="bank-details">
+                                                <div class="bank-name">@tenNganHang</div>
+                                                <div class="bank-loans">@soKhoanVay khoản vay</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        catch
+                        {
+                            <div class="bank-list">
+                                <pre class="bank-json">@Model.DanhSachToChucTinDung</pre>
+                            </div>
+                        }
                     }
                 </div>
             </div>
@@ -311,19 +346,29 @@
 </div>
 
 <style>
+/* Force no horizontal scroll */
+html, body {
+    overflow-x: hidden !important;
+}
+
 .cic-details-container {
-    padding: 32px;
-    max-width: 1400px;
+    padding: 24px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .details-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 32px;
-    padding-bottom: 24px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
     border-bottom: 2px solid var(--border-gray);
+    flex-wrap: wrap;
+    gap: 16px;
 }
 
 .header-left {
@@ -374,67 +419,78 @@
 .details-content {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 24px;
 }
 
 .details-section {
     background: var(--bg-white);
-    padding: 28px;
+    padding: 20px;
     border-radius: 12px;
     box-shadow: var(--shadow-md);
+    overflow: hidden;
 }
 
 .section-title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-dark);
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .section-title svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     color: var(--primary-blue);
+    flex-shrink: 0;
 }
 
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    width: 100%;
 }
 
 .info-item {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .info-item label {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-gray);
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .info-item .info-value {
-    font-size: 16px;
+    font-size: 14px;
     color: var(--text-dark);
     font-weight: 600;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .score-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    width: 100%;
 }
 
 .score-card {
     background: var(--bg-gray);
-    padding: 24px;
-    border-radius: 12px;
+    padding: 16px 12px;
+    border-radius: 10px;
     text-align: center;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .score-card.score-high {
@@ -450,36 +506,45 @@
 }
 
 .score-label {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-gray);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .score-value {
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 700;
     color: var(--text-dark);
+    word-break: break-word;
 }
 
 .score-range {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--text-light);
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    width: 100%;
 }
 
 .stat-card {
     background: var(--bg-gray);
-    padding: 20px;
-    border-radius: 12px;
+    padding: 12px 8px;
+    border-radius: 10px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 16px;
+    text-align: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .stat-card.danger {
@@ -487,35 +552,42 @@
 }
 
 .stat-icon {
-    font-size: 32px;
+    font-size: 24px;
 }
 
 .stat-content {
-    flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .stat-label {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-gray);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .stat-number {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-dark);
 }
 
 .debt-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    width: 100%;
 }
 
 .debt-card {
     background: var(--bg-gray);
-    padding: 20px;
-    border-radius: 12px;
+    padding: 14px 10px;
+    border-radius: 10px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .debt-card.warning {
@@ -527,39 +599,49 @@
 }
 
 .debt-label {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-gray);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .debt-value {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--text-dark);
+    word-break: break-word;
 }
 
 .history-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
 }
 
 .history-item {
     background: var(--bg-gray);
-    padding: 16px;
+    padding: 12px 10px;
     border-radius: 8px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .history-label {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-gray);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .history-value {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--text-dark);
+    word-break: break-word;
 }
 
 .bank-info {
@@ -572,6 +654,78 @@
     font-size: 16px;
     color: var(--text-dark);
     margin-bottom: 16px;
+}
+
+.bank-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.bank-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--bg-white);
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border-gray);
+    transition: all 0.2s ease;
+}
+
+.bank-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-blue);
+}
+
+.bank-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.bank-icon svg {
+    width: 24px;
+    height: 24px;
+    color: #2563eb;
+}
+
+.bank-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.bank-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bank-loans {
+    font-size: 13px;
+    color: var(--text-gray);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.bank-loans::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #10b981;
+    border-radius: 50%;
 }
 
 .bank-json {
@@ -633,14 +787,17 @@
 
 .lookup-info {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    width: 100%;
 }
 
 .lookup-item {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .lookup-item label {
@@ -650,8 +807,169 @@
 }
 
 .lookup-item div {
-    font-size: 15px;
+    font-size: 14px;
     color: var(--text-dark);
     font-weight: 600;
+    word-break: break-word;
+}
+
+/* ============ RESPONSIVE ============ */
+
+/* Tablet */
+@@media (max-width: 992px) {
+    .cic-details-container {
+        padding: 16px;
+    }
+    
+    .details-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .header-badges {
+        align-self: flex-start;
+    }
+    
+    .header-title h1 {
+        font-size: 22px;
+    }
+}
+
+/* Mobile */
+@@media (max-width: 768px) {
+    .cic-details-container {
+        padding: 12px;
+    }
+    
+    .details-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+    
+    .header-title h1 {
+        font-size: 18px;
+    }
+    
+    .subtitle {
+        font-size: 13px;
+    }
+    
+    .details-section {
+        padding: 14px;
+    }
+    
+    .section-title {
+        font-size: 15px;
+        margin-bottom: 14px;
+    }
+    
+    .section-title svg {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .score-card {
+        padding: 12px 8px;
+    }
+    
+    .score-value {
+        font-size: 20px;
+    }
+    
+    .stat-card {
+        padding: 10px 6px;
+    }
+    
+    .stat-icon {
+        font-size: 20px;
+    }
+    
+    .stat-number {
+        font-size: 16px;
+    }
+    
+    .debt-card {
+        padding: 10px 8px;
+    }
+    
+    .debt-value {
+        font-size: 14px;
+    }
+    
+    .history-item {
+        padding: 10px 8px;
+    }
+    
+    .history-value {
+        font-size: 13px;
+    }
+    
+    .recommendation-card {
+        padding: 12px;
+    }
+    
+    .recommendation-title {
+        font-size: 14px;
+    }
+    
+    .bank-info {
+        padding: 12px;
+    }
+    
+    .bank-json {
+        font-size: 10px;
+        padding: 8px;
+    }
+}
+
+/* Small Mobile */
+@@media (max-width: 480px) {
+    .cic-details-container {
+        padding: 8px;
+    }
+    
+    .header-title h1 {
+        font-size: 16px;
+    }
+    
+    .header-badges {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .btn-back {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .score-card {
+        padding: 10px 6px;
+    }
+    
+    .score-value {
+        font-size: 18px;
+    }
+    
+    .stat-card {
+        padding: 8px 4px;
+    }
+    
+    .stat-icon {
+        font-size: 16px;
+    }
+    
+    .stat-number {
+        font-size: 14px;
+    }
+    
+    .details-section {
+        padding: 10px 8px;
+        border-radius: 8px;
+    }
+    
+    .section-title {
+        font-size: 13px;
+        gap: 6px;
+    }
 }
 </style>

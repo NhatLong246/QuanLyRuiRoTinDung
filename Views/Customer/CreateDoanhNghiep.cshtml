@@ -39,13 +39,17 @@
         <!-- 1. Thông tin doanh nghiệp -->
         <div class="form-section">
             <h3 class="section-title">Thông tin doanh nghiệp</h3>
-            <div class="form-grid">
-                <div class="form-group full-width">
-                    <label asp-for="TenCongTy" class="form-label">Tên công ty <span class="required">*</span></label>
-                    <input asp-for="TenCongTy" class="form-control" required data-val="true" data-val-required="Tên công ty là bắt buộc." />
-                    <span asp-validation-for="TenCongTy" class="text-danger validation-error"></span>
-                </div>
+            
+            <div class="validation-notice">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>Nếu Mã số thuế đã tồn tại trong CIC, Tên công ty và CCCD người đại diện phải khớp với thông tin CIC.</span>
+            </div>
 
+            <div class="form-grid">
                 <div class="form-group">
                     <label asp-for="MaSoThue" class="form-label">Mã số thuế <span class="required">*</span></label>
                     <input type="text" 
@@ -58,12 +62,21 @@
                     <small class="form-text text-muted">Định dạng: 10 chữ số + 3 chữ số phụ (VD: 0123456789-001)</small>
                     <span id="maSoThueError" class="text-danger validation-error" style="display: none;"></span>
                     <span asp-validation-for="MaSoThue" class="text-danger validation-error"></span>
+                    <div id="maSoThueValidationLabel" class="validation-label" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="SoGiayPhepKinhDoanh" class="form-label">Tên giấy phép kinh doanh</label>
-                    <input asp-for="SoGiayPhepKinhDoanh" class="form-control" />
-                    <span asp-validation-for="SoGiayPhepKinhDoanh" class="text-danger"></span>
+                    <label asp-for="TenCongTy" class="form-label">Tên công ty <span class="required">*</span></label>
+                    <input asp-for="TenCongTy" class="form-control" id="tenCongTyInput" required data-val="true" data-val-required="Tên công ty là bắt buộc." />
+                    <span asp-validation-for="TenCongTy" class="text-danger validation-error" id="tenCongTyError"></span>
+                    <div id="tenCongTyValidationLabel" class="validation-label" style="display:none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="SoGiayPhepKinhDoanh" class="form-label">Số giấy phép kinh doanh</label>
+                    <input asp-for="SoGiayPhepKinhDoanh" class="form-control" id="giayPhepInput" />
+                    <span asp-validation-for="SoGiayPhepKinhDoanh" class="text-danger validation-error" id="giayPhepError"></span>
+                    <div id="giayPhepValidationLabel" class="validation-label" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
@@ -91,33 +104,70 @@
         <!-- 2. Thông tin người đại diện pháp luật -->
         <div class="form-section">
             <h3 class="section-title">Thông tin người đại diện pháp luật</h3>
+            
+            <div class="validation-notice">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>Thông tin người đại diện sẽ được kiểm tra với dữ liệu CIC, khách hàng cá nhân và các doanh nghiệp khác để đảm bảo tính đồng bộ.</span>
+            </div>
+
             <div class="form-grid form-grid-single-row">
                 <div class="form-group">
-                    <label asp-for="NguoiDaiDienPhapLuat" class="form-label">Người đại diện pháp luật</label>
-                    <input asp-for="NguoiDaiDienPhapLuat" class="form-control" />
-                    <span asp-validation-for="NguoiDaiDienPhapLuat" class="text-danger"></span>
+                    <label asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-label">Số CCCD người đại diện <span class="required">*</span></label>
+                    <input asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-control" id="cccdNguoiDaiDienInput" maxlength="12" pattern="\d{12}" placeholder="Nhập 12 chữ số" required data-val="true" data-val-required="Số CCCD người đại diện là bắt buộc." />
+                    <span asp-validation-for="SoCccdNguoiDaiDienPhapLuat" class="text-danger validation-error"></span>
+                    <div id="cccdValidationLabel" class="validation-label" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-label">Số CCCD người đại diện <span class="required">*</span></label>
-                    <input asp-for="SoCccdNguoiDaiDienPhapLuat" class="form-control" maxlength="12" pattern="\d{12}" placeholder="Nhập 12 chữ số" required data-val="true" data-val-required="Số CCCD người đại diện là bắt buộc." />
-                    <span asp-validation-for="SoCccdNguoiDaiDienPhapLuat" class="text-danger validation-error"></span>
+                    <label asp-for="NguoiDaiDienPhapLuat" class="form-label">Người đại diện pháp luật <span class="required">*</span></label>
+                    <input asp-for="NguoiDaiDienPhapLuat" class="form-control" id="nguoiDaiDienInput" required />
+                    <span asp-validation-for="NguoiDaiDienPhapLuat" class="text-danger validation-error"></span>
+                    <div id="hoTenValidationLabel" class="validation-label" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
                     <label asp-for="NgaySinh" class="form-label">Ngày sinh người đại diện</label>
-                    <input asp-for="NgaySinh" type="date" class="form-control" id="ngaySinhNguoiDaiDien" max="@DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd")" />
+                    <input asp-for="NgaySinh" type="date" class="form-control" id="ngaySinhNguoiDaiDienInput" max="@DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd")" />
                     <span asp-validation-for="NgaySinh" class="text-danger validation-error"></span>
+                    <div id="ngaySinhValidationLabel" class="validation-label" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
                     <label asp-for="GioiTinh" class="form-label">Giới tính người đại diện</label>
-                    <select asp-for="GioiTinh" class="form-control">
+                    <select asp-for="GioiTinh" class="form-control" id="gioiTinhInput">
                         <option value="">-- Chọn --</option>
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
                     </select>
-                    <span asp-validation-for="GioiTinh" class="text-danger"></span>
+                    <span asp-validation-for="GioiTinh" class="text-danger validation-error"></span>
+                    <div id="gioiTinhValidationLabel" class="validation-label" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Thông báo tham chiếu từ hệ thống -->
+            <div id="referenceInfo" class="reference-info" style="display:none;">
+                <h4>Thông tin tham chiếu từ hệ thống:</h4>
+                <div class="reference-grid">
+                    <div class="reference-item">
+                        <span class="ref-label">Họ tên:</span>
+                        <span class="ref-value" id="refHoTen">-</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="ref-label">Ngày sinh:</span>
+                        <span class="ref-value" id="refNgaySinh">-</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="ref-label">Giới tính:</span>
+                        <span class="ref-value" id="refGioiTinh">-</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="ref-label">Nguồn:</span>
+                        <span class="ref-value" id="refSource">-</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -316,8 +366,437 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script src="~/js/customer-doanhnghiep.js"></script>
+    <script>
+        // ==========================================
+        // VALIDATION REALTIME CHO NGƯỜI ĐẠI DIỆN PHÁP LUẬT
+        // ==========================================
+        $(document).ready(function() {
+            const crossCheckUrl = '/Customer/CrossCheckWithCIC';
+            const crossValidateCICUrl = '/Customer/CrossValidateCIC';
+            const checkPhoneUrl = '/Customer/CheckPhoneExists';
+            const checkEmailUrl = '/Customer/CheckEmailExists';
+            const checkGiayPhepUrl = '/Customer/CheckGiayPhepExists';
+            const checkTenCongTyUrl = '/Customer/CheckTenCongTyExists';
+            
+            let validationTimeout = null;
+            let hasValidationErrors = false;
+            let hasCICValidationErrors = false;
+            let hasGiayPhepError = false;
+            let hasTenCongTyError = false;
+
+            const cccdInput = document.getElementById('cccdNguoiDaiDienInput');
+            const nguoiDaiDienInput = document.getElementById('nguoiDaiDienInput');
+            const ngaySinhInput = document.getElementById('ngaySinhNguoiDaiDienInput');
+            const gioiTinhInput = document.getElementById('gioiTinhInput');
+            const phoneInput = document.querySelector('[name="SoDienThoai"]');
+            const emailInput = document.querySelector('[name="Email"]');
+            const maSoThueInput = document.getElementById('maSoThueInput');
+            const tenCongTyInput = document.getElementById('tenCongTyInput');
+            const giayPhepInput = document.getElementById('giayPhepInput');
+
+            // Hàm hiển thị validation label
+            function showValidationLabel(elementId, message, type = 'error') {
+                const label = document.getElementById(elementId);
+                if (label) {
+                    label.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:6px;flex-shrink:0;">
+                        ${type === 'error' 
+                            ? '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>'
+                            : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'
+                        }
+                    </svg><span>${message}</span>`;
+                    label.className = `validation-label ${type}`;
+                    label.style.display = 'flex';
+                }
+            }
+
+            function hideValidationLabel(elementId) {
+                const label = document.getElementById(elementId);
+                if (label) {
+                    label.style.display = 'none';
+                }
+            }
+
+            function hideAllValidationLabels() {
+                ['cccdValidationLabel', 'hoTenValidationLabel', 'ngaySinhValidationLabel', 'gioiTinhValidationLabel'].forEach(id => {
+                    hideValidationLabel(id);
+                });
+                document.getElementById('referenceInfo').style.display = 'none';
+            }
+
+            function hideCICValidationLabels() {
+                ['maSoThueValidationLabel', 'tenCongTyValidationLabel'].forEach(id => {
+                    hideValidationLabel(id);
+                });
+                document.getElementById('cicReferenceInfo')?.remove();
+            }
+
+            // ==========================================
+            // KIỂM TRA MÃ SỐ THUẾ VỚI CIC
+            // ==========================================
+            async function validateMaSoThueWithCIC() {
+                const maSoThue = maSoThueInput?.value?.replace(/-/g, '')?.trim() || '';
+                const tenCongTy = tenCongTyInput?.value?.trim() || '';
+                const cccd = cccdInput?.value?.trim() || '';
+
+                // Chỉ validate khi Mã số thuế đủ 13 số
+                if (maSoThue.length !== 13) {
+                    hideCICValidationLabels();
+                    hasCICValidationErrors = false;
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams({
+                        maSoThue: maSoThue,
+                        tenCongTy: tenCongTy,
+                        cccd: cccd
+                    });
+
+                    const response = await fetch(`${crossValidateCICUrl}?${params}`);
+                    const data = await response.json();
+
+                    hasCICValidationErrors = false;
+                    hideCICValidationLabels();
+                    tenCongTyInput?.classList.remove('input-error');
+                    cccdInput?.classList.remove('input-error');
+
+                    if (data.hasCicRecord) {
+                        // Hiển thị thông tin CIC tham chiếu
+                        let existingRef = document.getElementById('cicReferenceInfo');
+                        if (!existingRef) {
+                            existingRef = document.createElement('div');
+                            existingRef.id = 'cicReferenceInfo';
+                            existingRef.className = 'cic-reference-info';
+                            // Thêm vào sau form-group của Mã số thuế
+                            const formSection = maSoThueInput.closest('.form-section');
+                            const formGrid = formSection.querySelector('.form-grid');
+                            formGrid.insertAdjacentElement('afterend', existingRef);
+                        }
+                        existingRef.innerHTML = `
+                            <div class="cic-ref-header">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12l2 2 4-4"></path>
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                </svg>
+                                <span>Thông tin CIC theo Mã số thuế:</span>
+                            </div>
+                            <div class="cic-ref-content">
+                                <div class="cic-ref-item">
+                                    <span class="cic-ref-label">Tên công ty:</span>
+                                    <span class="cic-ref-value">${data.cicTenCongTy || '-'}</span>
+                                </div>
+                                <div class="cic-ref-item">
+                                    <span class="cic-ref-label">CCCD:</span>
+                                    <span class="cic-ref-value">${data.cicCccd || '-'}</span>
+                                </div>
+                            </div>
+                        `;
+
+                        // Kiểm tra và hiển thị lỗi nếu không khớp
+                        if (data.tenCongTyMismatch && tenCongTy) {
+                            hasCICValidationErrors = true;
+                            showValidationLabel('tenCongTyValidationLabel', 
+                                `Tên công ty không khớp với CIC. CIC: ${data.cicTenCongTy}`, 'error');
+                            tenCongTyInput?.classList.add('input-error');
+                        }
+
+                        if (data.cccdMismatch && cccd) {
+                            hasCICValidationErrors = true;
+                            showValidationLabel('cccdValidationLabel', 
+                                `CCCD người đại diện không khớp với CIC. CIC: ${data.cicCccd}`, 'error');
+                            cccdInput?.classList.add('input-error');
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Error validating MST with CIC:', error);
+                }
+            }
+
+            // Gắn sự kiện cho Mã số thuế
+            if (maSoThueInput) {
+                maSoThueInput.addEventListener('blur', validateMaSoThueWithCIC);
+            }
+
+            // Gắn sự kiện cho Tên công ty (validate khi thay đổi)
+            if (tenCongTyInput) {
+                tenCongTyInput.addEventListener('blur', async function() {
+                    const tenCongTy = this.value.trim();
+                    if (!tenCongTy) return;
+
+                    // Kiểm tra trùng tên công ty
+                    try {
+                        const response = await fetch(`${checkTenCongTyUrl}?tenCongTy=${encodeURIComponent(tenCongTy)}`);
+                        const data = await response.json();
+                        
+                        const errorSpan = document.getElementById('tenCongTyError');
+                        if (data.exists) {
+                            hasTenCongTyError = true;
+                            this.classList.add('input-error');
+                            if (errorSpan) {
+                                errorSpan.textContent = 'Tên công ty này đã tồn tại trong hệ thống.';
+                                errorSpan.style.display = 'block';
+                            }
+                        } else {
+                            hasTenCongTyError = false;
+                            this.classList.remove('input-error');
+                            if (errorSpan && errorSpan.textContent.includes('Tên công ty này đã tồn tại')) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking ten cong ty:', error);
+                    }
+
+                    // Validate với CIC nếu đã có MST
+                    validateMaSoThueWithCIC();
+                });
+            }
+
+            // ==========================================
+            // KIỂM TRA SỐ GIẤY PHÉP KINH DOANH TRÙNG
+            // ==========================================
+            if (giayPhepInput) {
+                giayPhepInput.addEventListener('blur', async function() {
+                    const soGiayPhep = this.value.trim();
+                    if (!soGiayPhep) {
+                        hasGiayPhepError = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`${checkGiayPhepUrl}?soGiayPhep=${encodeURIComponent(soGiayPhep)}`);
+                        const data = await response.json();
+                        
+                        const errorSpan = document.getElementById('giayPhepError');
+                        if (data.exists) {
+                            hasGiayPhepError = true;
+                            this.classList.add('input-error');
+                            if (errorSpan) {
+                                errorSpan.textContent = 'Số giấy phép kinh doanh này đã được sử dụng bởi doanh nghiệp khác.';
+                                errorSpan.style.display = 'block';
+                            }
+                        } else {
+                            hasGiayPhepError = false;
+                            this.classList.remove('input-error');
+                            if (errorSpan && errorSpan.textContent.includes('Số giấy phép kinh doanh này đã được sử dụng')) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking giay phep:', error);
+                    }
+                });
+            }
+
+            // Hàm kiểm tra cross-check với CIC, khách hàng cá nhân và doanh nghiệp khác
+            async function validateNguoiDaiDien() {
+                const soCccd = cccdInput?.value?.trim() || '';
+                const nguoiDaiDien = nguoiDaiDienInput?.value?.trim() || '';
+                const ngaySinh = ngaySinhInput?.value || '';
+                const gioiTinh = gioiTinhInput?.value || '';
+
+                // Chỉ validate khi CCCD đủ 12 số
+                if (soCccd.length !== 12) {
+                    hideAllValidationLabels();
+                    hasValidationErrors = false;
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams({
+                        soCccd: soCccd,
+                        nguoiDaiDien: nguoiDaiDien,
+                        ngaySinh: ngaySinh,
+                        gioiTinh: gioiTinh
+                        // Không có excludeId vì đây là tạo mới
+                    });
+
+                    const response = await fetch(`${crossCheckUrl}?${params}`);
+                    const data = await response.json();
+
+                    hasValidationErrors = false;
+                    hideAllValidationLabels();
+
+                    // Xóa class input-error
+                    nguoiDaiDienInput?.classList.remove('input-error');
+                    ngaySinhInput?.classList.remove('input-error');
+                    gioiTinhInput?.classList.remove('input-error');
+
+                    if (data.hasWarnings && data.warnings && data.warnings.length > 0) {
+                        data.warnings.forEach(warning => {
+                            hasValidationErrors = true;
+                            
+                            if (warning.fieldName === 'NguoiDaiDienPhapLuat' || warning.fieldName === 'HoTen') {
+                                showValidationLabel('hoTenValidationLabel', warning.message, 'error');
+                                nguoiDaiDienInput?.classList.add('input-error');
+                            } else if (warning.fieldName === 'NgaySinh') {
+                                showValidationLabel('ngaySinhValidationLabel', warning.message, 'error');
+                                ngaySinhInput?.classList.add('input-error');
+                            } else if (warning.fieldName === 'GioiTinh') {
+                                showValidationLabel('gioiTinhValidationLabel', warning.message, 'error');
+                                gioiTinhInput?.classList.add('input-error');
+                            }
+                        });
+                    }
+
+                    // Hiển thị thông tin tham chiếu nếu có
+                    if (data.referenceData && data.referenceData.source) {
+                        const refInfo = document.getElementById('referenceInfo');
+                        document.getElementById('refHoTen').textContent = data.referenceData.hoTen || '-';
+                        document.getElementById('refNgaySinh').textContent = data.referenceData.ngaySinh || '-';
+                        document.getElementById('refGioiTinh').textContent = data.referenceData.gioiTinh || '-';
+                        document.getElementById('refSource').textContent = data.referenceData.source || '-';
+                        refInfo.style.display = 'block';
+                    }
+
+                } catch (error) {
+                    console.error('Error validating nguoi dai dien:', error);
+                }
+            }
+
+            // Debounce function
+            function debounce(func, delay) {
+                return function(...args) {
+                    if (validationTimeout) clearTimeout(validationTimeout);
+                    validationTimeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            const debouncedValidate = debounce(validateNguoiDaiDien, 500);
+
+            // Gắn sự kiện cho CCCD
+            if (cccdInput) {
+                cccdInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 12) value = value.substring(0, 12);
+                    e.target.value = value;
+                    debouncedValidate();
+                });
+                cccdInput.addEventListener('blur', function() {
+                    validateNguoiDaiDien();
+                    // Cũng validate với CIC nếu đã có MST
+                    validateMaSoThueWithCIC();
+                });
+            }
+
+            // Gắn sự kiện cho Người đại diện
+            if (nguoiDaiDienInput) {
+                nguoiDaiDienInput.addEventListener('input', debouncedValidate);
+                nguoiDaiDienInput.addEventListener('blur', validateNguoiDaiDien);
+            }
+
+            // Gắn sự kiện cho Ngày sinh
+            if (ngaySinhInput) {
+                ngaySinhInput.addEventListener('change', validateNguoiDaiDien);
+            }
+
+            // Gắn sự kiện cho Giới tính
+            if (gioiTinhInput) {
+                gioiTinhInput.addEventListener('change', validateNguoiDaiDien);
+            }
+
+            // ==========================================
+            // KIỂM TRA SĐT VÀ EMAIL TRÙNG
+            // ==========================================
+            
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 10) value = value.substring(0, 10);
+                    e.target.value = value;
+                });
+
+                phoneInput.addEventListener('blur', async function() {
+                    const phone = this.value.trim();
+                    if (phone.length !== 10) return;
+
+                    try {
+                        const response = await fetch(`${checkPhoneUrl}?phone=${encodeURIComponent(phone)}`);
+                        const data = await response.json();
+                        
+                        let errorSpan = this.parentElement.querySelector('.validation-error');
+                        if (data.exists) {
+                            this.classList.add('input-error');
+                            if (errorSpan) {
+                                errorSpan.textContent = 'Số điện thoại này đã được sử dụng bởi khách hàng khác.';
+                                errorSpan.style.display = 'block';
+                            }
+                        } else {
+                            this.classList.remove('input-error');
+                            if (errorSpan && errorSpan.textContent.includes('Số điện thoại này đã được sử dụng')) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking phone:', error);
+                    }
+                });
+            }
+
+            if (emailInput) {
+                emailInput.addEventListener('blur', async function() {
+                    const email = this.value.trim();
+                    if (!email) return;
+
+                    try {
+                        const response = await fetch(`${checkEmailUrl}?email=${encodeURIComponent(email)}`);
+                        const data = await response.json();
+                        
+                        let errorSpan = this.parentElement.querySelector('.validation-error');
+                        if (data.exists) {
+                            this.classList.add('input-error');
+                            if (errorSpan) {
+                                errorSpan.textContent = 'Email này đã được sử dụng bởi khách hàng khác.';
+                                errorSpan.style.display = 'block';
+                            }
+                        } else {
+                            this.classList.remove('input-error');
+                            if (errorSpan && errorSpan.textContent.includes('Email này đã được sử dụng')) {
+                                errorSpan.textContent = '';
+                                errorSpan.style.display = 'none';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking email:', error);
+                    }
+                });
+            }
+
+            // ==========================================
+            // CHẶN SUBMIT NẾU CÓ LỖI VALIDATION
+            // ==========================================
+            document.querySelector('form.customer-form')?.addEventListener('submit', function(e) {
+                let errorMessages = [];
+                
+                if (hasValidationErrors) {
+                    errorMessages.push('- Thông tin người đại diện không khớp với dữ liệu trong hệ thống.');
+                }
+                
+                if (hasCICValidationErrors) {
+                    errorMessages.push('- Thông tin doanh nghiệp không khớp với CIC (Tên công ty hoặc CCCD).');
+                }
+                
+                if (hasGiayPhepError) {
+                    errorMessages.push('- Số giấy phép kinh doanh đã được sử dụng.');
+                }
+                
+                if (hasTenCongTyError) {
+                    errorMessages.push('- Tên công ty đã tồn tại trong hệ thống.');
+                }
+                
+                if (errorMessages.length > 0) {
+                    e.preventDefault();
+                    alert('Vui lòng sửa các lỗi sau trước khi lưu:\n\n' + errorMessages.join('\n'));
+                    return false;
+                }
+            });
+        });
+    </script>
 }
 
 <style>
@@ -517,6 +996,162 @@
     border-color: #ef4444;
 }
 
+.input-error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+
+.validation-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+    color: #1e40af;
+}
+
+.validation-notice svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.validation-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.validation-label.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.validation-label.warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+
+.reference-info {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.reference-info h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #166534;
+    margin: 0 0 0.75rem 0;
+}
+
+.reference-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem 2rem;
+}
+
+.reference-item {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.ref-label {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ref-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #166534;
+    word-break: break-word;
+}
+
+/* CIC Reference Info - Improved Layout */
+.cic-reference-info {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #86efac;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-top: 1.25rem;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+}
+
+.cic-ref-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.625rem;
+    border-bottom: 1px dashed #86efac;
+}
+
+.cic-ref-header svg {
+    width: 20px;
+    height: 20px;
+    color: #16a34a;
+    flex-shrink: 0;
+}
+
+.cic-ref-header span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #15803d;
+}
+
+.cic-ref-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2.5rem;
+}
+
+.cic-ref-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cic-ref-label {
+    font-size: 0.8125rem;
+    color: #4b5563;
+    white-space: nowrap;
+}
+
+.cic-ref-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #166534;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 0.25rem 0.625rem;
+    border-radius: 4px;
+}
+
+@@media (max-width: 576px) {
+    .cic-ref-content {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+}
+
 .validation-error {
     display: block !important;
     color: #ef4444 !important;
@@ -661,5 +1296,24 @@
     margin: 0;
     font-size: 0.95rem;
     line-height: 1.5;
+}
+
+/* Responsive cho reference-grid */
+@@media (max-width: 992px) {
+    .reference-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+@@media (max-width: 576px) {
+    .reference-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .reference-item {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
 }
 </style>
