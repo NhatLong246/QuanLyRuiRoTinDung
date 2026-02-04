@@ -37,15 +37,18 @@ $(document).ready(function() {
     
     if (doanhThuInput && doanhThuHidden) {
         doanhThuInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\./g, '');
-            if (value && !isNaN(value)) {
-                let numValue = parseFloat(value);
+            // Chỉ lấy các chữ số
+            let value = e.target.value.replace(/[^\d]/g, '');
+            
+            if (value && value.length > 0) {
+                let numValue = parseInt(value, 10);
                 // Không cho phép số âm
                 if (numValue < 0) {
                     numValue = 0;
                     value = '0';
                 }
-                let formatted = Math.floor(numValue).toLocaleString('vi-VN').replace(/,/g, '.');
+                // Format với dấu chấm phân cách hàng nghìn
+                let formatted = numValue.toLocaleString('vi-VN').replace(/,/g, '.');
                 e.target.value = formatted;
                 // Lưu giá trị số vào hidden field (không có dấu chấm)
                 doanhThuHidden.value = Math.floor(numValue).toString();
@@ -62,10 +65,11 @@ $(document).ready(function() {
         });
 
         doanhThuInput.addEventListener('blur', function() {
-            let value = this.value.replace(/\./g, '');
+            // Chỉ lấy các chữ số
+            let value = this.value.replace(/[^\d]/g, '');
             const errorSpan = this.parentElement.querySelector('.validation-error');
-            if (value && !isNaN(value)) {
-                let numValue = parseFloat(value);
+            if (value && value.length > 0) {
+                let numValue = parseInt(value, 10);
                 if (numValue < 0) {
                     if (errorSpan) {
                         errorSpan.textContent = 'Doanh thu hàng năm không được âm.';
@@ -84,8 +88,9 @@ $(document).ready(function() {
 
         document.querySelector('form')?.addEventListener('submit', function(e) {
             if (doanhThuInput.value) {
-                let value = doanhThuInput.value.replace(/\./g, '');
-                let numValue = parseFloat(value);
+                // Chỉ lấy các chữ số
+                let value = doanhThuInput.value.replace(/[^\d]/g, '');
+                let numValue = parseInt(value, 10);
                 if (numValue < 0) {
                     e.preventDefault();
                     const errorSpan = doanhThuInput.parentElement.querySelector('.validation-error');
@@ -96,7 +101,7 @@ $(document).ready(function() {
                     doanhThuInput.focus();
                     return false;
                 }
-                doanhThuHidden.value = Math.floor(numValue).toString();
+                doanhThuHidden.value = numValue.toString();
             }
         });
     }
@@ -107,18 +112,21 @@ $(document).ready(function() {
     
     if (tongTaiSanInput && tongTaiSanHidden) {
         tongTaiSanInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\./g, '');
-            if (value && !isNaN(value)) {
-                let numValue = parseFloat(value);
+            // Chỉ lấy các chữ số
+            let value = e.target.value.replace(/[^\d]/g, '');
+            
+            if (value && value.length > 0) {
+                let numValue = parseInt(value, 10);
                 // Không cho phép số âm
                 if (numValue < 0) {
                     numValue = 0;
                     value = '0';
                 }
-                let formatted = Math.floor(numValue).toLocaleString('vi-VN').replace(/,/g, '.');
+                // Format với dấu chấm phân cách hàng nghìn
+                let formatted = numValue.toLocaleString('vi-VN').replace(/,/g, '.');
                 e.target.value = formatted;
                 // Lưu giá trị số vào hidden field (không có dấu chấm)
-                tongTaiSanHidden.value = Math.floor(numValue).toString();
+                tongTaiSanHidden.value = numValue.toString();
                 
                 // Xóa lỗi nếu có
                 const errorSpan = this.parentElement.querySelector('.validation-error');
@@ -132,10 +140,11 @@ $(document).ready(function() {
         });
 
         tongTaiSanInput.addEventListener('blur', function() {
-            let value = this.value.replace(/\./g, '');
+            // Chỉ lấy các chữ số
+            let value = this.value.replace(/[^\d]/g, '');
             const errorSpan = this.parentElement.querySelector('.validation-error');
-            if (value && !isNaN(value)) {
-                let numValue = parseFloat(value);
+            if (value && value.length > 0) {
+                let numValue = parseInt(value, 10);
                 if (numValue < 0) {
                     if (errorSpan) {
                         errorSpan.textContent = 'Tổng tài sản không được âm.';
@@ -154,8 +163,9 @@ $(document).ready(function() {
 
         document.querySelector('form')?.addEventListener('submit', function(e) {
             if (tongTaiSanInput.value) {
-                let value = tongTaiSanInput.value.replace(/\./g, '');
-                let numValue = parseFloat(value);
+                // Chỉ lấy các chữ số
+                let value = tongTaiSanInput.value.replace(/[^\d]/g, '');
+                let numValue = parseInt(value, 10);
                 if (numValue < 0) {
                     e.preventDefault();
                     const errorSpan = tongTaiSanInput.parentElement.querySelector('.validation-error');
@@ -166,7 +176,7 @@ $(document).ready(function() {
                     tongTaiSanInput.focus();
                     return false;
                 }
-                tongTaiSanHidden.value = Math.floor(numValue).toString();
+                tongTaiSanHidden.value = numValue.toString();
             }
         });
     }
@@ -177,18 +187,21 @@ $(document).ready(function() {
     
     if (vonDieuLeInput && vonDieuLeHidden) {
         vonDieuLeInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\./g, '');
-            if (value && !isNaN(value)) {
-                let numValue = parseFloat(value);
+            // Chỉ lấy các chữ số
+            let value = e.target.value.replace(/[^\d]/g, '');
+            
+            if (value && value.length > 0) {
+                let numValue = parseInt(value, 10);
                 // Không cho phép số âm
                 if (numValue < 0) {
                     numValue = 0;
                     value = '0';
                 }
-                let formatted = Math.floor(numValue).toLocaleString('vi-VN').replace(/,/g, '.');
+                // Format với dấu chấm phân cách hàng nghìn
+                let formatted = numValue.toLocaleString('vi-VN').replace(/,/g, '.');
                 e.target.value = formatted;
                 // Lưu giá trị số vào hidden field (không có dấu chấm)
-                vonDieuLeHidden.value = Math.floor(numValue).toString();
+                vonDieuLeHidden.value = numValue.toString();
                 
                 // Xóa lỗi nếu có
                 const errorSpan = this.parentElement.querySelector('.validation-error');
@@ -202,10 +215,11 @@ $(document).ready(function() {
         });
 
         vonDieuLeInput.addEventListener('blur', function() {
-            let value = this.value.replace(/\./g, '');
+            // Chỉ lấy các chữ số
+            let value = this.value.replace(/[^\d]/g, '');
             const errorSpan = this.parentElement.querySelector('.validation-error');
-            if (value && !isNaN(value)) {
-                let numValue = parseFloat(value);
+            if (value && value.length > 0) {
+                let numValue = parseInt(value, 10);
                 if (numValue < 0) {
                     if (errorSpan) {
                         errorSpan.textContent = 'Vốn điều lệ không được âm.';
@@ -224,8 +238,9 @@ $(document).ready(function() {
 
         document.querySelector('form')?.addEventListener('submit', function(e) {
             if (vonDieuLeInput.value) {
-                let value = vonDieuLeInput.value.replace(/\./g, '');
-                let numValue = parseFloat(value);
+                // Chỉ lấy các chữ số
+                let value = vonDieuLeInput.value.replace(/[^\d]/g, '');
+                let numValue = parseInt(value, 10);
                 if (numValue < 0) {
                     e.preventDefault();
                     const errorSpan = vonDieuLeInput.parentElement.querySelector('.validation-error');
@@ -236,7 +251,7 @@ $(document).ready(function() {
                     vonDieuLeInput.focus();
                     return false;
                 }
-                vonDieuLeHidden.value = Math.floor(numValue).toString();
+                vonDieuLeHidden.value = numValue.toString();
             }
         });
     }
@@ -307,16 +322,45 @@ $(document).ready(function() {
         
         // Xử lý khi nhập
         maSoThueInput.addEventListener('input', function(e) {
-            // Chỉ cho phép số và dấu -
-            let value = e.target.value.replace(/[^\d-]/g, '');
+            // Lấy vị trí con trỏ hiện tại
+            let cursorPos = e.target.selectionStart;
+            let oldValue = e.target.value;
             
-            // Không cho phép nhiều dấu -
-            let parts = value.split('-');
-            if (parts.length > 2) {
-                value = parts[0] + '-' + parts.slice(1).join('');
+            // Chỉ lấy các chữ số
+            let numbersOnly = oldValue.replace(/[^\d]/g, '');
+            
+            // Giới hạn tối đa 13 chữ số
+            if (numbersOnly.length > 13) {
+                numbersOnly = numbersOnly.substring(0, 13);
             }
             
-            e.target.value = value;
+            // Format: tự động thêm dấu - sau 10 số đầu tiên
+            let formattedValue = '';
+            if (numbersOnly.length > 10) {
+                formattedValue = numbersOnly.substring(0, 10) + '-' + numbersOnly.substring(10);
+            } else {
+                formattedValue = numbersOnly;
+            }
+            
+            // Cập nhật giá trị input
+            e.target.value = formattedValue;
+            
+            // Lưu vào hidden field (không có dấu -)
+            maSoThueHidden.value = numbersOnly;
+            
+            // Điều chỉnh vị trí con trỏ
+            let newCursorPos = cursorPos;
+            // Nếu con trỏ ở sau vị trí dấu - và vừa thêm dấu -
+            if (numbersOnly.length > 10 && cursorPos > 10 && oldValue.length < formattedValue.length) {
+                newCursorPos = cursorPos + 1;
+            }
+            // Đảm bảo con trỏ không vượt quá độ dài
+            if (newCursorPos > formattedValue.length) {
+                newCursorPos = formattedValue.length;
+            }
+            e.target.setSelectionRange(newCursorPos, newCursorPos);
+            
+            // Validate
             validateMaSoThue();
         });
         
@@ -1289,20 +1333,20 @@ $(document).ready(function() {
     // =============================================
     // CROSS-VALIDATION CCCD - KIỂM TRA VỚI CÁ NHÂN/CIC CÁ NHÂN
     // =============================================
-    const nguoiDaiDienInput = document.querySelector('[name="NguoiDaiDienPhapLuat"]');
-    const ngaySinhNguoiDaiDienInput = document.querySelector('[name="NgaySinh"]');
-    const gioiTinhNguoiDaiDienInput = document.querySelector('[name="GioiTinh"]');
+    const nguoiDaiDienInputCross = document.querySelector('[name="NguoiDaiDienPhapLuat"]');
+    const ngaySinhNguoiDaiDienInputCross = document.querySelector('[name="NgaySinh"]');
+    const gioiTinhNguoiDaiDienInputCross = document.querySelector('[name="GioiTinh"]');
     let crossValidationTimeout = null;
 
     // Hàm hiển thị Cross warning label cho doanh nghiệp
     function showCrossWarningDN(fieldName, message) {
         let targetInput = null;
         if (fieldName === 'NguoiDaiDienPhapLuat') {
-            targetInput = nguoiDaiDienInput;
+            targetInput = nguoiDaiDienInputCross;
         } else if (fieldName === 'NgaySinh') {
-            targetInput = ngaySinhNguoiDaiDienInput;
+            targetInput = ngaySinhNguoiDaiDienInputCross;
         } else if (fieldName === 'GioiTinh') {
-            targetInput = gioiTinhNguoiDaiDienInput;
+            targetInput = gioiTinhNguoiDaiDienInputCross;
         }
 
         if (!targetInput) return;
@@ -1332,11 +1376,11 @@ $(document).ready(function() {
     function hideCrossWarningDN(fieldName) {
         let targetInput = null;
         if (fieldName === 'NguoiDaiDienPhapLuat') {
-            targetInput = nguoiDaiDienInput;
+            targetInput = nguoiDaiDienInputCross;
         } else if (fieldName === 'NgaySinh') {
-            targetInput = ngaySinhNguoiDaiDienInput;
+            targetInput = ngaySinhNguoiDaiDienInputCross;
         } else if (fieldName === 'GioiTinh') {
-            targetInput = gioiTinhNguoiDaiDienInput;
+            targetInput = gioiTinhNguoiDaiDienInputCross;
         }
 
         if (!targetInput) return;
@@ -1357,9 +1401,9 @@ $(document).ready(function() {
     // Hàm kiểm tra Cross-validation cho doanh nghiệp
     async function checkCrossValidationDoanhNghiep() {
         const soCccd = cccdNguoiDaiDienInput?.value?.trim() || '';
-        const nguoiDaiDien = nguoiDaiDienInput?.value?.trim() || '';
-        const ngaySinh = ngaySinhNguoiDaiDienInput?.value || '';
-        const gioiTinh = gioiTinhNguoiDaiDienInput?.value || '';
+        const nguoiDaiDien = nguoiDaiDienInputCross?.value?.trim() || '';
+        const ngaySinh = ngaySinhNguoiDaiDienInputCross?.value || '';
+        const gioiTinh = gioiTinhNguoiDaiDienInputCross?.value || '';
 
         // Chỉ kiểm tra khi CCCD đủ 12 số
         if (soCccd.length !== 12) {
@@ -1394,7 +1438,7 @@ $(document).ready(function() {
     }
 
     // Gắn sự kiện cho các field người đại diện
-    if (cccdNguoiDaiDienInput && nguoiDaiDienInput && ngaySinhNguoiDaiDienInput && gioiTinhNguoiDaiDienInput) {
+    if (cccdNguoiDaiDienInput && nguoiDaiDienInputCross && ngaySinhNguoiDaiDienInputCross && gioiTinhNguoiDaiDienInputCross) {
         const debouncedCrossCheck = debounceCrossValidation(checkCrossValidationDoanhNghiep, 500);
         
         // Khi CCCD người đại diện thay đổi
@@ -1402,14 +1446,14 @@ $(document).ready(function() {
         cccdNguoiDaiDienInput.addEventListener('blur', checkCrossValidationDoanhNghiep);
         
         // Khi Người đại diện pháp luật thay đổi
-        nguoiDaiDienInput.addEventListener('input', debouncedCrossCheck);
-        nguoiDaiDienInput.addEventListener('blur', checkCrossValidationDoanhNghiep);
+        nguoiDaiDienInputCross.addEventListener('input', debouncedCrossCheck);
+        nguoiDaiDienInputCross.addEventListener('blur', checkCrossValidationDoanhNghiep);
         
         // Khi Ngày sinh thay đổi
-        ngaySinhNguoiDaiDienInput.addEventListener('change', checkCrossValidationDoanhNghiep);
+        ngaySinhNguoiDaiDienInputCross.addEventListener('change', checkCrossValidationDoanhNghiep);
         
         // Khi Giới tính thay đổi
-        gioiTinhNguoiDaiDienInput.addEventListener('change', checkCrossValidationDoanhNghiep);
+        gioiTinhNguoiDaiDienInputCross.addEventListener('change', checkCrossValidationDoanhNghiep);
     }
     // =============================================
     // END CROSS-VALIDATION
@@ -1506,3 +1550,4 @@ $(document).ready(function() {
             }
         });
     }
+});
